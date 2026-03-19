@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Upgrage_Functions",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Upgrage_Functions",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
