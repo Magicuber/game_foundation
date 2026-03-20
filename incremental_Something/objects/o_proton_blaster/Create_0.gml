@@ -1,6 +1,7 @@
 target_x = room_width / 2
 target_y = room_height / 2
 image_index = 0
+depth = 8
 // Choose a random off-screen edge to spawn from (0=top, 1=bottom, 2=left, 3=right)
 var edge = irandom(3);
 

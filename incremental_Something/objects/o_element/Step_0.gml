@@ -10,5 +10,7 @@ if fused {
 		fused = false
 	}
 }
+image_xscale = 6
+image_yscale = 6
 	
 image_index = global.current_ele.index

@@ -6,7 +6,7 @@ if !global.paused {
 		Smasher_cost()
 		
 		with(o_controller_main) {
-			gen_interval = max(5, 300 / power(2, global.smasher_lvl - 1))
+			gen_interval = max(5, 300 / global.smasher_lvl)
 		}
 	}
 	

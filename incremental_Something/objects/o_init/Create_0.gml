@@ -2,6 +2,8 @@ global.dust = 0
 global.orbs = 0
 global.smasher_lvl = 0
 global.smasher_cost = int64(10)
+global.ele_unlock_lvl = 0
+global.ele_unlock_cost = 1000
 global.elements = {
 	
 	ele_P: {
@@ -18,7 +20,7 @@ global.elements = {
 		unlocked: false,
 		index:	1,
 		cost:	100,
-		amt:	0,
+		amt:	1000,
 		value:	5
 	},
 	

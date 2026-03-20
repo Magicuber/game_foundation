@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"Upgrage_Functions",
+  "%Name":"Upgrade_Functions",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Upgrage_Functions",
+  "name":"Upgrade_Functions",
   "parent":{
     "name":"Scripts",
     "path":"folders/Scripts.yy",

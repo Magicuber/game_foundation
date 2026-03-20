@@ -50,7 +50,7 @@
     {"id":{"name":"o_proton_blaster","path":"objects/o_proton_blaster/o_proton_blaster.yy",},},
     {"id":{"name":"rm_Main","path":"rooms/rm_Main/rm_Main.yy",},},
     {"id":{"name":"rm_Start","path":"rooms/rm_Start/rm_Start.yy",},},
-    {"id":{"name":"Upgrage_Functions","path":"scripts/Upgrage_Functions/Upgrage_Functions.yy",},},
+    {"id":{"name":"Upgrade_Functions","path":"scripts/Upgrade_Functions/Upgrade_Functions.yy",},},
     {"id":{"name":"bar","path":"sprites/bar/bar.yy",},},
     {"id":{"name":"button2","path":"sprites/button2/button2.yy",},},
     {"id":{"name":"elements_01","path":"sprites/elements_01/elements_01.yy",},},
