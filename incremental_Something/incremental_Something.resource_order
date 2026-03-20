@@ -27,6 +27,7 @@
     {"name":"o_icon_partical_smasher","order":8,"path":"objects/o_icon_partical_smasher/o_icon_partical_smasher.yy",},
     {"name":"o_lock","order":7,"path":"objects/o_lock/o_lock.yy",},
     {"name":"o_partical_spawning","order":4,"path":"objects/o_partical_spawning/o_partical_spawning.yy",},
+    {"name":"o_proton_blaster","order":10,"path":"objects/o_proton_blaster/o_proton_blaster.yy",},
     {"name":"rm_Main","order":1,"path":"rooms/rm_Main/rm_Main.yy",},
     {"name":"button2","order":1,"path":"sprites/button2/button2.yy",},
     {"name":"elements_01","order":6,"path":"sprites/elements_01/elements_01.yy",},

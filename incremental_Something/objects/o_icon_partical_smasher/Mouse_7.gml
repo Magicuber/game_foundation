@@ -4,8 +4,11 @@ if !global.paused {
 		global.elements.ele_H.amt -= global.smasher_cost
 		global.smasher_lvl++
 		Smasher_cost()
-			
+		
+		with(o_controller_main) {
+			gen_interval = max(5, 300 / power(2, global.smasher_lvl - 1))
 		}
+	}
 	
 }
 			

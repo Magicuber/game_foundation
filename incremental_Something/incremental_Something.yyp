@@ -47,6 +47,7 @@
     {"id":{"name":"o_init","path":"objects/o_init/o_init.yy",},},
     {"id":{"name":"o_lock","path":"objects/o_lock/o_lock.yy",},},
     {"id":{"name":"o_partical_spawning","path":"objects/o_partical_spawning/o_partical_spawning.yy",},},
+    {"id":{"name":"o_proton_blaster","path":"objects/o_proton_blaster/o_proton_blaster.yy",},},
     {"id":{"name":"rm_Main","path":"rooms/rm_Main/rm_Main.yy",},},
     {"id":{"name":"rm_Start","path":"rooms/rm_Start/rm_Start.yy",},},
     {"id":{"name":"Upgrage_Functions","path":"scripts/Upgrage_Functions/Upgrage_Functions.yy",},},

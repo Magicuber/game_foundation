@@ -1,12 +1,13 @@
 {
   "$GMObject":"",
-  "%Name":"o_controller_main",
+  "%Name":"o_proton_blaster",
   "eventList":[
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+    {"$GMEvent":"v1","%Name":"","collisionObjectId":{"name":"o_element","path":"objects/o_element/o_element.yy",},"eventNum":0,"eventType":4,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
-  "name":"o_controller_main",
+  "name":"o_proton_blaster",
   "overriddenProperties":[],
   "parent":{
     "name":"Objects",
@@ -30,7 +31,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"elements_01",
+    "path":"sprites/elements_01/elements_01.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }
