@@ -1,16 +1,17 @@
 {
   "$GMObject":"",
-  "%Name":"o_controller_main",
+  "%Name":"o_btn_prev",
   "eventList":[
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
-    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":7,"eventType":6,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
-  "name":"o_controller_main",
+  "name":"o_btn_prev",
   "overriddenProperties":[],
   "parent":{
-    "name":"Logic",
-    "path":"folders/Objects/Logic.yy",
+    "name":"Nav",
+    "path":"folders/Objects/Nav.yy",
   },
   "parentObjectId":null,
   "persistent":false,
@@ -30,7 +31,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"button2",
+    "path":"sprites/button2/button2.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }

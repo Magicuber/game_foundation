@@ -2,6 +2,7 @@ global.dust = 0
 global.orbs = 0
 global.smasher_lvl = 0
 global.smasher_cost = int64(10)
+global.next_unlock = "ele_H"
 
 global.elements = {
 	
@@ -1095,4 +1096,5 @@ global.elements = {
 	
 }
 
+global.no_split = [1, 2, 10, 18, 36, 54, 86, 118]
 global.current_ele	= global.elements.ele_P

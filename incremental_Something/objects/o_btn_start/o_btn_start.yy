@@ -10,8 +10,8 @@
   "name":"o_btn_start",
   "overriddenProperties":[],
   "parent":{
-    "name":"Objects",
-    "path":"folders/Objects.yy",
+    "name":"Nav",
+    "path":"folders/Objects/Nav.yy",
   },
   "parentObjectId":null,
   "persistent":false,

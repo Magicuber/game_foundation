@@ -12,8 +12,8 @@
   "name":"o_element",
   "overriddenProperties":[],
   "parent":{
-    "name":"Objects",
-    "path":"folders/Objects.yy",
+    "name":"Elements",
+    "path":"folders/Objects/Elements.yy",
   },
   "parentObjectId":null,
   "persistent":false,
