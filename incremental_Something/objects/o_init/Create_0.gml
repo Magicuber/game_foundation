@@ -3,6 +3,7 @@ global.orbs = 0
 global.smasher_lvl = 0
 global.smasher_cost = int64(10)
 global.next_unlock = "ele_H"
+global.max_ele = "ele_P"
 
 global.elements = {
 	

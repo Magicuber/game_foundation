@@ -1,3 +1,10 @@
+if global.elements.ele_H.amt >= global.smasher_cost {
+	image_blend = c_white
+} else {
+	image_blend = c_dkgrey
+}
+
+
 draw_self()
 
 draw_set_font(fnt_cost)

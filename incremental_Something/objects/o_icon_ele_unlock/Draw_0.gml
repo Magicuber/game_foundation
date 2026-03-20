@@ -1,3 +1,9 @@
+if  global.elements[$ global.next_unlock].amt >= global.elements[$ global.next_unlock].cost {
+	image_blend = c_white
+} else {
+	image_blend = c_dkgrey
+}
+
 draw_self()
 
 draw_set_font(fnt_cost)

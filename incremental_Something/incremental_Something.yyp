@@ -53,6 +53,7 @@
     {"id":{"name":"o_lock","path":"objects/o_lock/o_lock.yy",},},
     {"id":{"name":"o_partical_spawning","path":"objects/o_partical_spawning/o_partical_spawning.yy",},},
     {"id":{"name":"o_proton_blaster","path":"objects/o_proton_blaster/o_proton_blaster.yy",},},
+    {"id":{"name":"o_upgrade_menu","path":"objects/o_upgrade_menu/o_upgrade_menu.yy",},},
     {"id":{"name":"rm_Main","path":"rooms/rm_Main/rm_Main.yy",},},
     {"id":{"name":"rm_Start","path":"rooms/rm_Start/rm_Start.yy",},},
     {"id":{"name":"Get_Ele_By_Index","path":"scripts/Get_Ele_By_Index/Get_Ele_By_Index.yy",},},
