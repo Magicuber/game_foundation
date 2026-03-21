@@ -25,6 +25,6 @@ switch (edge) {
 }
 
 // Point toward center and set speed
-move_speed = 5;
+move_speed = random_range(4, 6)
 direction = point_direction(x, y, target_x, target_y);
 speed = move_speed;

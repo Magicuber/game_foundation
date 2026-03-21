@@ -4,6 +4,8 @@ global.smasher_lvl = 0
 global.smasher_cost = int64(10)
 global.next_unlock = "ele_H"
 global.max_ele = "ele_P"
+global.world_lvl = 0
+global.world_cost = 1000
 
 global.elements = {
 	

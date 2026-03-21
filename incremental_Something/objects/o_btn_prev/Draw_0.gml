@@ -1,3 +1,9 @@
+if global.current_ele.index == 0 {
+	image_blend = c_dkgrey
+} else {
+	image_blend = c_white
+}
+
 draw_self()
 draw_set_font(fnt_menu)
 draw_set_colour(c_black)
