@@ -1,7 +1,9 @@
 {
   "$GMObject":"",
   "%Name":"o_ele_upgrds",
-  "eventList":[],
+  "eventList":[
+    {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
+  ],
   "managed":true,
   "name":"o_ele_upgrds",
   "overriddenProperties":[],
@@ -27,7 +29,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"spr_t1_upgrd",
+    "path":"sprites/spr_t1_upgrd/spr_t1_upgrd.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }

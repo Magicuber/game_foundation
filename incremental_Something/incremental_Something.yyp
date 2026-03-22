@@ -75,6 +75,8 @@
     {"id":{"name":"spr_BUTTON","path":"sprites/spr_BUTTON/spr_BUTTON.yy",},},
     {"id":{"name":"spr_eleupgds_background","path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",},},
     {"id":{"name":"spr_nav_btns","path":"sprites/spr_nav_btns/spr_nav_btns.yy",},},
+    {"id":{"name":"spr_smasher","path":"sprites/spr_smasher/spr_smasher.yy",},},
+    {"id":{"name":"spr_t1_upgrd","path":"sprites/spr_t1_upgrd/spr_t1_upgrd.yy",},},
   ],
   "resourceType":"GMProject",
   "resourceVersion":"2.0",

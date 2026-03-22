@@ -48,5 +48,7 @@
     {"name":"spr_BUTTON","order":12,"path":"sprites/spr_BUTTON/spr_BUTTON.yy",},
     {"name":"spr_eleupgds_background","order":9,"path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",},
     {"name":"spr_nav_btns","order":10,"path":"sprites/spr_nav_btns/spr_nav_btns.yy",},
+    {"name":"spr_smasher","order":14,"path":"sprites/spr_smasher/spr_smasher.yy",},
+    {"name":"spr_t1_upgrd","order":13,"path":"sprites/spr_t1_upgrd/spr_t1_upgrd.yy",},
   ],
 }
