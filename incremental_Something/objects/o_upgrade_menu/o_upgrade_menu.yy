@@ -32,7 +32,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"spr_eleupgds_background",
+    "path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }

@@ -43,5 +43,6 @@
     {"name":"lock","order":5,"path":"sprites/lock/lock.yy",},
     {"name":"Proton","order":2,"path":"sprites/Proton/Proton.yy",},
     {"name":"spr_blackout","order":4,"path":"sprites/spr_blackout/spr_blackout.yy",},
+    {"name":"spr_eleupgds_background","order":9,"path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",},
   ],
 }

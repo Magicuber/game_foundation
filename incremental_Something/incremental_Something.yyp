@@ -68,6 +68,7 @@
     {"id":{"name":"lock","path":"sprites/lock/lock.yy",},},
     {"id":{"name":"Proton","path":"sprites/Proton/Proton.yy",},},
     {"id":{"name":"spr_blackout","path":"sprites/spr_blackout/spr_blackout.yy",},},
+    {"id":{"name":"spr_eleupgds_background","path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",},},
   ],
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
