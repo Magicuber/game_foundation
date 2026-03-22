@@ -22,10 +22,12 @@
   "ResourceOrderSettings":[
     {"name":"fnt_menu","order":1,"path":"fonts/fnt_menu/fnt_menu.yy",},
     {"name":"o_blackout","order":3,"path":"objects/o_blackout/o_blackout.yy",},
+    {"name":"o_btn_BUY","order":16,"path":"objects/o_btn_BUY/o_btn_BUY.yy",},
+    {"name":"o_btn_menu","order":4,"path":"objects/o_btn_menu/o_btn_menu.yy",},
     {"name":"o_btn_next","order":1,"path":"objects/o_btn_next/o_btn_next.yy",},
     {"name":"o_btn_start","order":2,"path":"objects/o_btn_start/o_btn_start.yy",},
-    {"name":"o_btn_upgrades","order":4,"path":"objects/o_btn_upgrades/o_btn_upgrades.yy",},
     {"name":"o_ele_counter","order":6,"path":"objects/o_ele_counter/o_ele_counter.yy",},
+    {"name":"o_ele_upgrds","order":15,"path":"objects/o_ele_upgrds/o_ele_upgrds.yy",},
     {"name":"o_icon_ele_unlock","order":9,"path":"objects/o_icon_ele_unlock/o_icon_ele_unlock.yy",},
     {"name":"o_icon_partical_smasher","order":8,"path":"objects/o_icon_partical_smasher/o_icon_partical_smasher.yy",},
     {"name":"o_init","order":1,"path":"objects/o_init/o_init.yy",},
@@ -43,6 +45,8 @@
     {"name":"lock","order":5,"path":"sprites/lock/lock.yy",},
     {"name":"Proton","order":2,"path":"sprites/Proton/Proton.yy",},
     {"name":"spr_blackout","order":4,"path":"sprites/spr_blackout/spr_blackout.yy",},
+    {"name":"spr_BUTTON","order":12,"path":"sprites/spr_BUTTON/spr_BUTTON.yy",},
     {"name":"spr_eleupgds_background","order":9,"path":"sprites/spr_eleupgds_background/spr_eleupgds_background.yy",},
+    {"name":"spr_nav_btns","order":10,"path":"sprites/spr_nav_btns/spr_nav_btns.yy",},
   ],
 }

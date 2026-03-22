@@ -1,13 +1,13 @@
 {
   "$GMObject":"",
-  "%Name":"o_btn_upgrades",
+  "%Name":"o_btn_menu",
   "eventList":[
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":7,"eventType":6,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
-  "name":"o_btn_upgrades",
+  "name":"o_btn_menu",
   "overriddenProperties":[],
   "parent":{
     "name":"Nav",
@@ -32,8 +32,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"btnshop",
-    "path":"sprites/btnshop/btnshop.yy",
+    "name":"spr_nav_btns",
+    "path":"sprites/spr_nav_btns/spr_nav_btns.yy",
   },
   "spriteMaskId":null,
   "visible":true,
