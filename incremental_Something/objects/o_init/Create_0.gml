@@ -1101,3 +1101,4 @@ global.elements = {
 
 global.no_split = [1, 2, 10, 18, 36, 54, 86, 118]
 global.current_ele	= global.elements.ele_P
+layer_set_visible("Upgrd_Menu", false)	

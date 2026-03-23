@@ -2,8 +2,8 @@
   "$GMRoomUI":"",
   "%Name":"RoomUI",
   "children":[
-    {"$GMRUILayer":"v1","%Name":"UILayer_1","alignItems":2,"children":[
-        {"$GMRFlexPanel":"","%Name":"Menu","alignItems":2,"children":[
+    {"$GMRUILayer":"v1","%Name":"Upgrd_Menu","alignItems":2,"children":[
+        {"$GMRFlexPanel":"","%Name":"Menu","alignItems":2,"alignSelf":2,"children":[
             {"$GMRFlexPanel":"","%Name":"Upgrade","alignItems":2,"children":[
                 {"$GMRFlexPanel":"","%Name":"Upgrd_Image","alignItems":2,"children":[],"flexDirection":0,"height":{"unit":1,"value":125.0,},"justifyContent":1,"marginLeft":{"unit":1,"value":20.0,},"marginRight":{"unit":1,"value":20.0,},"name":"Upgrd_Image","nodeColour":4285592136,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":125.0,},},
                 {"$GMRFlexPanel":"","%Name":"Upgrd_Text","alignItems":2,"children":[],"flexDirection":0,"height":{"unit":1,"value":105.0,},"justifyContent":1,"marginLeft":{"unit":1,"value":4.0,},"name":"Upgrd_Text","nodeColour":4283582706,"paddingBottom":{"unit":1,"value":10.0,},"paddingLeft":{"unit":1,"value":10.0,},"paddingRight":{"unit":1,"value":10.0,},"paddingTop":{"unit":1,"value":10.0,},"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":580.0,},},
@@ -13,8 +13,8 @@
                 {"$GMRInstance":"v4","%Name":"inst_3DD705E","colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"hasCreationCode":false,"ignore":false,"imageIndex":0,"imageSpeed":1.0,"inheritCode":false,"inheritedItemId":null,"inheritItemSettings":false,"isDnd":false,"name":"inst_3DD705E","objectId":{"name":"o_ele_upgrds","path":"objects/o_ele_upgrds/o_ele_upgrds.yy",},"properties":[],"resourceType":"GMRInstance","resourceVersion":"2.0","rotation":0.0,"scaleX":1.0,"scaleY":1.0,"x":0.0,"y":0.0,},
               ],"flexDirection":2,"height":{"unit":1,"value":150.0,},"justifyContent":0,"marginTop":{"unit":1,"value":20.0,},"name":"Upgrade","nodeColour":4282962930,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":1000.0,},},
             {"$GMRInstance":"v4","%Name":"inst_317601CD","colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"hasCreationCode":false,"ignore":false,"imageIndex":0,"imageSpeed":1.0,"inheritCode":false,"inheritedItemId":null,"inheritItemSettings":false,"isDnd":false,"name":"inst_317601CD","objectId":{"name":"o_upgrade_menu","path":"objects/o_upgrade_menu/o_upgrade_menu.yy",},"properties":[],"resourceType":"GMRInstance","resourceVersion":"2.0","rotation":0.0,"scaleX":1.0,"scaleY":1.0,"x":0.0,"y":0.0,},
-          ],"flexDirection":0,"height":{"unit":1,"value":1550.0,},"justifyContent":0,"name":"Menu","nodeColour":4294106952,"positionType":0,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":1080.0,},},
-      ],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"UILayer_1","nodeColour":4289546482,"resourceType":"GMRUILayer","resourceVersion":"2.0",},
+          ],"flexDirection":0,"height":{"unit":1,"value":1550.0,},"justifyContent":0,"name":"Menu","nodeColour":4294106952,"positionTop":{"unit":1,"value":11.0,},"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":1080.0,},},
+      ],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"Upgrd_Menu","nodeColour":4289546482,"paddingBottom":{"unit":1,"value":200.0,},"paddingTop":{"unit":1,"value":200.0,},"resourceType":"GMRUILayer","resourceVersion":"2.0",},
   ],
   "locked":false,
   "name":"RoomUI",
