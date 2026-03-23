@@ -36,6 +36,7 @@
     {"name":"o_proton_blaster","order":2,"path":"objects/o_proton_blaster/o_proton_blaster.yy",},
     {"name":"o_upgrade_menu","order":3,"path":"objects/o_upgrade_menu/o_upgrade_menu.yy",},
     {"name":"rm_Main","order":1,"path":"rooms/rm_Main/rm_Main.yy",},
+    {"name":"RoomUI","order":16,"path":"roomui/RoomUI/RoomUI.yy",},
     {"name":"Get_Ele_By_Index","order":1,"path":"scripts/Get_Ele_By_Index/Get_Ele_By_Index.yy",},
     {"name":"btnshop","order":8,"path":"sprites/btnshop/btnshop.yy",},
     {"name":"button2","order":1,"path":"sprites/button2/button2.yy",},

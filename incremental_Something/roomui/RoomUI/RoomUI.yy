@@ -1,0 +1,29 @@
+{
+  "$GMRoomUI":"",
+  "%Name":"RoomUI",
+  "children":[
+    {"$GMRUILayer":"v1","%Name":"UILayer_1","alignItems":2,"children":[
+        {"$GMRFlexPanel":"","%Name":"Menu","alignItems":2,"children":[
+            {"$GMRFlexPanel":"","%Name":"Upgrade","alignItems":2,"children":[
+                {"$GMRFlexPanel":"","%Name":"Upgrd_Image","alignItems":2,"children":[],"flexDirection":0,"height":{"unit":1,"value":125.0,},"justifyContent":1,"marginLeft":{"unit":1,"value":20.0,},"marginRight":{"unit":1,"value":20.0,},"name":"Upgrd_Image","nodeColour":4285592136,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":125.0,},},
+                {"$GMRFlexPanel":"","%Name":"Upgrd_Text","alignItems":2,"children":[],"flexDirection":0,"height":{"unit":1,"value":105.0,},"justifyContent":1,"marginLeft":{"unit":1,"value":4.0,},"name":"Upgrd_Text","nodeColour":4283582706,"paddingBottom":{"unit":1,"value":10.0,},"paddingLeft":{"unit":1,"value":10.0,},"paddingRight":{"unit":1,"value":10.0,},"paddingTop":{"unit":1,"value":10.0,},"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":580.0,},},
+                {"$GMRFlexPanel":"","%Name":"Buy_Button","alignItems":2,"children":[
+                    {"$GMRInstance":"v4","%Name":"inst_59509AE0","colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"hasCreationCode":false,"ignore":false,"imageIndex":0,"imageSpeed":1.0,"inheritCode":false,"inheritedItemId":null,"inheritItemSettings":false,"isDnd":false,"name":"inst_59509AE0","objectId":{"name":"o_btn_BUY","path":"objects/o_btn_BUY/o_btn_BUY.yy",},"properties":[],"resourceType":"GMRInstance","resourceVersion":"2.0","rotation":0.0,"scaleX":2.0,"scaleY":1.0,"x":0.0,"y":0.0,},
+                  ],"flexDirection":0,"height":{"unit":3,"value":100.0,},"justifyContent":1,"marginLeft":{"unit":1,"value":25.0,},"marginRight":{"unit":1,"value":25.0,},"name":"Buy_Button","nodeColour":4294068386,"positionLeft":{"unit":1,"value":0.0,},"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":3,"value":100.0,},},
+                {"$GMRInstance":"v4","%Name":"inst_3DD705E","colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"hasCreationCode":false,"ignore":false,"imageIndex":0,"imageSpeed":1.0,"inheritCode":false,"inheritedItemId":null,"inheritItemSettings":false,"isDnd":false,"name":"inst_3DD705E","objectId":{"name":"o_ele_upgrds","path":"objects/o_ele_upgrds/o_ele_upgrds.yy",},"properties":[],"resourceType":"GMRInstance","resourceVersion":"2.0","rotation":0.0,"scaleX":1.0,"scaleY":1.0,"x":0.0,"y":0.0,},
+              ],"flexDirection":2,"height":{"unit":1,"value":150.0,},"justifyContent":0,"marginTop":{"unit":1,"value":20.0,},"name":"Upgrade","nodeColour":4282962930,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":1000.0,},},
+            {"$GMRInstance":"v4","%Name":"inst_317601CD","colour":4294967295,"flexProperties":{"$InstanceFlexProps":"v1","anchor":0,"resourceType":"InstanceFlexProps",},"frozen":false,"hasCreationCode":false,"ignore":false,"imageIndex":0,"imageSpeed":1.0,"inheritCode":false,"inheritedItemId":null,"inheritItemSettings":false,"isDnd":false,"name":"inst_317601CD","objectId":{"name":"o_upgrade_menu","path":"objects/o_upgrade_menu/o_upgrade_menu.yy",},"properties":[],"resourceType":"GMRInstance","resourceVersion":"2.0","rotation":0.0,"scaleX":1.0,"scaleY":1.0,"x":0.0,"y":0.0,},
+          ],"flexDirection":0,"height":{"unit":1,"value":1550.0,},"justifyContent":0,"name":"Menu","nodeColour":4294106952,"positionType":0,"resourceType":"GMRFlexPanel","resourceVersion":"2.0","width":{"unit":1,"value":1080.0,},},
+      ],"flexDirection":0,"gridX":32,"gridY":32,"justifyContent":1,"name":"UILayer_1","nodeColour":4289546482,"resourceType":"GMRUILayer","resourceVersion":"2.0",},
+  ],
+  "locked":false,
+  "name":"RoomUI",
+  "parent":{
+    "name":"incremental_Something",
+    "path":"incremental_Something.yyp",
+  },
+  "resourceType":"GMRoomUI",
+  "resourceVersion":"2.0",
+  "viewspaceChildren":[],
+  "visible":true,
+}
