@@ -1,0 +1,1 @@
+text_to_draw = string(global.smasher_cost) + "H"
