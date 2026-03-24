@@ -1099,6 +1099,43 @@ global.elements = {
 	
 }
 
+global.upgrades = {
+
+	partical_smasher: {
+		id: "partical_smash",
+		name: "Partical Smasher",
+		discription: "Upgrade to automatically smash particals",
+		tier: 1,
+		cost: 10,
+		costScaling: 1.15,
+		maxLevel: 60,
+		currentLevel: 0,
+		unlockRequirement: {
+			type: "progression",
+			value: 0,
+		},	
+	},
+	ele_unlock: {
+		id: "element_unlock",
+		name: "Element Unlock",
+		discription: "Unlock the next Element",
+		tier: 1,
+		cost: 100,
+		costScaling: 2,
+		maxLevel: 118,
+		currentLevel: 1,
+		unlockRequirement: {
+			type: "progression",
+			value: 0,
+		},
+	},
+}
+
+global.stats = {
+	total_upgrades: 0
+}
+
+
 global.no_split = [1, 2, 10, 18, 36, 54, 86, 118]
 global.current_ele	= global.elements.ele_P
 layer_set_visible("Upgrd_Menu", false)	
