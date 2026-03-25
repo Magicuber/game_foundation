@@ -15,11 +15,19 @@ run/main_scene="uid://csjtggx6q0g4t"
 config/features=PackedStringArray("4.4", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+GodotIapPlugin="*res://addons/godot-iap/godot_iap.gd"
+
 [display]
 
 window/size/viewport_width=1080
 window/size/viewport_height=1920
 window/handheld/orientation=1
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-iap/plugin.cfg")
 
 [rendering]
 
