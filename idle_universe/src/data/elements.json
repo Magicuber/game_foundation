@@ -1,0 +1,1194 @@
+{
+  "elements": [
+	{
+	  "id": "ele_P",
+	  "name": "P",
+	  "unlocked": true,
+	  "index": 0,
+	  "cost": 0,
+	  "amt": "infinity",
+	  "produces": "ele_H",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_H",
+	  "name": "H",
+	  "unlocked": false,
+	  "index": 1,
+	  "cost": 100,
+	  "amt": 1000,
+	  "produces": "ele_He",
+	  "show_in_counter": true
+	},
+	{
+	  "id": "ele_He",
+	  "name": "He",
+	  "unlocked": false,
+	  "index": 2,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_Li",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Li",
+	  "name": "Li",
+	  "unlocked": false,
+	  "index": 3,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_Be",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Be",
+	  "name": "Be",
+	  "unlocked": false,
+	  "index": 4,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_B",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_B",
+	  "name": "B",
+	  "unlocked": false,
+	  "index": 5,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_C",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_C",
+	  "name": "C",
+	  "unlocked": false,
+	  "index": 6,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_N",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_N",
+	  "name": "N",
+	  "unlocked": false,
+	  "index": 7,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_O",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_O",
+	  "name": "O",
+	  "unlocked": false,
+	  "index": 8,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_F",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_F",
+	  "name": "F",
+	  "unlocked": false,
+	  "index": 9,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_Ne",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ne",
+	  "name": "Ne",
+	  "unlocked": false,
+	  "index": 10,
+	  "cost": 10,
+	  "amt": 0,
+	  "produces": "ele_Na",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Na",
+	  "name": "Na",
+	  "unlocked": false,
+	  "index": 11,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Mg",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Mg",
+	  "name": "Mg",
+	  "unlocked": false,
+	  "index": 12,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Al",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Al",
+	  "name": "Al",
+	  "unlocked": false,
+	  "index": 13,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Si",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Si",
+	  "name": "Si",
+	  "unlocked": false,
+	  "index": 14,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Pt2",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pt2",
+	  "name": "P",
+	  "unlocked": false,
+	  "index": 15,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_S",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_S",
+	  "name": "S",
+	  "unlocked": false,
+	  "index": 16,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Cl",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cl",
+	  "name": "Cl",
+	  "unlocked": false,
+	  "index": 17,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_Ar",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ar",
+	  "name": "Ar",
+	  "unlocked": false,
+	  "index": 18,
+	  "cost": 20,
+	  "amt": 0,
+	  "produces": "ele_K",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_K",
+	  "name": "K",
+	  "unlocked": false,
+	  "index": 19,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Ca",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ca",
+	  "name": "Ca",
+	  "unlocked": false,
+	  "index": 20,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Sc",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sc",
+	  "name": "Sc",
+	  "unlocked": false,
+	  "index": 21,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Ti",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ti",
+	  "name": "Ti",
+	  "unlocked": false,
+	  "index": 22,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_V",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_V",
+	  "name": "V",
+	  "unlocked": false,
+	  "index": 23,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Cr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cr",
+	  "name": "Cr",
+	  "unlocked": false,
+	  "index": 24,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Mn",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Mn",
+	  "name": "Mn",
+	  "unlocked": false,
+	  "index": 25,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Fe",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Fe",
+	  "name": "Fe",
+	  "unlocked": false,
+	  "index": 26,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Co",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Co",
+	  "name": "Co",
+	  "unlocked": false,
+	  "index": 27,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Ni",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ni",
+	  "name": "Ni",
+	  "unlocked": false,
+	  "index": 28,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Cu",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cu",
+	  "name": "Cu",
+	  "unlocked": false,
+	  "index": 29,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Zn",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Zn",
+	  "name": "Zn",
+	  "unlocked": false,
+	  "index": 30,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Ga",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ga",
+	  "name": "Ga",
+	  "unlocked": false,
+	  "index": 31,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Ge",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ge",
+	  "name": "Ge",
+	  "unlocked": false,
+	  "index": 32,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_As",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_As",
+	  "name": "As",
+	  "unlocked": false,
+	  "index": 33,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Se",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Se",
+	  "name": "Se",
+	  "unlocked": false,
+	  "index": 34,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Br",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Br",
+	  "name": "Br",
+	  "unlocked": false,
+	  "index": 35,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Kr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Kr",
+	  "name": "Kr",
+	  "unlocked": false,
+	  "index": 36,
+	  "cost": 40,
+	  "amt": 0,
+	  "produces": "ele_Rb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Rb",
+	  "name": "Rb",
+	  "unlocked": false,
+	  "index": 37,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Sr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sr",
+	  "name": "Sr",
+	  "unlocked": false,
+	  "index": 38,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Y",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Y",
+	  "name": "Y",
+	  "unlocked": false,
+	  "index": 39,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Zr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Zr",
+	  "name": "Zr",
+	  "unlocked": false,
+	  "index": 40,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Nb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Nb",
+	  "name": "Nb",
+	  "unlocked": false,
+	  "index": 41,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Mo",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Mo",
+	  "name": "Mo",
+	  "unlocked": false,
+	  "index": 42,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Tc",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Tc",
+	  "name": "Tc",
+	  "unlocked": false,
+	  "index": 43,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Ru",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ru",
+	  "name": "Ru",
+	  "unlocked": false,
+	  "index": 44,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Rh",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Rh",
+	  "name": "Rh",
+	  "unlocked": false,
+	  "index": 45,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Pd",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pd",
+	  "name": "Pd",
+	  "unlocked": false,
+	  "index": 46,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Ag",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ag",
+	  "name": "Ag",
+	  "unlocked": false,
+	  "index": 47,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Cd",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cd",
+	  "name": "Cd",
+	  "unlocked": false,
+	  "index": 48,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_In",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_In",
+	  "name": "In",
+	  "unlocked": false,
+	  "index": 49,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Sn",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sn",
+	  "name": "Sn",
+	  "unlocked": false,
+	  "index": 50,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Sb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sb",
+	  "name": "Sb",
+	  "unlocked": false,
+	  "index": 51,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Te",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Te",
+	  "name": "Te",
+	  "unlocked": false,
+	  "index": 52,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_I",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_I",
+	  "name": "I",
+	  "unlocked": false,
+	  "index": 53,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Xe",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Xe",
+	  "name": "Xe",
+	  "unlocked": false,
+	  "index": 54,
+	  "cost": 80,
+	  "amt": 0,
+	  "produces": "ele_Cs",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cs",
+	  "name": "Cs",
+	  "unlocked": false,
+	  "index": 55,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Ba",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ba",
+	  "name": "Ba",
+	  "unlocked": false,
+	  "index": 56,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_La",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_La",
+	  "name": "La",
+	  "unlocked": false,
+	  "index": 57,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Ce",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ce",
+	  "name": "Ce",
+	  "unlocked": false,
+	  "index": 58,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Pr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pr",
+	  "name": "Pr",
+	  "unlocked": false,
+	  "index": 59,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Nd",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Nd",
+	  "name": "Nd",
+	  "unlocked": false,
+	  "index": 60,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Pm",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pm",
+	  "name": "Pm",
+	  "unlocked": false,
+	  "index": 61,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Sm",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sm",
+	  "name": "Sm",
+	  "unlocked": false,
+	  "index": 62,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Eu",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Eu",
+	  "name": "Eu",
+	  "unlocked": false,
+	  "index": 63,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Gd",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Gd",
+	  "name": "Gd",
+	  "unlocked": false,
+	  "index": 64,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Tb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Tb",
+	  "name": "Tb",
+	  "unlocked": false,
+	  "index": 65,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Dy",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Dy",
+	  "name": "Dy",
+	  "unlocked": false,
+	  "index": 66,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Ho",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ho",
+	  "name": "Ho",
+	  "unlocked": false,
+	  "index": 67,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Er",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Er",
+	  "name": "Er",
+	  "unlocked": false,
+	  "index": 68,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Tm",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Tm",
+	  "name": "Tm",
+	  "unlocked": false,
+	  "index": 69,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Yb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Yb",
+	  "name": "Yb",
+	  "unlocked": false,
+	  "index": 70,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Lu",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Lu",
+	  "name": "Lu",
+	  "unlocked": false,
+	  "index": 71,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Hf",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Hf",
+	  "name": "Hf",
+	  "unlocked": false,
+	  "index": 72,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Ta",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ta",
+	  "name": "Ta",
+	  "unlocked": false,
+	  "index": 73,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_W",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_W",
+	  "name": "W",
+	  "unlocked": false,
+	  "index": 74,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Re",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Re",
+	  "name": "Re",
+	  "unlocked": false,
+	  "index": 75,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Os",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Os",
+	  "name": "Os",
+	  "unlocked": false,
+	  "index": 76,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Ir",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ir",
+	  "name": "Ir",
+	  "unlocked": false,
+	  "index": 77,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Pt",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pt",
+	  "name": "Pt",
+	  "unlocked": false,
+	  "index": 78,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Au",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Au",
+	  "name": "Au",
+	  "unlocked": false,
+	  "index": 79,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Hg",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Hg",
+	  "name": "Hg",
+	  "unlocked": false,
+	  "index": 80,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Tl",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Tl",
+	  "name": "Tl",
+	  "unlocked": false,
+	  "index": 81,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Pb",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pb",
+	  "name": "Pb",
+	  "unlocked": false,
+	  "index": 82,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Bi",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Bi",
+	  "name": "Bi",
+	  "unlocked": false,
+	  "index": 83,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Po",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Po",
+	  "name": "Po",
+	  "unlocked": false,
+	  "index": 84,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_At",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_At",
+	  "name": "At",
+	  "unlocked": false,
+	  "index": 85,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Rn",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Rn",
+	  "name": "Rn",
+	  "unlocked": false,
+	  "index": 86,
+	  "cost": 160,
+	  "amt": 0,
+	  "produces": "ele_Fr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Fr",
+	  "name": "Fr",
+	  "unlocked": false,
+	  "index": 87,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Ra",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ra",
+	  "name": "Ra",
+	  "unlocked": false,
+	  "index": 88,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Ac",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ac",
+	  "name": "Ac",
+	  "unlocked": false,
+	  "index": 89,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Th",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Th",
+	  "name": "Th",
+	  "unlocked": false,
+	  "index": 90,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Pa",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pa",
+	  "name": "Pa",
+	  "unlocked": false,
+	  "index": 91,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_U",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_U",
+	  "name": "U",
+	  "unlocked": false,
+	  "index": 92,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Np",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Np",
+	  "name": "Np",
+	  "unlocked": false,
+	  "index": 93,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Pu",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Pu",
+	  "name": "Pu",
+	  "unlocked": false,
+	  "index": 94,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Am",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Am",
+	  "name": "Am",
+	  "unlocked": false,
+	  "index": 95,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Cm",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cm",
+	  "name": "Cm",
+	  "unlocked": false,
+	  "index": 96,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Bk",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Bk",
+	  "name": "Bk",
+	  "unlocked": false,
+	  "index": 97,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Cf",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cf",
+	  "name": "Cf",
+	  "unlocked": false,
+	  "index": 98,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Es",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Es",
+	  "name": "Es",
+	  "unlocked": false,
+	  "index": 99,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Fm",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Fm",
+	  "name": "Fm",
+	  "unlocked": false,
+	  "index": 100,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Md",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Md",
+	  "name": "Md",
+	  "unlocked": false,
+	  "index": 101,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_No",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_No",
+	  "name": "No",
+	  "unlocked": false,
+	  "index": 102,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Lr",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Lr",
+	  "name": "Lr",
+	  "unlocked": false,
+	  "index": 103,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Rf",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Rf",
+	  "name": "Rf",
+	  "unlocked": false,
+	  "index": 104,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Db",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Db",
+	  "name": "Db",
+	  "unlocked": false,
+	  "index": 105,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Sg",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Sg",
+	  "name": "Sg",
+	  "unlocked": false,
+	  "index": 106,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Bh",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Bh",
+	  "name": "Bh",
+	  "unlocked": false,
+	  "index": 107,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Hs",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Hs",
+	  "name": "Hs",
+	  "unlocked": false,
+	  "index": 108,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Mt",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Mt",
+	  "name": "Mt",
+	  "unlocked": false,
+	  "index": 109,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Ds",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ds",
+	  "name": "Ds",
+	  "unlocked": false,
+	  "index": 110,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Rg",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Rg",
+	  "name": "Rg",
+	  "unlocked": false,
+	  "index": 111,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Cn",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Cn",
+	  "name": "Cn",
+	  "unlocked": false,
+	  "index": 112,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Nh",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Nh",
+	  "name": "Nh",
+	  "unlocked": false,
+	  "index": 113,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Fl",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Fl",
+	  "name": "Fl",
+	  "unlocked": false,
+	  "index": 114,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Mc",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Mc",
+	  "name": "Mc",
+	  "unlocked": false,
+	  "index": 115,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Lv",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Lv",
+	  "name": "Lv",
+	  "unlocked": false,
+	  "index": 116,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Ts",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Ts",
+	  "name": "Ts",
+	  "unlocked": false,
+	  "index": 117,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "ele_Og",
+	  "show_in_counter": false
+	},
+	{
+	  "id": "ele_Og",
+	  "name": "Og",
+	  "unlocked": false,
+	  "index": 118,
+	  "cost": 320,
+	  "amt": 0,
+	  "produces": "Dust",
+	  "show_in_counter": false
+	}
+  ]
+}

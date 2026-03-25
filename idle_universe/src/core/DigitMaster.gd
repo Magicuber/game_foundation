@@ -47,6 +47,29 @@ func add(other: DigitMaster) -> DigitMaster:
 		var diff = other.exponent - exponent
 		var self_scaled = mantissa / pow(10.0, diff)
 		return DigitMaster.new(self_scaled + other.mantissa, other.exponent)
+func subtract(other: DigitMaster) -> DigitMaster:
+	"""Subtract other from self: self - other
+	Returns 0 if result would be negative (prevents debt)."""
+	# Handle zero cases
+	if other.mantissa == 0.0:
+		return DigitMaster.new(mantissa, exponent)
+	if mantissa == 0.0:
+		return DigitMaster.new(0.0)  # Can't go negative
+	# If other is larger, return 0 (no negative balances)
+	if compare(other) < 0:
+		return DigitMaster.new(0.0)
+	# Same exponent: straightforward subtraction
+	if exponent == other.exponent:
+		return DigitMaster.new(mantissa - other.mantissa, exponent)
+	# Different exponents: scale to common base
+	if exponent > other.exponent:
+		var diff = exponent - other.exponent
+		var other_scaled = other.mantissa / pow(10.0, diff)
+		return DigitMaster.new(mantissa - other_scaled, exponent)
+	else:
+		var diff = other.exponent - exponent
+		var self_scaled = mantissa / pow(10.0, diff)
+		return DigitMaster.new(self_scaled - other.mantissa, other.exponent)
 		
 func power(exp: float) -> DigitMaster:
 	"""Raise to a power: self^exp"""
