@@ -1,0 +1,17 @@
+{
+  "upgrades": [
+	{
+	  "id": "particle_smasher",
+	  "name": "Particle Smasher",
+	  "description": "Automatically smashes the selected element over time.",
+	  "currency_id": "ele_H",
+	  "base_cost": 10,
+	  "cost_mode": "additive_power",
+	  "cost_scaling": 1.5,
+	  "max_level": 60,
+	  "current_level": 0,
+	  "effect_type": "auto_smash",
+	  "effect_amount": 1.0
+	}
+  ]
+}
