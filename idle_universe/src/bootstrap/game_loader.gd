@@ -11,38 +11,57 @@ const PRODUCT_SPEED_MIN := 210.0
 const PRODUCT_SPEED_MAX := 320.0
 const PROTON_SPEED_MIN := 260.0
 const PROTON_SPEED_MAX := 360.0
-const FUSE_COLLISION_RADIUS := 68.0
+const PROTON_SPEED_VARIATION := 0.15
+const MAX_COUNTERS := 10
+const FIRST_TIER_UNLOCK_COUNT := 10
+const DISABLED_BUTTON_MODULATE := Color(0.45, 0.45, 0.45, 1.0)
+const ENABLED_BUTTON_MODULATE := Color(1, 1, 1, 1)
 
 const ELEMENT_SHEET = preload("res://assests/sprites/elements_01_strip119.png")
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
 const NEXT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_next_btn.png")
 const MENU_BUTTON_TEXTURE = preload("res://assests/sprites/spr_menu_btn.png")
+const CLOSE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_close_btn1.png")
+const ZIN_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zin_btn.png")
+const ZOUT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zout_btn.png")
 const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_background.png")
 
 @onready var tick_system: TickSystem = $TickSystem
-@onready var top_bar: ColorRect = $TopBar
 @onready var effects_layer: Control = $EffectsLayer
-@onready var resource_list: VBoxContainer = $TopBar/ResourceMargin/ResourceList
 @onready var fuse_button: TextureButton = $FuseButton
-@onready var prev_button: TextureButton = $PrevButton
-@onready var next_button: TextureButton = $NextButton
-@onready var menu_button: TextureButton = $MenuButton
 @onready var menu_overlay: Control = $MenuOverlay
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
 @onready var menu_title: Label = $MenuOverlay/MenuContent/MenuVBox/MenuTitle
 @onready var menu_info: Label = $MenuOverlay/MenuContent/MenuVBox/MenuInfo
 @onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuVBox/UnlockButton
 @onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuVBox/UpgradeList
+@onready var counter_margin: MarginContainer = $CounterMargin
+@onready var counter_list: VBoxContainer = $CounterMargin/CounterList
+@onready var top_bar: ColorRect = $TopBar
+@onready var profile_button: Button = $TopBar/ProfileButton
+@onready var level_label: Label = $TopBar/LevelLabel
+@onready var orbs_panel: PanelContainer = $TopBar/CurrencyBoxes/OrbsPanel
+@onready var dust_panel: PanelContainer = $TopBar/CurrencyBoxes/DustPanel
+@onready var orbs_icon_slot: ColorRect = $TopBar/CurrencyBoxes/OrbsPanel/OrbsRow/OrbsIconSlot
+@onready var dust_icon_slot: ColorRect = $TopBar/CurrencyBoxes/DustPanel/DustRow/DustIconSlot
+@onready var orbs_label: Label = $TopBar/CurrencyBoxes/OrbsPanel/OrbsRow/OrbsLabel
+@onready var dust_label: Label = $TopBar/CurrencyBoxes/DustPanel/DustRow/DustLabel
+@onready var bottom_bar: ColorRect = $BottomBar
+@onready var prev_button: TextureButton = $BottomBar/NavSlots/PrevSlot/PrevButton
+@onready var next_button: TextureButton = $BottomBar/NavSlots/NextSlot/NextButton
+@onready var zin_button: TextureButton = $BottomBar/NavSlots/ZinSlot/ZinButton
+@onready var zout_button: TextureButton = $BottomBar/NavSlots/ZoutSlot/ZoutButton
+@onready var menu_button: TextureButton = $BottomBar/NavSlots/MenuSlot/MenuButton
 
 var game_state: GameState
-var element_system = ElementSystem.new()
-var upgrades_system = UpgradesSystem.new()
+var element_system: ElementSystem = ElementSystem.new()
+var upgrades_system: UpgradesSystem = UpgradesSystem.new()
 var resource_displays: Dictionary = {}
 var resource_display_ids: Array[String] = []
 var upgrade_buttons: Dictionary = {}
 var upgrade_button_ids: Array[String] = []
 var visual_particles: Array[Dictionary] = []
-var rng := RandomNumberGenerator.new()
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -53,27 +72,17 @@ func _ready() -> void:
 
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
+	zin_button.pressed.connect(_on_zin_pressed)
+	zout_button.pressed.connect(_on_zout_pressed)
 	menu_button.pressed.connect(_on_menu_pressed)
 	fuse_button.pressed.connect(_on_smash_pressed)
 	unlock_button.pressed.connect(_on_unlock_pressed)
 
-	prev_button.texture_normal = PREV_BUTTON_TEXTURE
-	prev_button.texture_pressed = PREV_BUTTON_TEXTURE
-	prev_button.texture_hover = PREV_BUTTON_TEXTURE
-	prev_button.texture_disabled = PREV_BUTTON_TEXTURE
-	prev_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
-	next_button.texture_normal = NEXT_BUTTON_TEXTURE
-	next_button.texture_pressed = NEXT_BUTTON_TEXTURE
-	next_button.texture_hover = NEXT_BUTTON_TEXTURE
-	next_button.texture_disabled = NEXT_BUTTON_TEXTURE
-	next_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
-	menu_button.texture_normal = MENU_BUTTON_TEXTURE
-	menu_button.texture_pressed = MENU_BUTTON_TEXTURE
-	menu_button.texture_hover = MENU_BUTTON_TEXTURE
-	menu_button.texture_disabled = MENU_BUTTON_TEXTURE
-	menu_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_configure_texture_button(prev_button, PREV_BUTTON_TEXTURE)
+	_configure_texture_button(next_button, NEXT_BUTTON_TEXTURE)
+	_configure_texture_button(zin_button, ZIN_BUTTON_TEXTURE)
+	_configure_texture_button(zout_button, ZOUT_BUTTON_TEXTURE)
+	_update_menu_button_texture()
 
 	menu_background.texture = MENU_BACKGROUND_TEXTURE
 	menu_background.modulate = Color(1, 1, 1, 0.7)
@@ -82,22 +91,30 @@ func _ready() -> void:
 	menu_background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fuse_button.pivot_offset = fuse_button.size * 0.5
+	profile_button.focus_mode = Control.FOCUS_NONE
+	unlock_button.focus_mode = Control.FOCUS_NONE
+	_apply_profile_button_style()
+	_apply_currency_box_style(orbs_panel)
+	_apply_currency_box_style(dust_panel)
+	_apply_ui_font()
+	_apply_currency_labels()
+	_apply_menu_text_style()
+	_configure_placeholder_slot(orbs_icon_slot)
+	_configure_placeholder_slot(dust_icon_slot)
+
 	effects_layer.z_index = 1
-	top_bar.z_index = 20
 	fuse_button.z_index = 15
-	prev_button.z_index = 20
-	next_button.z_index = 20
-	menu_button.z_index = 30
-	menu_overlay.z_index = 40
+	menu_overlay.z_index = 30
+	counter_margin.z_index = 20
+	top_bar.z_index = 50
+	bottom_bar.z_index = 50
 
 	tick_system.configure(game_state, element_system, upgrades_system)
 	tick_system.tick_processed.connect(_on_tick_processed)
 	tick_system.manual_smash_resolved.connect(_on_manual_smash_resolved)
 	tick_system.auto_smash_requested.connect(_on_auto_smash_requested)
 
-	menu_overlay.visible = false
-	_sync_resource_displays()
-	_sync_upgrade_buttons()
 	_refresh_ui()
 
 func _process(delta: float) -> void:
@@ -130,20 +147,104 @@ func _load_json_dictionary(path: String) -> Dictionary:
 	var parsed: Dictionary = parsed_value
 	return parsed
 
-func _sync_resource_displays() -> void:
+func _configure_texture_button(button: TextureButton, texture: Texture2D) -> void:
+	button.texture_normal = texture
+	button.texture_pressed = texture
+	button.texture_hover = texture
+	button.texture_disabled = texture
+	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	button.ignore_texture_size = true
+	button.focus_mode = Control.FOCUS_NONE
+
+func _update_menu_button_texture() -> void:
+	var texture: Texture2D = MENU_BUTTON_TEXTURE
+	if menu_overlay.visible:
+		texture = CLOSE_BUTTON_TEXTURE
+	_configure_texture_button(menu_button, texture)
+	menu_button.modulate = ENABLED_BUTTON_MODULATE
+
+func _apply_profile_button_style() -> void:
+	var normal_style := StyleBoxFlat.new()
+	normal_style.bg_color = Color8(15, 100, 63)
+	normal_style.border_width_left = 2
+	normal_style.border_width_top = 2
+	normal_style.border_width_right = 2
+	normal_style.border_width_bottom = 2
+	normal_style.border_color = Color8(8, 54, 34)
+
+	var pressed_style: StyleBoxFlat = normal_style.duplicate()
+	pressed_style.bg_color = Color8(12, 84, 53)
+
+	profile_button.add_theme_stylebox_override("normal", normal_style)
+	profile_button.add_theme_stylebox_override("hover", normal_style)
+	profile_button.add_theme_stylebox_override("pressed", pressed_style)
+	profile_button.add_theme_stylebox_override("disabled", normal_style)
+
+func _apply_ui_font() -> void:
+	var ui_font: FontFile = UIFont.load_ui_font()
+	if ui_font == null:
+		return
+
+	level_label.add_theme_font_override("font", ui_font)
+	orbs_label.add_theme_font_override("font", ui_font)
+	dust_label.add_theme_font_override("font", ui_font)
+	menu_title.add_theme_font_override("font", ui_font)
+	menu_info.add_theme_font_override("font", ui_font)
+	unlock_button.add_theme_font_override("font", ui_font)
+	profile_button.add_theme_font_override("font", ui_font)
+
+func _apply_currency_box_style(panel: PanelContainer) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color8(45, 45, 45)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color8(16, 16, 16)
+	style.content_margin_left = 8
+	style.content_margin_top = 3
+	style.content_margin_right = 8
+	style.content_margin_bottom = 3
+	panel.add_theme_stylebox_override("panel", style)
+
+func _apply_currency_labels() -> void:
+	level_label.add_theme_font_size_override("font_size", 14)
+	level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	orbs_label.add_theme_font_size_override("font_size", 14)
+	orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	dust_label.add_theme_font_size_override("font_size", 14)
+	dust_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _apply_menu_text_style() -> void:
+	menu_title.add_theme_font_size_override("font_size", 26)
+	menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	menu_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _configure_placeholder_slot(slot: ColorRect) -> void:
+	slot.color = Color8(25, 25, 25, 180)
+
+func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
+	var limited_ids: Array[String] = []
+	for element_id in visible_ids:
+		limited_ids.append(element_id)
+		if limited_ids.size() >= MAX_COUNTERS:
+			break
+	return limited_ids
+
+func _sync_resource_displays() -> void:
+	var visible_ids: Array[String] = _get_counter_ids()
 	if resource_display_ids != visible_ids:
-		for child in resource_list.get_children():
+		for child in counter_list.get_children():
 			child.queue_free()
 
 		resource_displays.clear()
 		resource_display_ids = visible_ids.duplicate()
 
 		for element_id in resource_display_ids:
-			var display := CurrencyDisplay.new()
+			var display: CurrencyDisplay = CurrencyDisplay.new()
 			display.configure(game_state, element_id)
-			display.add_theme_font_size_override("font_size", 28)
-			resource_list.add_child(display)
+			counter_list.add_child(display)
 			resource_displays[element_id] = display
 
 	for element_id in resource_display_ids:
@@ -160,7 +261,7 @@ func _sync_upgrade_buttons() -> void:
 		upgrade_button_ids = upgrade_ids.duplicate()
 
 		for upgrade_id in upgrade_button_ids:
-			var button := UpgradeButton.new()
+			var button: UpgradeButton = UpgradeButton.new()
 			button.configure(game_state, upgrades_system, upgrade_id)
 			button.purchase_requested.connect(_on_upgrade_purchase_requested)
 			upgrade_list.add_child(button)
@@ -174,26 +275,40 @@ func _refresh_ui() -> void:
 	_sync_resource_displays()
 	_sync_upgrade_buttons()
 
+	level_label.text = "Lv. %d" % game_state.player_level
+	orbs_label.text = "ORBS %s" % str(game_state.orbs)
+	dust_label.text = "DUST %s" % game_state.dust.big_to_short_string()
+
 	var current_element: Dictionary = game_state.get_current_element()
 	var current_name := str(current_element.get("name", ""))
 	var current_index := int(current_element.get("index", 0))
 	var produced_name := game_state.get_resource_name(str(current_element.get("produces", "")))
 
-	var current_icon := _make_element_icon(current_index)
+	var current_icon: AtlasTexture = _make_element_icon(current_index)
 	fuse_button.texture_normal = current_icon
 	fuse_button.texture_pressed = current_icon
 	fuse_button.texture_hover = current_icon
 	fuse_button.texture_disabled = current_icon
-	fuse_button.ignore_texture_size = true
 
-	prev_button.disabled = not game_state.has_adjacent_unlocked_element(-1)
-	next_button.disabled = not game_state.has_adjacent_unlocked_element(1)
+	_set_button_enabled_state(prev_button, game_state.has_adjacent_unlocked_element(-1))
+	_set_button_enabled_state(next_button, game_state.has_adjacent_unlocked_element(1))
+
+	var first_tier_complete := game_state.has_unlocked_element_count(FIRST_TIER_UNLOCK_COUNT)
+	zin_button.visible = first_tier_complete
+	zout_button.visible = first_tier_complete
+	if first_tier_complete:
+		_set_button_enabled_state(zin_button, false)
+		_set_button_enabled_state(zout_button, false)
+
+	_update_menu_button_texture()
 
 	menu_title.text = "Upgrade Menu"
-	menu_info.text = "Current: %s\nProduces: %s\nParticle Smasher: %.2f actions/sec" % [
+	menu_info.text = "Current: %s\nProduces: %s\nParticle Smasher: %.2f actions/sec\nCrit Chance: %.0f%%\nFission Chance: %.0f%%" % [
 		current_name,
 		produced_name,
-		upgrades_system.get_auto_smashes_per_second(game_state)
+		upgrades_system.get_auto_smashes_per_second(game_state),
+		upgrades_system.get_global_critical_smash_chance_percent(game_state),
+		upgrades_system.get_fission_chance_percent(game_state)
 	]
 
 	var next_unlock: Dictionary = game_state.get_next_unlock_element()
@@ -209,6 +324,13 @@ func _refresh_ui() -> void:
 			game_state.get_resource_name(unlock_id)
 		]
 		unlock_button.disabled = not game_state.can_unlock_next()
+
+func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
+	button.disabled = not is_enabled
+	if is_enabled:
+		button.modulate = ENABLED_BUTTON_MODULATE
+	else:
+		button.modulate = DISABLED_BUTTON_MODULATE
 
 func _autosave_if_needed() -> void:
 	if game_state.tick_count - game_state.last_save_tick < AUTO_SAVE_INTERVAL_TICKS:
@@ -228,6 +350,9 @@ func _make_element_icon(element_index: int) -> AtlasTexture:
 func _fuse_center() -> Vector2:
 	return fuse_button.position + (fuse_button.size * 0.5)
 
+func _fuse_radius() -> float:
+	return minf(fuse_button.size.x, fuse_button.size.y) * 0.5 * fuse_button.scale.x
+
 func _random_offscreen_point() -> Vector2:
 	var viewport_size := get_viewport_rect().size
 	var edge := rng.randi_range(0, 3)
@@ -241,23 +366,25 @@ func _random_offscreen_point() -> Vector2:
 		_:
 			return Vector2(viewport_size.x + OFFSCREEN_MARGIN, rng.randf_range(0.0, viewport_size.y))
 
-func _spawn_outgoing_element(resource_id: String) -> void:
+func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2) -> void:
 	if not game_state.is_element_id(resource_id):
 		return
 
 	var element: Dictionary = game_state.get_element(resource_id)
 	var element_index := int(element.get("index", 0))
 	var target := _random_offscreen_point()
-	var center := _fuse_center()
-	var direction := (target - center).normalized()
+	var direction := (target - spawn_center).normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
 	var speed := rng.randf_range(PRODUCT_SPEED_MIN, PRODUCT_SPEED_MAX)
-	_spawn_particle(_make_element_icon(element_index), center, direction * speed, PRODUCT_PARTICLE_SIZE, "product", "")
+	_spawn_particle(_make_element_icon(element_index), spawn_center, direction * speed, PRODUCT_PARTICLE_SIZE, "product", "")
 
 func _spawn_proton(target_element_id: String) -> void:
 	var proton_start := _random_offscreen_point()
 	var center := _fuse_center()
 	var direction := (center - proton_start).normalized()
-	var speed := rng.randf_range(PROTON_SPEED_MIN, PROTON_SPEED_MAX)
+	var speed_variation := rng.randf_range(1.0 - PROTON_SPEED_VARIATION, 1.0 + PROTON_SPEED_VARIATION)
+	var speed := rng.randf_range(PROTON_SPEED_MIN, PROTON_SPEED_MAX) * speed_variation
 	_spawn_particle(_make_element_icon(0), proton_start, direction * speed, PROTON_PARTICLE_SIZE, "proton", target_element_id)
 
 func _spawn_particle(texture: Texture2D, center_position: Vector2, velocity: Vector2, icon_size: float, kind: String, target_element_id: String) -> void:
@@ -289,21 +416,32 @@ func _update_particles(delta: float) -> void:
 		var velocity: Vector2 = particle["velocity"]
 		node.position += velocity * delta
 
-		if str(particle.get("kind", "")) == "proton" and _is_particle_colliding_with_fuse(node):
-			var result: Dictionary = element_system.resolve_auto_smash(game_state, str(particle.get("target_element_id", "")))
-			if not result.is_empty():
-				_pulse_fuse_element()
-				_spawn_outgoing_element(str(result.get("produced_resource_id", "")))
-				_refresh_ui()
-			_remove_particle_at(i)
-			continue
+		if str(particle.get("kind", "")) == "proton":
+			var collision_point := _get_particle_collision_point(node)
+			if collision_point != Vector2.INF:
+				var result: Dictionary = element_system.resolve_auto_smash(game_state, upgrades_system, str(particle.get("target_element_id", "")))
+				if not result.is_empty():
+					_pulse_fuse_element()
+					_spawn_result_particles(result, collision_point)
+					_refresh_ui()
+				_remove_particle_at(i)
+				continue
 
 		if _is_offscreen(node, viewport_size):
 			_remove_particle_at(i)
 
-func _is_particle_colliding_with_fuse(node: TextureRect) -> bool:
+func _get_particle_collision_point(node: TextureRect) -> Vector2:
 	var particle_center := node.position + (node.size * 0.5)
-	return particle_center.distance_to(_fuse_center()) <= FUSE_COLLISION_RADIUS
+	var fuse_center := _fuse_center()
+	var offset := particle_center - fuse_center
+	var distance := offset.length()
+	var particle_radius: float = minf(node.size.x, node.size.y) * 0.5
+	var fuse_radius: float = _fuse_radius()
+	if distance > fuse_radius + particle_radius:
+		return Vector2.INF
+	if distance == 0.0:
+		return fuse_center + Vector2.RIGHT * fuse_radius
+	return fuse_center + offset.normalized() * fuse_radius
 
 func _is_offscreen(node: TextureRect, viewport_size: Vector2) -> bool:
 	return node.position.x > viewport_size.x + OFFSCREEN_MARGIN \
@@ -324,20 +462,34 @@ func _on_tick_processed(_tick_count: int) -> void:
 
 func _on_manual_smash_resolved(result: Dictionary) -> void:
 	_pulse_fuse_element()
-	_spawn_outgoing_element(str(result.get("produced_resource_id", "")))
+	var spawn_target := _random_offscreen_point()
+	var spawn_direction := (spawn_target - _fuse_center()).normalized()
+	if spawn_direction == Vector2.ZERO:
+		spawn_direction = Vector2.RIGHT
+	var spawn_point := _fuse_center() + (spawn_direction * _fuse_radius())
+	_spawn_result_particles(result, spawn_point)
 	_refresh_ui()
 
-func _on_auto_smash_requested(target_element_id: String) -> void:
-	_spawn_proton(target_element_id)
+func _on_auto_smash_requested(request: Dictionary) -> void:
+	var target_element_id := str(request.get("target_element_id", ""))
+	var spawn_count := int(request.get("spawn_count", 1))
+	for _i in range(spawn_count):
+		_spawn_proton(target_element_id)
 
 func _on_prev_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": -1})
 
-func _on_smash_pressed() -> void:
-	tick_system.enqueue_action("manual_smash")
-
 func _on_next_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": 1})
+
+func _on_zin_pressed() -> void:
+	pass
+
+func _on_zout_pressed() -> void:
+	pass
+
+func _on_smash_pressed() -> void:
+	tick_system.enqueue_action("manual_smash")
 
 func _on_menu_pressed() -> void:
 	menu_overlay.visible = not menu_overlay.visible
@@ -358,3 +510,19 @@ func _pulse_fuse_element() -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(fuse_button, "scale", Vector2(0.9, 0.9), 0.06)
 	tween.tween_property(fuse_button, "scale", Vector2.ONE, 0.08)
+
+func _spawn_result_particles(result: Dictionary, spawn_center: Vector2) -> void:
+	for resource_id in _get_result_resource_ids(result):
+		_spawn_outgoing_element(resource_id, spawn_center)
+
+func _get_result_resource_ids(result: Dictionary) -> Array[String]:
+	var resource_ids: Array[String] = []
+	var raw_ids: Variant = result.get("produced_resource_ids", [])
+	if typeof(raw_ids) == TYPE_ARRAY:
+		for raw_id in raw_ids:
+			resource_ids.append(str(raw_id))
+	if resource_ids.is_empty():
+		var fallback_id := str(result.get("produced_resource_id", ""))
+		if not fallback_id.is_empty():
+			resource_ids.append(fallback_id)
+	return resource_ids

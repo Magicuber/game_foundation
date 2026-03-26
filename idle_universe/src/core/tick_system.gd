@@ -4,7 +4,7 @@ class_name TickSystem
 
 signal tick_processed(tick_count: int)
 signal manual_smash_resolved(result: Dictionary)
-signal auto_smash_requested(target_element_id: String)
+signal auto_smash_requested(request: Dictionary)
 
 const DEFAULT_TICKS_PER_SECOND := 10.0
 
@@ -60,7 +60,7 @@ func _apply_action(action: Dictionary) -> void:
 
 	match action_type:
 		"manual_smash":
-			var result: Dictionary = element_system.manual_smash(game_state)
+			var result: Dictionary = element_system.manual_smash(game_state, upgrades_system)
 			if not result.is_empty():
 				emit_signal("manual_smash_resolved", result)
 		"unlock_next":
@@ -81,5 +81,10 @@ func _process_auto_smash(tick_duration: float) -> void:
 	_auto_smash_accumulator += tick_duration
 	while _auto_smash_accumulator >= interval:
 		_auto_smash_accumulator -= interval
-		if not game_state.current_element_id.is_empty():
-			emit_signal("auto_smash_requested", game_state.current_element_id)
+		if game_state.current_element_id.is_empty():
+			continue
+		var request := {
+			"target_element_id": game_state.current_element_id,
+			"spawn_count": upgrades_system.get_auto_smash_spawn_count(game_state)
+		}
+		emit_signal("auto_smash_requested", request)

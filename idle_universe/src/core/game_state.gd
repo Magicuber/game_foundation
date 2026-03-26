@@ -5,6 +5,7 @@ class_name GameState
 const SAVE_VERSION := 1
 const DUST_RESOURCE_ID := "dust"
 
+var orbs: int
 var dust: DigitMaster
 var elements: Dictionary
 var element_ids_in_order: Array[String]
@@ -13,6 +14,7 @@ var upgrade_ids_in_order: Array[String]
 var current_element_id: String
 var next_unlock_id: String
 var max_unlocked_element_id: String
+var player_level: int
 var world_level: int
 var global_multiplier: DigitMaster
 var tick_count: int
@@ -29,6 +31,7 @@ static func from_content(elements_content: Dictionary, upgrades_content: Diction
 	return state
 
 func _init() -> void:
+	orbs = 0
 	dust = DigitMaster.zero()
 	elements = {}
 	element_ids_in_order = []
@@ -37,6 +40,7 @@ func _init() -> void:
 	current_element_id = ""
 	next_unlock_id = ""
 	max_unlocked_element_id = ""
+	player_level = 1
 	world_level = 0
 	global_multiplier = DigitMaster.one()
 	tick_count = 0
@@ -124,10 +128,6 @@ func refresh_progression_state() -> void:
 			next_unlock_id = element_id
 			break
 
-	if not next_unlock_id.is_empty():
-		var next_unlock_element: Dictionary = elements[next_unlock_id]
-		next_unlock_element["show_in_counter"] = true
-
 	if current_element_id.is_empty() or not is_element_unlocked(current_element_id):
 		if not highest_unlocked_id.is_empty():
 			current_element_id = highest_unlocked_id
@@ -168,6 +168,17 @@ func get_unlocked_element_ids() -> Array[String]:
 	for element_id in element_ids_in_order:
 		if is_element_unlocked(element_id):
 			unlocked_ids.append(element_id)
+	return unlocked_ids
+
+func get_unlocked_real_element_ids() -> Array[String]:
+	var unlocked_ids: Array[String] = []
+	for element_id in element_ids_in_order:
+		if not is_element_unlocked(element_id):
+			continue
+		var element: Dictionary = elements[element_id]
+		if int(element.get("index", 0)) <= 0:
+			continue
+		unlocked_ids.append(element_id)
 	return unlocked_ids
 
 func get_visible_counter_element_ids() -> Array[String]:
@@ -244,8 +255,12 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 	var element: Dictionary = elements[resource_id]
 	var current_amount: DigitMaster = element["amount"]
 	element["amount"] = current_amount.add(amount)
-	if bool(element.get("unlocked", false)):
-		element["show_in_counter"] = true
+	element["show_in_counter"] = true
+
+func has_unlocked_element_count(required_count: int) -> bool:
+	if required_count <= 0:
+		return true
+	return get_unlocked_element_ids().size() >= required_count
 
 func select_element(element_id: String) -> bool:
 	if not is_element_unlocked(element_id):
@@ -301,7 +316,6 @@ func unlock_next_element() -> bool:
 		return false
 
 	next_element["unlocked"] = true
-	next_element["show_in_counter"] = true
 	current_element_id = next_unlock_id
 	refresh_progression_state()
 	return true
@@ -328,10 +342,12 @@ func to_save_dict() -> Dictionary:
 
 	return {
 		"save_version": SAVE_VERSION,
+		"orbs": orbs,
 		"dust": dust.to_save_data(),
 		"elements": serialized_elements,
 		"upgrades": serialized_upgrades,
 		"current_element_id": current_element_id,
+		"player_level": player_level,
 		"world_level": world_level,
 		"global_multiplier": global_multiplier.to_save_data(),
 		"tick_count": tick_count,
@@ -342,7 +358,9 @@ func to_save_dict() -> Dictionary:
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
+	orbs = int(save_data.get("orbs", 0))
 	dust = DigitMaster.from_variant(save_data.get("dust", 0))
+	player_level = int(save_data.get("player_level", 1))
 	world_level = int(save_data.get("world_level", 0))
 	global_multiplier = DigitMaster.from_variant(save_data.get("global_multiplier", 1))
 	tick_count = int(save_data.get("tick_count", 0))

@@ -25,10 +25,11 @@ static func load_into_state(game_state: GameState, save_path: String = SAVE_PATH
 		push_warning("Unable to open save file for reading: %s" % save_path)
 		return false
 
-	var parsed := JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
+	var parsed_value: Variant = JSON.parse_string(file.get_as_text())
+	if typeof(parsed_value) != TYPE_DICTIONARY:
 		push_warning("Save data is not a dictionary; ignoring save.")
 		return false
 
+	var parsed: Dictionary = parsed_value
 	game_state.apply_save_dict(parsed)
 	return true

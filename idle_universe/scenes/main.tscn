@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://csjtggx6q0g4t"]
 
-[ext_resource type="Script" uid="uid://bceubmrgqlx1a" path="res://src/bootstrap/game_loader.gd" id="1_loader"]
+[ext_resource type="Script" uid="uid://bby3ucvr8fnjn" path="res://src/bootstrap/game_loader.gd" id="1_loader"]
 [ext_resource type="Script" uid="uid://do5uy6hpelkd6" path="res://src/core/tick_system.gd" id="2_tick"]
 
-[node name="GameRoot" type="Control" unique_id=1136649228]
+[node name="GameRoot" type="Control" unique_id=2086593814]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,10 +12,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_loader")
 
-[node name="TickSystem" type="Node" parent="." unique_id=1632092535]
+[node name="TickSystem" type="Node" parent="." unique_id=710692022]
 script = ExtResource("2_tick")
 
-[node name="Background" type="ColorRect" parent="." unique_id=619281509]
+[node name="Background" type="ColorRect" parent="." unique_id=102879281]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,31 +24,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.145098, 0.180392, 0.211765, 1)
 
-[node name="TopBar" type="ColorRect" parent="." unique_id=1326487644]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 140.0
-grow_horizontal = 2
-color = Color(0.231373, 0.423529, 0.580392, 1)
-
-[node name="ResourceMargin" type="MarginContainer" parent="TopBar" unique_id=675508306]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 12
-
-[node name="ResourceList" type="VBoxContainer" parent="TopBar/ResourceMargin" unique_id=1203059546]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="EffectsLayer" type="Control" parent="." unique_id=1295050531]
+[node name="EffectsLayer" type="Control" parent="." unique_id=2127717752]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -57,127 +33,264 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="FuseButton" type="TextureButton" parent="." unique_id=669380937]
+[node name="FuseButton" type="TextureButton" parent="." unique_id=488387922]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -90.0
-offset_top = -90.0
-offset_right = 90.0
-offset_bottom = 90.0
+offset_left = -86.0
+offset_top = -86.0
+offset_right = 86.0
+offset_bottom = 86.0
 grow_horizontal = 2
 grow_vertical = 2
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="PrevButton" type="TextureButton" parent="." unique_id=962433463]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -1036.0
-offset_top = -133.0
-offset_right = -936.0
-offset_bottom = -33.0
-grow_horizontal = 0
-grow_vertical = 0
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="NextButton" type="TextureButton" parent="." unique_id=1892305256]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -839.0
-offset_top = -133.0
-offset_right = -739.0
-offset_bottom = -33.0
-grow_horizontal = 0
-grow_vertical = 0
-ignore_texture_size = true
-stretch_mode = 5
-
-[node name="MenuOverlay" type="Control" parent="." unique_id=1884942071]
+[node name="MenuOverlay" type="Control" parent="." unique_id=1927428435]
 visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 104.0
+offset_bottom = -84.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="OverlayDim" type="ColorRect" parent="MenuOverlay" unique_id=1803045950]
+[node name="OverlayDim" type="ColorRect" parent="MenuOverlay" unique_id=1511254181]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.35)
+color = Color(0, 0, 0, 0.25)
 
-[node name="MenuBackground" type="TextureRect" parent="MenuOverlay" unique_id=1029570333]
+[node name="MenuBackground" type="TextureRect" parent="MenuOverlay" unique_id=545812047]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuContent" type="MarginContainer" parent="MenuOverlay" unique_id=397900582]
+[node name="MenuContent" type="MarginContainer" parent="MenuOverlay" unique_id=1464354927]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 28.0
+offset_right = -28.0
+offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 72
-theme_override_constants/margin_top = 220
-theme_override_constants/margin_right = 72
-theme_override_constants/margin_bottom = 260
 
-[node name="MenuVBox" type="VBoxContainer" parent="MenuOverlay/MenuContent" unique_id=1981823672]
+[node name="MenuVBox" type="VBoxContainer" parent="MenuOverlay/MenuContent" unique_id=818341854]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
-[node name="MenuTitle" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=514221901]
+[node name="MenuTitle" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1369652752]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
 text = "Upgrade Menu"
 
-[node name="MenuInfo" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1136345951]
+[node name="MenuInfo" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1875421218]
 layout_mode = 2
 text = "Info"
 autowrap_mode = 3
 
-[node name="UnlockButton" type="Button" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1867455063]
+[node name="UnlockButton" type="Button" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=314385671]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Unlock Next Element"
 
-[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=252735504]
+[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1155360097]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="MenuButton" type="TextureButton" parent="." unique_id=746434611]
+[node name="CounterMargin" type="MarginContainer" parent="." unique_id=1064962822]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 116.0
+offset_right = 124.0
+offset_bottom = -96.0
+grow_vertical = 2
+
+[node name="CounterList" type="VBoxContainer" parent="CounterMargin" unique_id=1259489311]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TopBar" type="ColorRect" parent="." unique_id=1292178807]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 104.0
+grow_horizontal = 2
+color = Color(0.678431, 0.772549, 0.835294, 1)
+
+[node name="ProfileButton" type="Button" parent="TopBar" unique_id=1737841203]
+layout_mode = 1
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 88.0
+offset_bottom = 72.0
+
+[node name="LevelLabel" type="Label" parent="TopBar" unique_id=128733764]
+layout_mode = 1
+offset_left = 22.0
+offset_top = 76.0
+offset_right = 94.0
+offset_bottom = 96.0
+text = "Lv. 1"
+
+[node name="CurrencyBoxes" type="VBoxContainer" parent="TopBar" unique_id=2139992455]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -72.0
+offset_top = -25.0
+offset_right = 72.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="OrbsPanel" type="PanelContainer" parent="TopBar/CurrencyBoxes" unique_id=564613853]
+layout_mode = 2
+
+[node name="OrbsRow" type="HBoxContainer" parent="TopBar/CurrencyBoxes/OrbsPanel" unique_id=398963790]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="OrbsIconSlot" type="ColorRect" parent="TopBar/CurrencyBoxes/OrbsPanel/OrbsRow" unique_id=628745171]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+color = Color(0, 0, 0, 0)
+
+[node name="OrbsLabel" type="Label" parent="TopBar/CurrencyBoxes/OrbsPanel/OrbsRow" unique_id=1898225398]
+layout_mode = 2
+text = "ORBS 0"
+
+[node name="DustPanel" type="PanelContainer" parent="TopBar/CurrencyBoxes" unique_id=1789359416]
+layout_mode = 2
+
+[node name="DustRow" type="HBoxContainer" parent="TopBar/CurrencyBoxes/DustPanel" unique_id=2146077649]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DustIconSlot" type="ColorRect" parent="TopBar/CurrencyBoxes/DustPanel/DustRow" unique_id=2070674502]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+color = Color(0, 0, 0, 0)
+
+[node name="DustLabel" type="Label" parent="TopBar/CurrencyBoxes/DustPanel/DustRow" unique_id=633476930]
+layout_mode = 2
+text = "DUST 0"
+
+[node name="BottomBar" type="ColorRect" parent="." unique_id=1136654278]
+layout_mode = 1
+anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -136.0
-offset_top = -120.0
-offset_right = -36.0
-offset_bottom = -20.0
-grow_horizontal = 0
+offset_top = -84.0
+grow_horizontal = 2
 grow_vertical = 0
+color = Color(0.678431, 0.772549, 0.835294, 1)
+
+[node name="NavSlots" type="HBoxContainer" parent="BottomBar" unique_id=2096444339]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -164.0
+offset_top = -28.0
+offset_right = 164.0
+offset_bottom = 28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+
+[node name="PrevSlot" type="Control" parent="BottomBar/NavSlots" unique_id=475446788]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+
+[node name="PrevButton" type="TextureButton" parent="BottomBar/NavSlots/PrevSlot" unique_id=981065558]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="NextSlot" type="Control" parent="BottomBar/NavSlots" unique_id=651801154]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+
+[node name="NextButton" type="TextureButton" parent="BottomBar/NavSlots/NextSlot" unique_id=1021755694]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="ZinSlot" type="Control" parent="BottomBar/NavSlots" unique_id=1155107241]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+
+[node name="ZinButton" type="TextureButton" parent="BottomBar/NavSlots/ZinSlot" unique_id=579032183]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="ZoutSlot" type="Control" parent="BottomBar/NavSlots" unique_id=1051500848]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+
+[node name="ZoutButton" type="TextureButton" parent="BottomBar/NavSlots/ZoutSlot" unique_id=1246675338]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuSlot" type="Control" parent="BottomBar/NavSlots" unique_id=1005955174]
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 2
+
+[node name="MenuButton" type="TextureButton" parent="BottomBar/NavSlots/MenuSlot" unique_id=52299730]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 ignore_texture_size = true
 stretch_mode = 5
