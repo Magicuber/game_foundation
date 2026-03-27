@@ -16,6 +16,19 @@ const MAX_COUNTERS := 10
 const FIRST_TIER_UNLOCK_COUNT := 10
 const DISABLED_BUTTON_MODULATE := Color(0.45, 0.45, 0.45, 1.0)
 const ENABLED_BUTTON_MODULATE := Color(1, 1, 1, 1)
+const ELEMENT_MENU_SECTIONS := [
+	{"title": "1-10", "start": 1, "end": 10, "columns": 5},
+	{"title": "11-30", "start": 11, "end": 30, "columns": 5},
+	{"title": "31-54", "start": 31, "end": 54, "columns": 6},
+	{"title": "55-86", "start": 55, "end": 86, "columns": 8},
+	{"title": "87-118", "start": 87, "end": 118, "columns": 8}
+]
+
+const MENU_CLOSED := 0
+const MENU_MAIN := 1
+const MENU_UPGRADES := 2
+const MENU_ELEMENTS := 3
+const MENU_STATS := 4
 
 const ELEMENT_SHEET = preload("res://assests/sprites/elements_01_strip119.png")
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
@@ -31,10 +44,24 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var fuse_button: TextureButton = $FuseButton
 @onready var menu_overlay: Control = $MenuOverlay
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
-@onready var menu_title: Label = $MenuOverlay/MenuContent/MenuVBox/MenuTitle
-@onready var menu_info: Label = $MenuOverlay/MenuContent/MenuVBox/MenuInfo
-@onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuVBox/UnlockButton
-@onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuVBox/UpgradeList
+@onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
+@onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
+@onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
+@onready var stats_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/StatsPanel
+@onready var main_menu_title: Label = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/MainMenuTitle
+@onready var upgrades_title: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesTitle
+@onready var upgrades_info: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesInfo
+@onready var elements_title: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsTitle
+@onready var elements_info: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsInfo
+@onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
+@onready var stats_title: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsTitle
+@onready var stats_info: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsInfo
+@onready var upgrades_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/UpgradesMenuButton
+@onready var elements_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ElementsMenuButton
+@onready var stats_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/StatsMenuButton
+@onready var settings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/SettingsMenuButton
+@onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/UnlockButton
+@onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeList
 @onready var counter_margin: MarginContainer = $CounterMargin
 @onready var counter_list: VBoxContainer = $CounterMargin/CounterList
 @onready var top_bar: ColorRect = $TopBar
@@ -60,8 +87,11 @@ var resource_displays: Dictionary = {}
 var resource_display_ids: Array[String] = []
 var upgrade_buttons: Dictionary = {}
 var upgrade_button_ids: Array[String] = []
+var element_menu_tiles: Dictionary = {}
+var visible_element_section_count := -1
 var visual_particles: Array[Dictionary] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var menu_mode: int = MENU_CLOSED
 
 func _ready() -> void:
 	set_process(true)
@@ -77,12 +107,14 @@ func _ready() -> void:
 	menu_button.pressed.connect(_on_menu_pressed)
 	fuse_button.pressed.connect(_on_smash_pressed)
 	unlock_button.pressed.connect(_on_unlock_pressed)
+	upgrades_menu_button.pressed.connect(_on_upgrades_menu_pressed)
+	elements_menu_button.pressed.connect(_on_elements_menu_pressed)
+	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
 
 	_configure_texture_button(prev_button, PREV_BUTTON_TEXTURE)
 	_configure_texture_button(next_button, NEXT_BUTTON_TEXTURE)
 	_configure_texture_button(zin_button, ZIN_BUTTON_TEXTURE)
 	_configure_texture_button(zout_button, ZOUT_BUTTON_TEXTURE)
-	_update_menu_button_texture()
 
 	menu_background.texture = MENU_BACKGROUND_TEXTURE
 	menu_background.modulate = Color(1, 1, 1, 0.7)
@@ -100,6 +132,10 @@ func _ready() -> void:
 	_apply_ui_font()
 	_apply_currency_labels()
 	_apply_menu_text_style()
+	_apply_menu_button_style(upgrades_menu_button, true)
+	_apply_menu_button_style(elements_menu_button, true)
+	_apply_menu_button_style(stats_menu_button, true)
+	_apply_menu_button_style(settings_menu_button, false)
 	_configure_placeholder_slot(orbs_icon_slot)
 	_configure_placeholder_slot(dust_icon_slot)
 
@@ -115,6 +151,7 @@ func _ready() -> void:
 	tick_system.manual_smash_resolved.connect(_on_manual_smash_resolved)
 	tick_system.auto_smash_requested.connect(_on_auto_smash_requested)
 
+	_set_menu_mode(MENU_CLOSED)
 	_refresh_ui()
 
 func _process(delta: float) -> void:
@@ -158,7 +195,7 @@ func _configure_texture_button(button: TextureButton, texture: Texture2D) -> voi
 
 func _update_menu_button_texture() -> void:
 	var texture: Texture2D = MENU_BUTTON_TEXTURE
-	if menu_overlay.visible:
+	if menu_mode != MENU_CLOSED:
 		texture = CLOSE_BUTTON_TEXTURE
 	_configure_texture_button(menu_button, texture)
 	menu_button.modulate = ENABLED_BUTTON_MODULATE
@@ -188,8 +225,17 @@ func _apply_ui_font() -> void:
 	level_label.add_theme_font_override("font", ui_font)
 	orbs_label.add_theme_font_override("font", ui_font)
 	dust_label.add_theme_font_override("font", ui_font)
-	menu_title.add_theme_font_override("font", ui_font)
-	menu_info.add_theme_font_override("font", ui_font)
+	main_menu_title.add_theme_font_override("font", ui_font)
+	upgrades_title.add_theme_font_override("font", ui_font)
+	upgrades_info.add_theme_font_override("font", ui_font)
+	elements_title.add_theme_font_override("font", ui_font)
+	elements_info.add_theme_font_override("font", ui_font)
+	stats_title.add_theme_font_override("font", ui_font)
+	stats_info.add_theme_font_override("font", ui_font)
+	upgrades_menu_button.add_theme_font_override("font", ui_font)
+	elements_menu_button.add_theme_font_override("font", ui_font)
+	stats_menu_button.add_theme_font_override("font", ui_font)
+	settings_menu_button.add_theme_font_override("font", ui_font)
 	unlock_button.add_theme_font_override("font", ui_font)
 	profile_button.add_theme_font_override("font", ui_font)
 
@@ -216,12 +262,37 @@ func _apply_currency_labels() -> void:
 	dust_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 func _apply_menu_text_style() -> void:
-	menu_title.add_theme_font_size_override("font_size", 26)
-	menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	menu_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	main_menu_title.add_theme_font_size_override("font_size", 26)
+	upgrades_title.add_theme_font_size_override("font_size", 26)
+	elements_title.add_theme_font_size_override("font_size", 26)
+	stats_title.add_theme_font_size_override("font_size", 26)
+	main_menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	upgrades_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	elements_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	stats_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	upgrades_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	elements_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
+	button.focus_mode = Control.FOCUS_NONE
+	button.disabled = not is_enabled
+	if is_enabled:
+		button.modulate = ENABLED_BUTTON_MODULATE
+	else:
+		button.modulate = DISABLED_BUTTON_MODULATE
 
 func _configure_placeholder_slot(slot: ColorRect) -> void:
 	slot.color = Color8(25, 25, 25, 180)
+
+func _set_menu_mode(new_mode: int) -> void:
+	menu_mode = new_mode
+	menu_overlay.visible = menu_mode != MENU_CLOSED
+	main_menu_panel.visible = menu_mode == MENU_MAIN
+	upgrades_panel.visible = menu_mode == MENU_UPGRADES
+	elements_panel.visible = menu_mode == MENU_ELEMENTS
+	stats_panel.visible = menu_mode == MENU_STATS
+	_update_menu_button_texture()
 
 func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
@@ -274,6 +345,7 @@ func _sync_upgrade_buttons() -> void:
 func _refresh_ui() -> void:
 	_sync_resource_displays()
 	_sync_upgrade_buttons()
+	_sync_element_menu_tiles()
 
 	level_label.text = "Lv. %d" % game_state.player_level
 	orbs_label.text = "ORBS %s" % str(game_state.orbs)
@@ -300,30 +372,38 @@ func _refresh_ui() -> void:
 		_set_button_enabled_state(zin_button, false)
 		_set_button_enabled_state(zout_button, false)
 
-	_update_menu_button_texture()
-
-	menu_title.text = "Upgrade Menu"
-	menu_info.text = "Current: %s\nProduces: %s\nParticle Smasher: %.2f actions/sec\nCrit Chance: %.0f%%\nFission Chance: %.0f%%" % [
-		current_name,
-		produced_name,
+	upgrades_info.text = "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%%\nFission Chance: %.0f%%" % [
 		upgrades_system.get_auto_smashes_per_second(game_state),
 		upgrades_system.get_global_critical_smash_chance_percent(game_state),
 		upgrades_system.get_fission_chance_percent(game_state)
 	]
 
+	stats_info.text = "Current Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d" % [
+		current_name,
+		produced_name,
+		game_state.total_manual_smashes,
+		game_state.total_auto_smashes
+	]
+
 	var next_unlock: Dictionary = game_state.get_next_unlock_element()
 	if next_unlock.is_empty():
+		elements_info.text = "Selected: %s\nAll elements unlocked." % current_name
 		unlock_button.text = "All elements unlocked"
 		unlock_button.disabled = true
 	else:
 		var unlock_id := str(next_unlock.get("id", ""))
 		var unlock_cost: DigitMaster = next_unlock["cost"]
-		unlock_button.text = "Unlock %s for %s %s" % [
+		elements_info.text = "Selected: %s\nProduces: %s\nNext: %s\nRequires: %s %s" % [
+			current_name,
+			produced_name,
 			str(next_unlock.get("name", unlock_id)),
 			unlock_cost.big_to_short_string(),
 			game_state.get_resource_name(unlock_id)
 		]
+		unlock_button.text = "Unlock %s" % str(next_unlock.get("name", unlock_id))
 		unlock_button.disabled = not game_state.can_unlock_next()
+
+	_update_menu_button_texture()
 
 func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
 	button.disabled = not is_enabled
@@ -331,6 +411,58 @@ func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
 		button.modulate = ENABLED_BUTTON_MODULATE
 	else:
 		button.modulate = DISABLED_BUTTON_MODULATE
+
+func _get_visible_element_section_count() -> int:
+	return clampi(game_state.world_level + 1, 1, ELEMENT_MENU_SECTIONS.size())
+
+func _sync_element_menu_tiles() -> void:
+	var section_count := _get_visible_element_section_count()
+	if visible_element_section_count != section_count:
+		for child in elements_section_list.get_children():
+			child.queue_free()
+
+		element_menu_tiles.clear()
+		visible_element_section_count = section_count
+
+		for section_index in range(section_count):
+			var section_data: Dictionary = ELEMENT_MENU_SECTIONS[section_index]
+			var section_box := VBoxContainer.new()
+			section_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			section_box.add_theme_constant_override("separation", 6)
+			elements_section_list.add_child(section_box)
+
+			var header := Label.new()
+			header.text = str(section_data.get("title", ""))
+			header.add_theme_font_size_override("font_size", 16)
+			header.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+			var ui_font: FontFile = UIFont.load_ui_font()
+			if ui_font != null:
+				header.add_theme_font_override("font", ui_font)
+			section_box.add_child(header)
+
+			var grid := GridContainer.new()
+			grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			grid.columns = int(section_data.get("columns", 5))
+			grid.add_theme_constant_override("h_separation", 6)
+			grid.add_theme_constant_override("v_separation", 6)
+			section_box.add_child(grid)
+
+			var section_start := int(section_data.get("start", 1))
+			var section_end := int(section_data.get("end", 1))
+			for atomic_index in range(section_start, section_end + 1):
+				var element: Dictionary = game_state.get_element_by_index(atomic_index)
+				if element.is_empty():
+					continue
+				var element_id := str(element.get("id", ""))
+				var tile: ElementMenuTile = ElementMenuTile.new()
+				tile.configure(game_state, element_id)
+				tile.element_pressed.connect(_on_element_tile_pressed)
+				grid.add_child(tile)
+				element_menu_tiles[element_id] = tile
+
+	for element_id in element_menu_tiles.keys():
+		var tile: ElementMenuTile = element_menu_tiles[element_id]
+		tile.refresh(game_state.current_element_id)
 
 func _autosave_if_needed() -> void:
 	if game_state.tick_count - game_state.last_save_tick < AUTO_SAVE_INTERVAL_TICKS:
@@ -492,8 +624,31 @@ func _on_smash_pressed() -> void:
 	tick_system.enqueue_action("manual_smash")
 
 func _on_menu_pressed() -> void:
-	menu_overlay.visible = not menu_overlay.visible
+	match menu_mode:
+		MENU_CLOSED:
+			_set_menu_mode(MENU_MAIN)
+		MENU_MAIN:
+			_set_menu_mode(MENU_CLOSED)
+		_:
+			_set_menu_mode(MENU_MAIN)
 	_refresh_ui()
+
+func _on_upgrades_menu_pressed() -> void:
+	_set_menu_mode(MENU_UPGRADES)
+	_refresh_ui()
+
+func _on_elements_menu_pressed() -> void:
+	_set_menu_mode(MENU_ELEMENTS)
+	_refresh_ui()
+
+func _on_stats_menu_pressed() -> void:
+	_set_menu_mode(MENU_STATS)
+	_refresh_ui()
+
+func _on_element_tile_pressed(element_id: String) -> void:
+	if game_state.select_element(element_id):
+		_set_menu_mode(MENU_CLOSED)
+		_refresh_ui()
 
 func _on_unlock_pressed() -> void:
 	tick_system.enqueue_action("unlock_next")

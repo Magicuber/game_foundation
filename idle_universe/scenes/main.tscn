@@ -93,27 +93,124 @@ offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuVBox" type="VBoxContainer" parent="MenuOverlay/MenuContent" unique_id=818341854]
+[node name="MenuPanels" type="Control" parent="MenuOverlay/MenuContent" unique_id=51121801]
 layout_mode = 2
+mouse_filter = 2
+
+[node name="MainMenuPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000101]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="MainMenuTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000102]
+layout_mode = 2
+text = "Main Menu"
+horizontal_alignment = 1
+
+[node name="UpgradesMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000103]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Upgrades"
+
+[node name="ElementsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000104]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Elements"
+
+[node name="StatsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000105]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stats"
+
+[node name="SettingsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000106]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Settings"
+
+[node name="UpgradesPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000201]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="MenuTitle" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1369652752]
+[node name="UpgradesTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel" unique_id=2000202]
 layout_mode = 2
-text = "Upgrade Menu"
+text = "Upgrades"
+horizontal_alignment = 1
 
-[node name="MenuInfo" type="Label" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1875421218]
+[node name="UpgradesInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel" unique_id=2000203]
 layout_mode = 2
-text = "Info"
+text = "Upgrade info"
 autowrap_mode = 3
 
-[node name="UnlockButton" type="Button" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=314385671]
+[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel" unique_id=1155360097]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ElementsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000301]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ElementsTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000302]
+layout_mode = 2
+text = "Elements"
+horizontal_alignment = 1
+
+[node name="ElementsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000303]
+layout_mode = 2
+text = "Element info"
+autowrap_mode = 3
+
+[node name="UnlockButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=314385671]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Unlock Next Element"
 
-[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuVBox" unique_id=1155360097]
+[node name="ElementsScroll" type="ScrollContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000304]
 layout_mode = 2
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ElementsSectionList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll" unique_id=2000305]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="StatsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000401]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="StatsTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/StatsPanel" unique_id=2000402]
+layout_mode = 2
+text = "Stats"
+horizontal_alignment = 1
+
+[node name="StatsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/StatsPanel" unique_id=2000403]
+layout_mode = 2
+text = "Stats"
+autowrap_mode = 3
 
 [node name="CounterMargin" type="MarginContainer" parent="." unique_id=1064962822]
 layout_mode = 1
