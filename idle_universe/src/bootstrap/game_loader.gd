@@ -4,6 +4,9 @@ const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
 const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
 const AUTO_SAVE_INTERVAL_TICKS := 50
 const ELEMENT_SHEET_FRAME_SIZE := Vector2i(32, 32)
+const ERA_SHEET_FRAME_SIZE := Vector2i(540, 750)
+const ERA_REQUIREMENT_CARD_TOP_RATIO := 0.80
+const ERA_REQUIREMENT_CARD_SIDE_MARGIN := 8.0
 const OFFSCREEN_MARGIN := 96.0
 const PRODUCT_PARTICLE_SIZE := 52.0
 const PROTON_PARTICLE_SIZE := 56.0
@@ -28,9 +31,11 @@ const MENU_CLOSED := 0
 const MENU_MAIN := 1
 const MENU_UPGRADES := 2
 const MENU_ELEMENTS := 3
-const MENU_STATS := 4
+const MENU_ERA := 4
+const MENU_STATS := 5
 
 const ELEMENT_SHEET = preload("res://assests/sprites/elements_01_strip119.png")
+const ERA_SHEET = preload("res://assests/sprites/spr_era_strip4.png")
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
 const NEXT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_next_btn.png")
 const MENU_BUTTON_TEXTURE = preload("res://assests/sprites/spr_menu_btn.png")
@@ -47,6 +52,7 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
 @onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
 @onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
+@onready var era_panel: Control = $MenuOverlay/MenuContent/MenuPanels/EraPanel
 @onready var stats_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/StatsPanel
 @onready var main_menu_title: Label = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/MainMenuTitle
 @onready var upgrades_title: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesTitle
@@ -54,10 +60,19 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var elements_title: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsTitle
 @onready var elements_info: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsInfo
 @onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
+@onready var era_title: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraTitle
+@onready var era_timeline: TextureRect = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraTimeline
+@onready var era_status: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraStatus
+@onready var era_requirement_card: PanelContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard
+@onready var era_requirement_title: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraRequirementTitle
+@onready var era_requirement_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraRequirementList
+@onready var era_unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraUnlockButton
 @onready var stats_title: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsTitle
 @onready var stats_info: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsInfo
+@onready var planetary_stats_info: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/PlanetaryStatsInfo
 @onready var upgrades_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/UpgradesMenuButton
 @onready var elements_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ElementsMenuButton
+@onready var era_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/EraMenuButton
 @onready var stats_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/StatsMenuButton
 @onready var settings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/SettingsMenuButton
 @onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/UnlockButton
@@ -90,6 +105,7 @@ var upgrade_button_ids: Array[String] = []
 var element_menu_tiles: Dictionary = {}
 var visible_element_section_count := -1
 var visual_particles: Array[Dictionary] = []
+var era_requirement_labels: Array[Label] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var menu_mode: int = MENU_CLOSED
 
@@ -109,7 +125,9 @@ func _ready() -> void:
 	unlock_button.pressed.connect(_on_unlock_pressed)
 	upgrades_menu_button.pressed.connect(_on_upgrades_menu_pressed)
 	elements_menu_button.pressed.connect(_on_elements_menu_pressed)
+	era_menu_button.pressed.connect(_on_era_menu_pressed)
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
+	era_unlock_button.pressed.connect(_on_era_unlock_pressed)
 
 	_configure_texture_button(prev_button, PREV_BUTTON_TEXTURE)
 	_configure_texture_button(next_button, NEXT_BUTTON_TEXTURE)
@@ -124,8 +142,14 @@ func _ready() -> void:
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
+	era_timeline.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	era_timeline.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	era_timeline.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	era_title.visible = false
+	era_status.visible = false
 	profile_button.focus_mode = Control.FOCUS_NONE
 	unlock_button.focus_mode = Control.FOCUS_NONE
+	era_unlock_button.focus_mode = Control.FOCUS_NONE
 	_apply_profile_button_style()
 	_apply_currency_box_style(orbs_panel)
 	_apply_currency_box_style(dust_panel)
@@ -134,10 +158,12 @@ func _ready() -> void:
 	_apply_menu_text_style()
 	_apply_menu_button_style(upgrades_menu_button, true)
 	_apply_menu_button_style(elements_menu_button, true)
+	_apply_menu_button_style(era_menu_button, false)
 	_apply_menu_button_style(stats_menu_button, true)
 	_apply_menu_button_style(settings_menu_button, false)
 	_configure_placeholder_slot(orbs_icon_slot)
 	_configure_placeholder_slot(dust_icon_slot)
+	_ensure_era_requirement_labels()
 
 	effects_layer.z_index = 1
 	fuse_button.z_index = 15
@@ -230,10 +256,16 @@ func _apply_ui_font() -> void:
 	upgrades_info.add_theme_font_override("font", ui_font)
 	elements_title.add_theme_font_override("font", ui_font)
 	elements_info.add_theme_font_override("font", ui_font)
+	era_title.add_theme_font_override("font", ui_font)
+	era_status.add_theme_font_override("font", ui_font)
+	era_requirement_title.add_theme_font_override("font", ui_font)
+	era_unlock_button.add_theme_font_override("font", ui_font)
 	stats_title.add_theme_font_override("font", ui_font)
 	stats_info.add_theme_font_override("font", ui_font)
+	planetary_stats_info.add_theme_font_override("font", ui_font)
 	upgrades_menu_button.add_theme_font_override("font", ui_font)
 	elements_menu_button.add_theme_font_override("font", ui_font)
+	era_menu_button.add_theme_font_override("font", ui_font)
 	stats_menu_button.add_theme_font_override("font", ui_font)
 	settings_menu_button.add_theme_font_override("font", ui_font)
 	unlock_button.add_theme_font_override("font", ui_font)
@@ -265,14 +297,21 @@ func _apply_menu_text_style() -> void:
 	main_menu_title.add_theme_font_size_override("font_size", 26)
 	upgrades_title.add_theme_font_size_override("font_size", 26)
 	elements_title.add_theme_font_size_override("font_size", 26)
+	era_title.add_theme_font_size_override("font_size", 26)
+	era_status.add_theme_font_size_override("font_size", 16)
+	era_requirement_title.add_theme_font_size_override("font_size", 18)
 	stats_title.add_theme_font_size_override("font_size", 26)
 	main_menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	upgrades_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	elements_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	era_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	stats_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	upgrades_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	elements_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	era_status.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	era_requirement_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	planetary_stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
 	button.focus_mode = Control.FOCUS_NONE
@@ -291,8 +330,63 @@ func _set_menu_mode(new_mode: int) -> void:
 	main_menu_panel.visible = menu_mode == MENU_MAIN
 	upgrades_panel.visible = menu_mode == MENU_UPGRADES
 	elements_panel.visible = menu_mode == MENU_ELEMENTS
+	era_panel.visible = menu_mode == MENU_ERA
 	stats_panel.visible = menu_mode == MENU_STATS
 	_update_menu_button_texture()
+
+func _ensure_era_requirement_labels() -> void:
+	if not era_requirement_labels.is_empty():
+		return
+
+	var ui_font: FontFile = UIFont.load_ui_font()
+	for _i in range(7):
+		var label := Label.new()
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 14)
+		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+		if ui_font != null:
+			label.add_theme_font_override("font", ui_font)
+		era_requirement_list.add_child(label)
+		era_requirement_labels.append(label)
+
+func _apply_era_requirement_card_style(era_index: int) -> void:
+	var accent_color := _get_era_card_color(era_index)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(accent_color.r * 0.28, accent_color.g * 0.28, accent_color.b * 0.28, 0.92)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = accent_color
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	era_requirement_card.add_theme_stylebox_override("panel", style)
+
+func _get_era_card_color(era_index: int) -> Color:
+	match era_index:
+		0:
+			return Color8(197, 70, 70)
+		1:
+			return Color8(99, 150, 255)
+		2:
+			return Color8(255, 241, 65)
+		3:
+			return Color8(112, 74, 143)
+		_:
+			return Color8(126, 126, 126)
+
+func _make_era_frame(frame_index: int) -> AtlasTexture:
+	var clamped_index := clampi(frame_index, 0, 3)
+	var icon := AtlasTexture.new()
+	icon.atlas = ERA_SHEET
+	icon.region = Rect2(
+		Vector2(clamped_index * ERA_SHEET_FRAME_SIZE.x, 0),
+		Vector2(ERA_SHEET_FRAME_SIZE.x, ERA_SHEET_FRAME_SIZE.y)
+	)
+	return icon
 
 func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
@@ -370,7 +464,7 @@ func _refresh_ui() -> void:
 	zout_button.visible = first_tier_complete
 	if first_tier_complete:
 		_set_button_enabled_state(zin_button, false)
-		_set_button_enabled_state(zout_button, false)
+		_set_button_enabled_state(zout_button, game_state.has_unlocked_era(1))
 
 	upgrades_info.text = "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%%\nFission Chance: %.0f%%" % [
 		upgrades_system.get_auto_smashes_per_second(game_state),
@@ -378,12 +472,18 @@ func _refresh_ui() -> void:
 		upgrades_system.get_fission_chance_percent(game_state)
 	]
 
+	var era_menu_enabled := game_state.is_era_menu_unlocked()
+	_apply_menu_button_style(era_menu_button, era_menu_enabled)
+
 	stats_info.text = "Current Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d" % [
 		current_name,
 		produced_name,
 		game_state.total_manual_smashes,
 		game_state.total_auto_smashes
 	]
+	planetary_stats_info.visible = game_state.has_unlocked_era(1)
+	if planetary_stats_info.visible:
+		planetary_stats_info.text = "Planetary Stats\nPlanets unlocked: 0\nPlanet systems coming soon"
 
 	var next_unlock: Dictionary = game_state.get_next_unlock_element()
 	if next_unlock.is_empty():
@@ -403,7 +503,92 @@ func _refresh_ui() -> void:
 		unlock_button.text = "Unlock %s" % str(next_unlock.get("name", unlock_id))
 		unlock_button.disabled = not game_state.can_unlock_next()
 
+	_refresh_era_ui()
 	_update_menu_button_texture()
+
+func _refresh_era_ui() -> void:
+	var unlocked_era_index := game_state.get_unlocked_era_index()
+	era_timeline.texture = _make_era_frame(unlocked_era_index)
+	_update_era_timeline_height()
+	_update_era_requirement_card_position()
+
+	if not game_state.is_era_menu_unlocked():
+		era_requirement_title.text = "Era Menu Locked"
+		for label in era_requirement_labels:
+			label.visible = false
+			label.text = ""
+		era_unlock_button.visible = false
+		_apply_era_requirement_card_style(0)
+		return
+
+	var next_era_index := game_state.get_next_implemented_era_index()
+	if next_era_index < 0:
+		var current_era_name := game_state.get_era_name(unlocked_era_index)
+		era_requirement_title.text = "%s Unlocked" % current_era_name
+		for label in era_requirement_labels:
+			label.visible = false
+			label.text = ""
+		era_unlock_button.visible = false
+		_apply_era_requirement_card_style(unlocked_era_index)
+		return
+
+	var next_era_name := game_state.get_era_name(next_era_index)
+	era_requirement_title.text = "Next Era: %s" % next_era_name
+	var requirements: Array[Dictionary] = game_state.get_next_era_requirements()
+	for label_index in range(era_requirement_labels.size()):
+		var label := era_requirement_labels[label_index]
+		if label_index >= requirements.size():
+			label.visible = false
+			label.text = ""
+			continue
+
+		var requirement: Dictionary = requirements[label_index]
+		label.visible = true
+		if bool(requirement.get("is_orb_requirement", false)):
+			var required_orbs := int(requirement.get("required_amount", 0))
+			label.text = "%s: %s / %s" % [
+				str(requirement.get("resource_name", "Orbs")),
+				str(game_state.orbs),
+				str(required_orbs)
+			]
+			continue
+
+		var resource_id := str(requirement.get("resource_id", ""))
+		var required_amount: DigitMaster = requirement["required_amount"]
+		label.text = "%s: %s / %s" % [
+			str(requirement.get("resource_name", resource_id)),
+			game_state.get_resource_amount(resource_id).big_to_short_string(),
+			required_amount.big_to_short_string()
+		]
+
+	era_unlock_button.visible = true
+	era_unlock_button.text = "Unlock %s" % next_era_name
+	era_unlock_button.disabled = not game_state.can_unlock_next_era()
+	_apply_era_requirement_card_style(next_era_index)
+
+func _update_era_timeline_height() -> void:
+	if not is_instance_valid(era_timeline):
+		return
+
+	var target_width := era_panel.size.x
+	if target_width <= 0.0:
+		target_width = era_timeline.size.x
+	if target_width <= 0.0:
+		return
+
+	var target_height := round(target_width * (float(ERA_SHEET_FRAME_SIZE.y) / float(ERA_SHEET_FRAME_SIZE.x)))
+	if absf(era_timeline.custom_minimum_size.y - target_height) > 0.5:
+		era_timeline.custom_minimum_size = Vector2(0.0, target_height)
+		era_timeline.offset_bottom = target_height
+
+func _update_era_requirement_card_position() -> void:
+	if not is_instance_valid(era_requirement_card):
+		return
+
+	var top_offset := round(era_timeline.custom_minimum_size.y * ERA_REQUIREMENT_CARD_TOP_RATIO)
+	era_requirement_card.offset_left = ERA_REQUIREMENT_CARD_SIDE_MARGIN
+	era_requirement_card.offset_right = -ERA_REQUIREMENT_CARD_SIDE_MARGIN
+	era_requirement_card.offset_top = top_offset
 
 func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
 	button.disabled = not is_enabled
@@ -641,6 +826,12 @@ func _on_elements_menu_pressed() -> void:
 	_set_menu_mode(MENU_ELEMENTS)
 	_refresh_ui()
 
+func _on_era_menu_pressed() -> void:
+	if not game_state.is_era_menu_unlocked():
+		return
+	_set_menu_mode(MENU_ERA)
+	_refresh_ui()
+
 func _on_stats_menu_pressed() -> void:
 	_set_menu_mode(MENU_STATS)
 	_refresh_ui()
@@ -652,6 +843,10 @@ func _on_element_tile_pressed(element_id: String) -> void:
 
 func _on_unlock_pressed() -> void:
 	tick_system.enqueue_action("unlock_next")
+
+func _on_era_unlock_pressed() -> void:
+	if game_state.unlock_next_era():
+		_refresh_ui()
 
 func _on_upgrade_purchase_requested(upgrade_id: String) -> void:
 	tick_system.enqueue_action("purchase_upgrade", {"id": upgrade_id})

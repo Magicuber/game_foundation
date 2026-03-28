@@ -4,6 +4,18 @@ class_name GameState
 
 const SAVE_VERSION := 1
 const DUST_RESOURCE_ID := "dust"
+const ERA_NAMES := [
+	"Atomic Era",
+	"Planetary Era",
+	"Solar Era",
+	"Space Era",
+	"Coming Soon"
+]
+const ERA_MENU_UNLOCK_ELEMENT_ID := "ele_Na"
+const MAX_IMPLEMENTED_ERA_INDEX := 1
+const PLANETARY_ERA_RESOURCE_IDS := ["ele_H", "ele_He", "ele_C", "ele_O", "ele_Ne"]
+const PLANETARY_ERA_RESOURCE_COST := 10000.0
+const PLANETARY_ERA_ORB_COST := 1000
 
 var orbs: int
 var dust: DigitMaster
@@ -22,6 +34,7 @@ var total_played_seconds: float
 var last_save_tick: int
 var total_manual_smashes: int
 var total_auto_smashes: int
+var unlocked_era_index: int
 
 static func from_content(elements_content: Dictionary, upgrades_content: Dictionary) -> GameState:
 	var state := GameState.new()
@@ -48,6 +61,7 @@ func _init() -> void:
 	last_save_tick = 0
 	total_manual_smashes = 0
 	total_auto_smashes = 0
+	unlocked_era_index = 0
 
 func _load_elements(elements_data: Array) -> void:
 	elements.clear()
@@ -262,6 +276,102 @@ func has_unlocked_element_count(required_count: int) -> bool:
 		return true
 	return get_unlocked_element_ids().size() >= required_count
 
+func is_era_menu_unlocked() -> bool:
+	return is_element_unlocked(ERA_MENU_UNLOCK_ELEMENT_ID)
+
+func get_unlocked_era_index() -> int:
+	return clampi(unlocked_era_index, 0, ERA_NAMES.size() - 1)
+
+func has_unlocked_era(era_index: int) -> bool:
+	return get_unlocked_era_index() >= era_index
+
+func get_era_name(era_index: int) -> String:
+	if era_index < 0 or era_index >= ERA_NAMES.size():
+		return ""
+	return str(ERA_NAMES[era_index])
+
+func get_next_implemented_era_index() -> int:
+	if not is_era_menu_unlocked():
+		return -1
+	var next_era_index := get_unlocked_era_index() + 1
+	if next_era_index > MAX_IMPLEMENTED_ERA_INDEX:
+		return -1
+	return next_era_index
+
+func get_next_implemented_era_name() -> String:
+	var next_era_index := get_next_implemented_era_index()
+	if next_era_index < 0:
+		return ""
+	return get_era_name(next_era_index)
+
+func get_next_era_requirements() -> Array[Dictionary]:
+	var next_era_index := get_next_implemented_era_index()
+	if next_era_index != 1:
+		return []
+
+	var requirements: Array[Dictionary] = []
+	for resource_id in PLANETARY_ERA_RESOURCE_IDS:
+		requirements.append({
+			"resource_id": resource_id,
+			"resource_name": get_resource_name(resource_id),
+			"required_amount": DigitMaster.new(PLANETARY_ERA_RESOURCE_COST),
+			"is_orb_requirement": false
+		})
+
+	requirements.append({
+		"resource_id": DUST_RESOURCE_ID,
+		"resource_name": "Dust",
+		"required_amount": DigitMaster.new(PLANETARY_ERA_RESOURCE_COST),
+		"is_orb_requirement": false
+	})
+
+	requirements.append({
+		"resource_id": "orbs",
+		"resource_name": "Orbs",
+		"required_amount": PLANETARY_ERA_ORB_COST,
+		"is_orb_requirement": true
+	})
+
+	return requirements
+
+func can_unlock_next_era() -> bool:
+	var requirements := get_next_era_requirements()
+	if requirements.is_empty():
+		return false
+
+	for requirement in requirements:
+		if bool(requirement.get("is_orb_requirement", false)):
+			if orbs < int(requirement.get("required_amount", 0)):
+				return false
+			continue
+
+		var resource_id := str(requirement.get("resource_id", ""))
+		var required_amount: DigitMaster = requirement["required_amount"]
+		if not can_afford_resource(resource_id, required_amount):
+			return false
+	return true
+
+func unlock_next_era() -> bool:
+	if not can_unlock_next_era():
+		return false
+
+	var next_era_index := get_next_implemented_era_index()
+	if next_era_index < 0:
+		return false
+
+	for requirement in get_next_era_requirements():
+		if bool(requirement.get("is_orb_requirement", false)):
+			orbs -= int(requirement.get("required_amount", 0))
+			continue
+
+		var resource_id := str(requirement.get("resource_id", ""))
+		var required_amount: DigitMaster = requirement["required_amount"]
+		if not spend_resource(resource_id, required_amount):
+			return false
+
+	unlocked_era_index = max(unlocked_era_index, next_era_index)
+	return true
+
 func select_element(element_id: String) -> bool:
 	if not is_element_unlocked(element_id):
 		return false
@@ -354,7 +464,8 @@ func to_save_dict() -> Dictionary:
 		"total_played_seconds": total_played_seconds,
 		"last_save_tick": last_save_tick,
 		"total_manual_smashes": total_manual_smashes,
-		"total_auto_smashes": total_auto_smashes
+		"total_auto_smashes": total_auto_smashes,
+		"unlocked_era_index": unlocked_era_index
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
@@ -368,6 +479,7 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	last_save_tick = int(save_data.get("last_save_tick", 0))
 	total_manual_smashes = int(save_data.get("total_manual_smashes", 0))
 	total_auto_smashes = int(save_data.get("total_auto_smashes", 0))
+	unlocked_era_index = int(save_data.get("unlocked_era_index", unlocked_era_index))
 
 	var saved_elements: Dictionary = save_data.get("elements", {})
 	for element_id in saved_elements.keys():

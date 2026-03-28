@@ -122,6 +122,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Elements"
 
+[node name="EraMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000107]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Era"
+
 [node name="StatsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000105]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -192,6 +198,81 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
+[node name="EraPanel" type="Control" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000351]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EraTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel" unique_id=2000352]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 24.0
+grow_horizontal = 2
+text = "Era Menu"
+horizontal_alignment = 1
+
+[node name="EraTimeline" type="TextureRect" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel" unique_id=2000353]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 360.0
+grow_horizontal = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EraStatus" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel" unique_id=2000354]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 364.0
+offset_bottom = 404.0
+grow_horizontal = 2
+text = "Era status"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="EraRequirementCard" type="PanelContainer" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel" unique_id=2000355]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 8.0
+offset_top = 292.0
+offset_right = -8.0
+offset_bottom = 520.0
+grow_horizontal = 2
+
+[node name="EraRequirementMargin" type="MarginContainer" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard" unique_id=2000356]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="EraRequirementVBox" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin" unique_id=2000357]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EraRequirementTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox" unique_id=2000358]
+layout_mode = 2
+text = "Next Era"
+
+[node name="EraRequirementList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox" unique_id=2000359]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="EraUnlockButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox" unique_id=2000360]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Unlock Era"
+
 [node name="StatsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000401]
 visible = false
 layout_mode = 1
@@ -210,6 +291,12 @@ horizontal_alignment = 1
 [node name="StatsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/StatsPanel" unique_id=2000403]
 layout_mode = 2
 text = "Stats"
+autowrap_mode = 3
+
+[node name="PlanetaryStatsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/StatsPanel" unique_id=2000404]
+visible = false
+layout_mode = 2
+text = "Planetary Stats"
 autowrap_mode = 3
 
 [node name="CounterMargin" type="MarginContainer" parent="." unique_id=1064962822]
