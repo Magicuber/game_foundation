@@ -31,7 +31,7 @@ window/handheld/orientation=1
 
 [editor_plugins]
 
-enabled=PackedStringArray()
+enabled=PackedStringArray("res://addons/aseprite_spritesheet_importer/plugin.cfg", "res://addons/godot_mcp/plugin.cfg")
 
 [rendering]
 

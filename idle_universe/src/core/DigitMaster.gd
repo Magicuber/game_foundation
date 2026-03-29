@@ -174,6 +174,10 @@ func big_to_short_string() -> String:
 	if is_zero():
 		return "0"
 
+	if exponent < 5:
+		var full_value := mantissa * pow(10.0, exponent)
+		return "%d" % int(round(full_value))
+
 	var suffixes := ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"]
 	var exponent_idx := int(floor(float(exponent) / 3.0))
 	if exponent_idx < 0 or exponent_idx >= suffixes.size():

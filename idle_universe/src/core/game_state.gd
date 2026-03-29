@@ -11,11 +11,13 @@ const ERA_NAMES := [
 	"Space Era",
 	"Coming Soon"
 ]
-const ERA_MENU_UNLOCK_ELEMENT_ID := "ele_Na"
+const ERA_MENU_UNLOCK_ELEMENT_ID := "ele_Ne"
 const MAX_IMPLEMENTED_ERA_INDEX := 1
 const PLANETARY_ERA_RESOURCE_IDS := ["ele_H", "ele_He", "ele_C", "ele_O", "ele_Ne"]
 const PLANETARY_ERA_RESOURCE_COST := 10000.0
 const PLANETARY_ERA_ORB_COST := 1000
+const UNLOCK_SECTION_ENDS := [10, 30, 54, 86, 118]
+const DEFAULT_PLANET_ID := "planet_a"
 
 var orbs: int
 var dust: DigitMaster
@@ -35,6 +37,8 @@ var last_save_tick: int
 var total_manual_smashes: int
 var total_auto_smashes: int
 var unlocked_era_index: int
+var planets: Dictionary
+var current_planet_id: String
 
 static func from_content(elements_content: Dictionary, upgrades_content: Dictionary) -> GameState:
 	var state := GameState.new()
@@ -62,6 +66,16 @@ func _init() -> void:
 	total_manual_smashes = 0
 	total_auto_smashes = 0
 	unlocked_era_index = 0
+	planets = {
+		DEFAULT_PLANET_ID: {
+			"id": DEFAULT_PLANET_ID,
+			"name": "Planet A",
+			"unlocked": false,
+			"level": 1,
+			"max_level": 25
+		}
+	}
+	current_planet_id = DEFAULT_PLANET_ID
 
 func _load_elements(elements_data: Array) -> void:
 	elements.clear()
@@ -177,6 +191,16 @@ func get_next_unlock_element() -> Dictionary:
 		return {}
 	return get_element(next_unlock_id)
 
+func get_max_unlockable_element_index() -> int:
+	var section_index := clampi(world_level, 0, UNLOCK_SECTION_ENDS.size() - 1)
+	return int(UNLOCK_SECTION_ENDS[section_index])
+
+func is_next_unlock_within_visible_sections() -> bool:
+	var next_element := get_next_unlock_element()
+	if next_element.is_empty():
+		return false
+	return int(next_element.get("index", 0)) <= get_max_unlockable_element_index()
+
 func get_unlocked_element_ids() -> Array[String]:
 	var unlocked_ids: Array[String] = []
 	for element_id in element_ids_in_order:
@@ -202,6 +226,20 @@ func get_visible_counter_element_ids() -> Array[String]:
 		if bool(element.get("show_in_counter", false)):
 			visible_ids.append(element_id)
 	return visible_ids
+
+func has_planet(planet_id: String) -> bool:
+	return planets.has(planet_id)
+
+func get_planet(planet_id: String) -> Dictionary:
+	return planets.get(planet_id, {})
+
+func get_current_planet() -> Dictionary:
+	return get_planet(current_planet_id)
+
+func is_planet_unlocked(planet_id: String) -> bool:
+	if not has_planet(planet_id):
+		return false
+	return bool(planets[planet_id].get("unlocked", false))
 
 func get_upgrade(upgrade_id: String) -> Dictionary:
 	return upgrades.get(upgrade_id, {})
@@ -370,6 +408,10 @@ func unlock_next_era() -> bool:
 			return false
 
 	unlocked_era_index = max(unlocked_era_index, next_era_index)
+	if next_era_index == 1 and has_planet(DEFAULT_PLANET_ID):
+		var starting_planet: Dictionary = planets[DEFAULT_PLANET_ID]
+		starting_planet["unlocked"] = true
+		starting_planet["level"] = maxi(1, int(starting_planet.get("level", 1)))
 	return true
 
 func select_element(element_id: String) -> bool:
@@ -380,6 +422,21 @@ func select_element(element_id: String) -> bool:
 
 func has_adjacent_unlocked_element(direction: int) -> bool:
 	return not _find_adjacent_unlocked_element_id(direction).is_empty()
+
+func has_next_selectable_element_in_visible_sections() -> bool:
+	if current_element_id.is_empty():
+		return false
+
+	var current_element := get_current_element()
+	if current_element.is_empty():
+		return false
+
+	var current_index := int(current_element.get("index", 0))
+	var max_visible_index := get_max_unlockable_element_index()
+	if current_index >= max_visible_index:
+		return false
+
+	return has_adjacent_unlocked_element(1)
 
 func select_adjacent_unlocked(direction: int) -> bool:
 	var target_id := _find_adjacent_unlocked_element_id(direction)
@@ -409,6 +466,8 @@ func _find_adjacent_unlocked_element_id(direction: int) -> String:
 
 func can_unlock_next() -> bool:
 	if next_unlock_id.is_empty():
+		return false
+	if not is_next_unlock_within_visible_sections():
 		return false
 	var next_element := get_next_unlock_element()
 	if next_element.is_empty():
@@ -465,7 +524,9 @@ func to_save_dict() -> Dictionary:
 		"last_save_tick": last_save_tick,
 		"total_manual_smashes": total_manual_smashes,
 		"total_auto_smashes": total_auto_smashes,
-		"unlocked_era_index": unlocked_era_index
+		"unlocked_era_index": unlocked_era_index,
+		"current_planet_id": current_planet_id,
+		"planets": planets
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
@@ -501,4 +562,13 @@ func apply_save_dict(save_data: Dictionary) -> void:
 		upgrade["current_cost"] = DigitMaster.from_variant(upgrade_save.get("current_cost", upgrade["base_cost"]))
 
 	current_element_id = str(save_data.get("current_element_id", current_element_id))
+	var saved_planets: Dictionary = save_data.get("planets", {})
+	for planet_id in saved_planets.keys():
+		if not planets.has(planet_id):
+			continue
+		var planet: Dictionary = planets[planet_id]
+		var planet_save: Dictionary = saved_planets[planet_id]
+		planet["unlocked"] = bool(planet_save.get("unlocked", planet.get("unlocked", false)))
+		planet["level"] = int(planet_save.get("level", planet.get("level", 1)))
+	current_planet_id = str(save_data.get("current_planet_id", current_planet_id))
 	refresh_progression_state()

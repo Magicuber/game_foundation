@@ -24,6 +24,60 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.145098, 0.180392, 0.211765, 1)
 
+[node name="WorldPage" type="Control" parent="." unique_id=2000001]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WorldTitle" type="Label" parent="WorldPage" unique_id=2000002]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 140.0
+offset_bottom = 176.0
+grow_horizontal = 2
+text = "World"
+horizontal_alignment = 1
+
+[node name="PlanetSprite" type="TextureRect" parent="WorldPage" unique_id=2000003]
+custom_minimum_size = Vector2(260, 260)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -130.0
+offset_top = -130.0
+offset_right = 130.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="WorldInfo" type="Label" parent="WorldPage" unique_id=2000004]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = 148.0
+offset_right = 170.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+
 [node name="EffectsLayer" type="Control" parent="." unique_id=2127717752]
 layout_mode = 1
 anchors_preset = 15
@@ -49,8 +103,17 @@ grow_vertical = 2
 ignore_texture_size = true
 stretch_mode = 5
 
-[node name="MenuOverlay" type="Control" parent="." unique_id=1927428435]
+[node name="FuseHitboxDebug" type="Panel" parent="FuseButton" unique_id=2000701]
 visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MenuOverlay" type="Control" parent="." unique_id=1927428435]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -128,10 +191,22 @@ size_flags_horizontal = 3
 disabled = true
 text = "Era"
 
+[node name="PlanetsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000109]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Planets"
+
 [node name="StatsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000105]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Stats"
+
+[node name="ShopMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000108]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Shop"
 
 [node name="SettingsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000106]
 layout_mode = 2
@@ -164,7 +239,6 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="ElementsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000301]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -198,8 +272,50 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="EraPanel" type="Control" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000351]
+[node name="DustActionRow" type="HBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000306]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="MakeDustButton" type="TextureButton" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow" unique_id=2000307]
+custom_minimum_size = Vector2(172, 48)
+layout_mode = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MakeDustLabel" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton" unique_id=2000308]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = "MAKE DUST"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DustCloseButton" type="TextureButton" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow" unique_id=2000309]
 visible = false
+custom_minimum_size = Vector2(82, 48)
+layout_mode = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="DustCloseLabel" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCloseButton" unique_id=2000310]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = "CLOSE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EraPanel" type="Control" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000351]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -274,7 +390,6 @@ size_flags_horizontal = 3
 text = "Unlock Era"
 
 [node name="StatsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000401]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -298,6 +413,83 @@ visible = false
 layout_mode = 2
 text = "Planetary Stats"
 autowrap_mode = 3
+
+[node name="ShopPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000501]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ShopTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ShopPanel" unique_id=2000502]
+layout_mode = 2
+text = "Shop"
+horizontal_alignment = 1
+
+[node name="ShopInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ShopPanel" unique_id=2000503]
+layout_mode = 2
+text = "Shop coming soon"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="PlanetsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000551]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="PlanetsTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/PlanetsPanel" unique_id=2000552]
+layout_mode = 2
+text = "Planets"
+horizontal_alignment = 1
+
+[node name="PlanetsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/PlanetsPanel" unique_id=2000553]
+layout_mode = 2
+text = "Planets coming soon"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="SettingsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000601]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="SettingsTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000602]
+layout_mode = 2
+text = "Dev Tools"
+horizontal_alignment = 1
+
+[node name="SettingsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000603]
+layout_mode = 2
+text = "Developer Tools"
+horizontal_alignment = 1
+
+[node name="ClickBoxesToggle" type="CheckButton" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000604]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Show Click Boxes"
+
+[node name="AddDustButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000605]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add 1000 Dust"
+
+[node name="AddOrbsButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000606]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add 1000 Orbs"
 
 [node name="CounterMargin" type="MarginContainer" parent="." unique_id=1064962822]
 layout_mode = 1
@@ -476,5 +668,21 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="ShopButton" type="TextureButton" parent="." unique_id=2000601]
+visible = false
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -132.0
+offset_top = 136.0
+offset_right = -36.0
+offset_bottom = 232.0
+grow_horizontal = 0
+grow_vertical = 0
 ignore_texture_size = true
 stretch_mode = 5

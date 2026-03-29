@@ -7,6 +7,7 @@ const ELEMENT_SHEET_FRAME_SIZE := Vector2i(32, 32)
 const ERA_SHEET_FRAME_SIZE := Vector2i(540, 750)
 const ERA_REQUIREMENT_CARD_TOP_RATIO := 0.80
 const ERA_REQUIREMENT_CARD_SIDE_MARGIN := 8.0
+const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
 const OFFSCREEN_MARGIN := 96.0
 const PRODUCT_PARTICLE_SIZE := 52.0
 const PROTON_PARTICLE_SIZE := 56.0
@@ -15,6 +16,7 @@ const PRODUCT_SPEED_MAX := 320.0
 const PROTON_SPEED_MIN := 260.0
 const PROTON_SPEED_MAX := 360.0
 const PROTON_SPEED_VARIATION := 0.15
+const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const MAX_COUNTERS := 10
 const FIRST_TIER_UNLOCK_COUNT := 10
 const DISABLED_BUTTON_MODULATE := Color(0.45, 0.45, 0.45, 1.0)
@@ -26,6 +28,25 @@ const ELEMENT_MENU_SECTIONS := [
 	{"title": "55-86", "start": 55, "end": 86, "columns": 8},
 	{"title": "87-118", "start": 87, "end": 118, "columns": 8}
 ]
+const DUST_SELECTION_STEPS := [0.0, 0.10, 0.25, 0.50, 1.0]
+const DUST_BASE_SCALAR := 0.024
+const DUST_QUANTITY_EXPONENT := 0.90
+const DUST_DIVERSITY_EXPONENT := 0.55
+const DUST_STABILITY_WEIGHT := 0.65
+const DUST_TIER_WEIGHT := 0.35
+const DUST_STABILITY_BY_INDEX := {
+	1: 0.000,
+	2: 0.804,
+	3: 0.637,
+	4: 0.734,
+	5: 0.787,
+	6: 0.873,
+	7: 0.850,
+	8: 0.907,
+	9: 0.884,
+	10: 0.913
+}
+const PLANET_SHEET_FRAME_SIZE := Vector2i(100, 100)
 
 const MENU_CLOSED := 0
 const MENU_MAIN := 1
@@ -33,8 +54,15 @@ const MENU_UPGRADES := 2
 const MENU_ELEMENTS := 3
 const MENU_ERA := 4
 const MENU_STATS := 5
+const MENU_SHOP := 6
+const MENU_PLANETS := 7
+const MENU_SETTINGS := 8
+
+const VIEW_ATOM := 0
+const VIEW_WORLD := 1
 
 const ELEMENT_SHEET = preload("res://assests/sprites/elements_01_strip119.png")
+const PLANET_SHEET = preload("res://assests/sprites/planet_A_split25.png")
 const ERA_SHEET = preload("res://assests/sprites/spr_era_strip4.png")
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
 const NEXT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_next_btn.png")
@@ -43,10 +71,16 @@ const CLOSE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_close_btn1.png")
 const ZIN_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zin_btn.png")
 const ZOUT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zout_btn.png")
 const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_background.png")
+const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 
 @onready var tick_system: TickSystem = $TickSystem
+@onready var world_page: Control = $WorldPage
+@onready var world_title: Label = $WorldPage/WorldTitle
+@onready var planet_sprite: TextureRect = $WorldPage/PlanetSprite
+@onready var world_info: Label = $WorldPage/WorldInfo
 @onready var effects_layer: Control = $EffectsLayer
 @onready var fuse_button: TextureButton = $FuseButton
+@onready var fuse_hitbox_debug: Panel = $FuseButton/FuseHitboxDebug
 @onready var menu_overlay: Control = $MenuOverlay
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
@@ -54,12 +88,19 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
 @onready var era_panel: Control = $MenuOverlay/MenuContent/MenuPanels/EraPanel
 @onready var stats_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/StatsPanel
+@onready var shop_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ShopPanel
+@onready var planets_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel
+@onready var settings_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel
 @onready var main_menu_title: Label = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/MainMenuTitle
 @onready var upgrades_title: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesTitle
 @onready var upgrades_info: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesInfo
 @onready var elements_title: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsTitle
 @onready var elements_info: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsInfo
 @onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
+@onready var make_dust_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton
+@onready var make_dust_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton/MakeDustLabel
+@onready var dust_close_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCloseButton
+@onready var dust_close_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCloseButton/DustCloseLabel
 @onready var era_title: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraTitle
 @onready var era_timeline: TextureRect = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraTimeline
 @onready var era_status: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraStatus
@@ -70,10 +111,21 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var stats_title: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsTitle
 @onready var stats_info: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/StatsInfo
 @onready var planetary_stats_info: Label = $MenuOverlay/MenuContent/MenuPanels/StatsPanel/PlanetaryStatsInfo
+@onready var shop_title: Label = $MenuOverlay/MenuContent/MenuPanels/ShopPanel/ShopTitle
+@onready var shop_info: Label = $MenuOverlay/MenuContent/MenuPanels/ShopPanel/ShopInfo
+@onready var planets_title: Label = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel/PlanetsTitle
+@onready var planets_info: Label = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel/PlanetsInfo
+@onready var settings_title: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsTitle
+@onready var settings_info: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsInfo
+@onready var click_boxes_toggle: CheckButton = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/ClickBoxesToggle
+@onready var add_dust_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddDustButton
+@onready var add_orbs_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddOrbsButton
 @onready var upgrades_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/UpgradesMenuButton
 @onready var elements_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ElementsMenuButton
 @onready var era_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/EraMenuButton
+@onready var planets_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/PlanetsMenuButton
 @onready var stats_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/StatsMenuButton
+@onready var shop_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ShopMenuButton
 @onready var settings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/SettingsMenuButton
 @onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/UnlockButton
 @onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeList
@@ -94,6 +146,7 @@ const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_back
 @onready var zin_button: TextureButton = $BottomBar/NavSlots/ZinSlot/ZinButton
 @onready var zout_button: TextureButton = $BottomBar/NavSlots/ZoutSlot/ZoutButton
 @onready var menu_button: TextureButton = $BottomBar/NavSlots/MenuSlot/MenuButton
+@onready var shop_button: TextureButton = $ShopButton
 
 var game_state: GameState
 var element_system: ElementSystem = ElementSystem.new()
@@ -108,6 +161,10 @@ var visual_particles: Array[Dictionary] = []
 var era_requirement_labels: Array[Label] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var menu_mode: int = MENU_CLOSED
+var view_mode: int = VIEW_ATOM
+var debug_show_element_hitboxes := false
+var dust_mode_active := false
+var dust_selection_indices: Dictionary = {}
 
 func _ready() -> void:
 	set_process(true)
@@ -121,18 +178,30 @@ func _ready() -> void:
 	zin_button.pressed.connect(_on_zin_pressed)
 	zout_button.pressed.connect(_on_zout_pressed)
 	menu_button.pressed.connect(_on_menu_pressed)
+	shop_button.pressed.connect(_on_shop_pressed)
 	fuse_button.pressed.connect(_on_smash_pressed)
 	unlock_button.pressed.connect(_on_unlock_pressed)
+	make_dust_button.pressed.connect(_on_make_dust_pressed)
+	dust_close_button.pressed.connect(_on_dust_close_pressed)
 	upgrades_menu_button.pressed.connect(_on_upgrades_menu_pressed)
 	elements_menu_button.pressed.connect(_on_elements_menu_pressed)
 	era_menu_button.pressed.connect(_on_era_menu_pressed)
+	planets_menu_button.pressed.connect(_on_planets_menu_pressed)
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
+	shop_menu_button.pressed.connect(_on_shop_pressed)
+	settings_menu_button.pressed.connect(_on_settings_menu_pressed)
 	era_unlock_button.pressed.connect(_on_era_unlock_pressed)
+	click_boxes_toggle.toggled.connect(_on_click_boxes_toggled)
+	add_dust_button.pressed.connect(_on_add_dust_pressed)
+	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
 
 	_configure_texture_button(prev_button, PREV_BUTTON_TEXTURE)
 	_configure_texture_button(next_button, NEXT_BUTTON_TEXTURE)
 	_configure_texture_button(zin_button, ZIN_BUTTON_TEXTURE)
 	_configure_texture_button(zout_button, ZOUT_BUTTON_TEXTURE)
+	_configure_texture_button(shop_button, SHOP_BUTTON_TEXTURE)
+	_configure_texture_button(make_dust_button, UPGRADE_BUTTON_TEXTURE)
+	_configure_texture_button(dust_close_button, UPGRADE_BUTTON_TEXTURE)
 
 	menu_background.texture = MENU_BACKGROUND_TEXTURE
 	menu_background.modulate = Color(1, 1, 1, 0.7)
@@ -142,35 +211,46 @@ func _ready() -> void:
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
+	planet_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	planet_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	planet_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	era_timeline.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	era_timeline.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	era_timeline.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	era_title.visible = false
 	era_status.visible = false
+	_apply_debug_hitbox_style(fuse_hitbox_debug)
 	profile_button.focus_mode = Control.FOCUS_NONE
 	unlock_button.focus_mode = Control.FOCUS_NONE
 	era_unlock_button.focus_mode = Control.FOCUS_NONE
+	make_dust_button.focus_mode = Control.FOCUS_NONE
+	dust_close_button.focus_mode = Control.FOCUS_NONE
 	_apply_profile_button_style()
 	_apply_currency_box_style(orbs_panel)
 	_apply_currency_box_style(dust_panel)
 	_apply_ui_font()
 	_apply_currency_labels()
 	_apply_menu_text_style()
+	_apply_dust_action_text_style()
 	_apply_menu_button_style(upgrades_menu_button, true)
 	_apply_menu_button_style(elements_menu_button, true)
 	_apply_menu_button_style(era_menu_button, false)
+	_apply_menu_button_style(planets_menu_button, false)
 	_apply_menu_button_style(stats_menu_button, true)
-	_apply_menu_button_style(settings_menu_button, false)
+	_apply_menu_button_style(shop_menu_button, false)
+	_apply_menu_button_style(settings_menu_button, true)
 	_configure_placeholder_slot(orbs_icon_slot)
 	_configure_placeholder_slot(dust_icon_slot)
 	_ensure_era_requirement_labels()
 
 	effects_layer.z_index = 1
+	world_page.z_index = 5
 	fuse_button.z_index = 15
 	menu_overlay.z_index = 30
 	counter_margin.z_index = 20
 	top_bar.z_index = 50
 	bottom_bar.z_index = 50
+	shop_button.z_index = 40
 
 	tick_system.configure(game_state, element_system, upgrades_system)
 	tick_system.tick_processed.connect(_on_tick_processed)
@@ -182,6 +262,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_update_particles(delta)
+
+func _unhandled_input(event: InputEvent) -> void:
+	pass
 
 func _exit_tree() -> void:
 	if game_state != null and SaveManager.save_state(game_state):
@@ -249,6 +332,8 @@ func _apply_ui_font() -> void:
 		return
 
 	level_label.add_theme_font_override("font", ui_font)
+	world_title.add_theme_font_override("font", ui_font)
+	world_info.add_theme_font_override("font", ui_font)
 	orbs_label.add_theme_font_override("font", ui_font)
 	dust_label.add_theme_font_override("font", ui_font)
 	main_menu_title.add_theme_font_override("font", ui_font)
@@ -263,13 +348,26 @@ func _apply_ui_font() -> void:
 	stats_title.add_theme_font_override("font", ui_font)
 	stats_info.add_theme_font_override("font", ui_font)
 	planetary_stats_info.add_theme_font_override("font", ui_font)
+	shop_title.add_theme_font_override("font", ui_font)
+	shop_info.add_theme_font_override("font", ui_font)
+	planets_title.add_theme_font_override("font", ui_font)
+	planets_info.add_theme_font_override("font", ui_font)
+	settings_title.add_theme_font_override("font", ui_font)
+	settings_info.add_theme_font_override("font", ui_font)
+	click_boxes_toggle.add_theme_font_override("font", ui_font)
+	add_dust_button.add_theme_font_override("font", ui_font)
+	add_orbs_button.add_theme_font_override("font", ui_font)
 	upgrades_menu_button.add_theme_font_override("font", ui_font)
 	elements_menu_button.add_theme_font_override("font", ui_font)
 	era_menu_button.add_theme_font_override("font", ui_font)
+	planets_menu_button.add_theme_font_override("font", ui_font)
 	stats_menu_button.add_theme_font_override("font", ui_font)
+	shop_menu_button.add_theme_font_override("font", ui_font)
 	settings_menu_button.add_theme_font_override("font", ui_font)
 	unlock_button.add_theme_font_override("font", ui_font)
 	profile_button.add_theme_font_override("font", ui_font)
+	make_dust_label.add_theme_font_override("font", ui_font)
+	dust_close_label.add_theme_font_override("font", ui_font)
 
 func _apply_currency_box_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
@@ -287,7 +385,11 @@ func _apply_currency_box_style(panel: PanelContainer) -> void:
 
 func _apply_currency_labels() -> void:
 	level_label.add_theme_font_size_override("font_size", 14)
+	world_title.add_theme_font_size_override("font_size", 26)
+	world_info.add_theme_font_size_override("font_size", 18)
 	level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	world_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	world_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	orbs_label.add_theme_font_size_override("font_size", 14)
 	orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	dust_label.add_theme_font_size_override("font_size", 14)
@@ -301,6 +403,9 @@ func _apply_menu_text_style() -> void:
 	era_status.add_theme_font_size_override("font_size", 16)
 	era_requirement_title.add_theme_font_size_override("font_size", 18)
 	stats_title.add_theme_font_size_override("font_size", 26)
+	shop_title.add_theme_font_size_override("font_size", 26)
+	planets_title.add_theme_font_size_override("font_size", 26)
+	settings_title.add_theme_font_size_override("font_size", 26)
 	main_menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	upgrades_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	elements_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
@@ -312,6 +417,21 @@ func _apply_menu_text_style() -> void:
 	era_requirement_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	planetary_stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	shop_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	shop_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	planets_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	planets_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	settings_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	settings_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	click_boxes_toggle.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	add_dust_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	add_orbs_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _apply_dust_action_text_style() -> void:
+	make_dust_label.add_theme_font_size_override("font_size", 14)
+	make_dust_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
+	dust_close_label.add_theme_font_size_override("font_size", 14)
+	dust_close_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
 
 func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
 	button.focus_mode = Control.FOCUS_NONE
@@ -324,7 +444,28 @@ func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
 func _configure_placeholder_slot(slot: ColorRect) -> void:
 	slot.color = Color8(25, 25, 25, 180)
 
+func _apply_debug_hitbox_style(panel: Panel) -> void:
+	if panel == null:
+		return
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = DEBUG_HITBOX_COLOR
+	panel.add_theme_stylebox_override("panel", style)
+
+func _refresh_debug_hitboxes() -> void:
+	fuse_hitbox_debug.visible = debug_show_element_hitboxes and view_mode == VIEW_ATOM
+	for element_id in element_menu_tiles.keys():
+		var tile: ElementMenuTile = element_menu_tiles[element_id]
+		tile.set_debug_hitbox_visible(debug_show_element_hitboxes)
+
 func _set_menu_mode(new_mode: int) -> void:
+	if new_mode != MENU_ELEMENTS:
+		dust_mode_active = false
 	menu_mode = new_mode
 	menu_overlay.visible = menu_mode != MENU_CLOSED
 	main_menu_panel.visible = menu_mode == MENU_MAIN
@@ -332,7 +473,25 @@ func _set_menu_mode(new_mode: int) -> void:
 	elements_panel.visible = menu_mode == MENU_ELEMENTS
 	era_panel.visible = menu_mode == MENU_ERA
 	stats_panel.visible = menu_mode == MENU_STATS
+	shop_panel.visible = menu_mode == MENU_SHOP
+	planets_panel.visible = menu_mode == MENU_PLANETS
+	settings_panel.visible = menu_mode == MENU_SETTINGS
 	_update_menu_button_texture()
+
+func _set_view_mode(new_mode: int) -> void:
+	if view_mode == new_mode:
+		return
+	view_mode = new_mode
+	if view_mode == VIEW_WORLD:
+		_clear_visual_particles()
+	_refresh_debug_hitboxes()
+
+func _clear_visual_particles() -> void:
+	for particle in visual_particles:
+		var node: TextureRect = particle.get("node", null)
+		if is_instance_valid(node):
+			node.queue_free()
+	visual_particles.clear()
 
 func _ensure_era_requirement_labels() -> void:
 	if not era_requirement_labels.is_empty():
@@ -440,6 +599,7 @@ func _refresh_ui() -> void:
 	_sync_resource_displays()
 	_sync_upgrade_buttons()
 	_sync_element_menu_tiles()
+	_refresh_world_ui()
 
 	level_label.text = "Lv. %d" % game_state.player_level
 	orbs_label.text = "ORBS %s" % str(game_state.orbs)
@@ -456,13 +616,19 @@ func _refresh_ui() -> void:
 	fuse_button.texture_hover = current_icon
 	fuse_button.texture_disabled = current_icon
 
-	_set_button_enabled_state(prev_button, game_state.has_adjacent_unlocked_element(-1))
-	_set_button_enabled_state(next_button, game_state.has_adjacent_unlocked_element(1))
+	world_page.visible = view_mode == VIEW_WORLD
+	fuse_button.visible = view_mode == VIEW_ATOM
+	effects_layer.visible = view_mode == VIEW_ATOM
+	shop_button.visible = false
 
-	var first_tier_complete := game_state.has_unlocked_element_count(FIRST_TIER_UNLOCK_COUNT)
-	zin_button.visible = first_tier_complete
-	zout_button.visible = first_tier_complete
-	if first_tier_complete:
+	if view_mode == VIEW_WORLD:
+		_set_button_enabled_state(prev_button, false)
+		_set_button_enabled_state(next_button, false)
+		_set_button_enabled_state(zin_button, true)
+		_set_button_enabled_state(zout_button, false)
+	else:
+		_set_button_enabled_state(prev_button, game_state.has_adjacent_unlocked_element(-1))
+		_set_button_enabled_state(next_button, game_state.has_next_selectable_element_in_visible_sections())
 		_set_button_enabled_state(zin_button, false)
 		_set_button_enabled_state(zout_button, game_state.has_unlocked_era(1))
 
@@ -474,6 +640,11 @@ func _refresh_ui() -> void:
 
 	var era_menu_enabled := game_state.is_era_menu_unlocked()
 	_apply_menu_button_style(era_menu_button, era_menu_enabled)
+	var planets_enabled := game_state.has_unlocked_era(1)
+	_apply_menu_button_style(planets_menu_button, planets_enabled)
+	var shop_enabled := game_state.is_element_unlocked("ele_H")
+	_apply_menu_button_style(shop_menu_button, shop_enabled)
+	shop_button.visible = shop_enabled and menu_mode == MENU_CLOSED
 
 	stats_info.text = "Current Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d" % [
 		current_name,
@@ -483,28 +654,89 @@ func _refresh_ui() -> void:
 	]
 	planetary_stats_info.visible = game_state.has_unlocked_era(1)
 	if planetary_stats_info.visible:
-		planetary_stats_info.text = "Planetary Stats\nPlanets unlocked: 0\nPlanet systems coming soon"
+		planetary_stats_info.text = "Planetary Stats\nPlanets unlocked: 1\nPlanet systems coming soon"
+	shop_info.text = "Shop inventory is not implemented yet.\nThis panel will hold orb and meta purchases."
+	planets_info.text = "Planets menu is not implemented yet.\nPlanet management will be added here later."
+	settings_info.text = "Developer Tools"
+	click_boxes_toggle.button_pressed = debug_show_element_hitboxes
 
 	var next_unlock: Dictionary = game_state.get_next_unlock_element()
+	var dust_preview: DigitMaster = _calculate_dust_preview()
+	var selected_batch_count := _get_selected_dust_element_ids().size()
 	if next_unlock.is_empty():
-		elements_info.text = "Selected: %s\nAll elements unlocked." % current_name
+		if dust_mode_active:
+			elements_info.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
+				selected_batch_count,
+				dust_preview.big_to_short_string()
+			]
+		else:
+			elements_info.text = "Selected: %s\nAll elements unlocked." % current_name
 		unlock_button.text = "All elements unlocked"
 		unlock_button.disabled = true
+		unlock_button.visible = false
 	else:
 		var unlock_id := str(next_unlock.get("id", ""))
 		var unlock_cost: DigitMaster = next_unlock["cost"]
-		elements_info.text = "Selected: %s\nProduces: %s\nNext: %s\nRequires: %s %s" % [
-			current_name,
-			produced_name,
-			str(next_unlock.get("name", unlock_id)),
-			unlock_cost.big_to_short_string(),
-			game_state.get_resource_name(unlock_id)
-		]
-		unlock_button.text = "Unlock %s" % str(next_unlock.get("name", unlock_id))
-		unlock_button.disabled = not game_state.can_unlock_next()
+		if not game_state.is_next_unlock_within_visible_sections():
+			if dust_mode_active:
+				elements_info.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
+					selected_batch_count,
+					dust_preview.big_to_short_string()
+				]
+			else:
+				elements_info.text = "Selected: %s\nProduces: %s\nNext section is locked." % [
+					current_name,
+					produced_name
+				]
+			unlock_button.text = "Next section locked"
+			unlock_button.disabled = true
+			unlock_button.visible = false
+		else:
+			if dust_mode_active:
+				elements_info.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
+					selected_batch_count,
+					dust_preview.big_to_short_string()
+				]
+			else:
+				elements_info.text = "Selected: %s\nProduces: %s\nNext: %s\nRequires: %s %s" % [
+					current_name,
+					produced_name,
+					str(next_unlock.get("name", unlock_id)),
+					unlock_cost.big_to_short_string(),
+					game_state.get_resource_name(unlock_id)
+				]
+			unlock_button.text = "Unlock %s" % str(next_unlock.get("name", unlock_id))
+			unlock_button.disabled = not game_state.can_unlock_next()
+			unlock_button.visible = true
+		if dust_mode_active:
+			unlock_button.disabled = true
+
+	make_dust_button.visible = true
+	dust_close_button.visible = dust_mode_active
+	make_dust_label.text = "MAKE DUST"
+	if dust_mode_active:
+		make_dust_label.text = "%s DUST" % dust_preview.big_to_short_string()
+	make_dust_button.disabled = dust_mode_active and dust_preview.is_zero()
+	make_dust_button.modulate = ENABLED_BUTTON_MODULATE if not make_dust_button.disabled else DISABLED_BUTTON_MODULATE
+	dust_close_button.modulate = ENABLED_BUTTON_MODULATE
 
 	_refresh_era_ui()
+	_refresh_debug_hitboxes()
 	_update_menu_button_texture()
+
+func _refresh_world_ui() -> void:
+	var planet: Dictionary = game_state.get_current_planet()
+	if planet.is_empty():
+		world_title.text = "World"
+		world_info.text = "No planets available."
+		planet_sprite.texture = null
+		return
+
+	var planet_level := int(planet.get("level", 1))
+	var planet_name := str(planet.get("name", "Planet"))
+	world_title.text = "World"
+	world_info.text = "%s\nLv. %d" % [planet_name, planet_level]
+	planet_sprite.texture = _make_planet_icon(planet_level)
 
 func _refresh_era_ui() -> void:
 	var unlocked_era_index := game_state.get_unlocked_era_index()
@@ -647,7 +879,135 @@ func _sync_element_menu_tiles() -> void:
 
 	for element_id in element_menu_tiles.keys():
 		var tile: ElementMenuTile = element_menu_tiles[element_id]
-		tile.refresh(game_state.current_element_id)
+		var dust_fraction := 0.0
+		if dust_mode_active:
+			dust_fraction = _get_dust_selection_fraction(element_id)
+		tile.refresh(game_state.current_element_id, dust_fraction)
+		tile.set_debug_hitbox_visible(debug_show_element_hitboxes)
+
+func _get_dust_selection_index(element_id: String) -> int:
+	return int(dust_selection_indices.get(element_id, 0))
+
+func _get_dust_selection_fraction(element_id: String) -> float:
+	var selection_index := clampi(_get_dust_selection_index(element_id), 0, DUST_SELECTION_STEPS.size() - 1)
+	return float(DUST_SELECTION_STEPS[selection_index])
+
+func _cycle_dust_selection(element_id: String) -> void:
+	var current_index := _get_dust_selection_index(element_id)
+	var next_index := (current_index + 1) % DUST_SELECTION_STEPS.size()
+	dust_selection_indices[element_id] = next_index
+
+func _get_selected_dust_amounts() -> Dictionary:
+	var selected_amounts := {}
+	for element_id in element_menu_tiles.keys():
+		var fraction := _get_dust_selection_fraction(element_id)
+		if fraction <= 0.0:
+			continue
+		if not game_state.is_element_unlocked(element_id):
+			continue
+		var amount: DigitMaster = game_state.get_resource_amount(element_id)
+		if amount.is_zero():
+			continue
+		selected_amounts[element_id] = amount.multiply_scalar(fraction)
+	return selected_amounts
+
+func _get_selected_dust_element_ids() -> Array[String]:
+	var selected_ids: Array[String] = []
+	for element_id in _get_selected_dust_amounts().keys():
+		selected_ids.append(str(element_id))
+	selected_ids.sort()
+	return selected_ids
+
+func _get_highest_unlocked_atomic_number() -> int:
+	var highest_index := 1
+	for element_id in game_state.get_unlocked_real_element_ids():
+		var element: Dictionary = game_state.get_element(element_id)
+		highest_index = maxi(highest_index, int(element.get("index", 1)))
+	return highest_index
+
+func _get_stability_score(element_index: int) -> float:
+	if DUST_STABILITY_BY_INDEX.has(element_index):
+		return float(DUST_STABILITY_BY_INDEX[element_index])
+	var tier_ratio := sqrt(clampf(float(element_index) / 118.0, 0.0, 1.0))
+	return clampf(0.45 + (0.45 * tier_ratio), 0.0, 1.0)
+
+func _get_hybrid_quality(element_id: String, highest_unlocked_atomic_number: int) -> float:
+	var element: Dictionary = game_state.get_element(element_id)
+	var atomic_number := int(element.get("index", 1))
+	var tier_score := sqrt(clampf(float(atomic_number) / float(maxi(1, highest_unlocked_atomic_number)), 0.0, 1.0))
+	var stability_score := _get_stability_score(atomic_number)
+	return clampf(
+		(DUST_STABILITY_WEIGHT * stability_score) + (DUST_TIER_WEIGHT * tier_score),
+		0.0,
+		1.0
+	)
+
+func _calculate_dust_preview() -> DigitMaster:
+	var selected_amounts: Dictionary = _get_selected_dust_amounts()
+	if selected_amounts.is_empty():
+		return DigitMaster.zero()
+
+	var total_quantity := DigitMaster.zero()
+	var max_exponent := -999999
+	for element_id_variant in selected_amounts.keys():
+		var amount: DigitMaster = selected_amounts[element_id_variant]
+		if amount.is_zero():
+			continue
+		total_quantity = total_quantity.add(amount)
+		max_exponent = maxi(max_exponent, amount.exponent)
+
+	if total_quantity.is_zero():
+		return DigitMaster.zero()
+
+	var highest_unlocked_atomic_number := _get_highest_unlocked_atomic_number()
+	var scaled_quantity_sum := 0.0
+	var weighted_quality_sum := 0.0
+	for element_id_variant in selected_amounts.keys():
+		var element_id := str(element_id_variant)
+		var amount: DigitMaster = selected_amounts[element_id]
+		if amount.is_zero():
+			continue
+		var scaled_quantity := amount.mantissa * pow(10.0, amount.exponent - max_exponent)
+		scaled_quantity_sum += scaled_quantity
+		weighted_quality_sum += scaled_quantity * _get_hybrid_quality(element_id, highest_unlocked_atomic_number)
+
+	if scaled_quantity_sum <= 0.0:
+		return DigitMaster.zero()
+
+	var avg_h := weighted_quality_sum / scaled_quantity_sum
+	var raw_dust := total_quantity.power(DUST_QUANTITY_EXPONENT)
+	raw_dust = raw_dust.multiply_scalar(
+		DUST_BASE_SCALAR
+		* pow(float(selected_amounts.size()), DUST_DIVERSITY_EXPONENT)
+		* avg_h
+	)
+	if raw_dust.compare(total_quantity) > 0:
+		return total_quantity
+	return raw_dust
+
+func _perform_dust_conversion() -> bool:
+	var selected_amounts: Dictionary = _get_selected_dust_amounts()
+	if selected_amounts.is_empty():
+		return false
+
+	var dust_preview: DigitMaster = _calculate_dust_preview()
+	if dust_preview.is_zero():
+		return false
+
+	for element_id_variant in selected_amounts.keys():
+		var element_id := str(element_id_variant)
+		var amount: DigitMaster = selected_amounts[element_id]
+		if not game_state.can_afford_resource(element_id, amount):
+			return false
+
+	for element_id_variant in selected_amounts.keys():
+		var element_id := str(element_id_variant)
+		var amount: DigitMaster = selected_amounts[element_id]
+		if not game_state.spend_resource(element_id, amount):
+			return false
+
+	game_state.produce_resource(GameState.DUST_RESOURCE_ID, dust_preview)
+	return true
 
 func _autosave_if_needed() -> void:
 	if game_state.tick_count - game_state.last_save_tick < AUTO_SAVE_INTERVAL_TICKS:
@@ -661,6 +1021,16 @@ func _make_element_icon(element_index: int) -> AtlasTexture:
 	icon.region = Rect2(
 		Vector2(element_index * ELEMENT_SHEET_FRAME_SIZE.x, 0),
 		Vector2(ELEMENT_SHEET_FRAME_SIZE.x, ELEMENT_SHEET_FRAME_SIZE.y)
+	)
+	return icon
+
+func _make_planet_icon(planet_level: int) -> AtlasTexture:
+	var frame_index := clampi(planet_level - 1, 0, 24)
+	var icon := AtlasTexture.new()
+	icon.atlas = PLANET_SHEET
+	icon.region = Rect2(
+		Vector2(frame_index * PLANET_SHEET_FRAME_SIZE.x, 0),
+		Vector2(PLANET_SHEET_FRAME_SIZE.x, PLANET_SHEET_FRAME_SIZE.y)
 	)
 	return icon
 
@@ -705,6 +1075,8 @@ func _spawn_proton(target_element_id: String) -> void:
 	_spawn_particle(_make_element_icon(0), proton_start, direction * speed, PROTON_PARTICLE_SIZE, "proton", target_element_id)
 
 func _spawn_particle(texture: Texture2D, center_position: Vector2, velocity: Vector2, icon_size: float, kind: String, target_element_id: String) -> void:
+	if view_mode != VIEW_ATOM:
+		return
 	var rect := TextureRect.new()
 	rect.texture = texture
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -723,6 +1095,8 @@ func _spawn_particle(texture: Texture2D, center_position: Vector2, velocity: Vec
 	})
 
 func _update_particles(delta: float) -> void:
+	if view_mode != VIEW_ATOM:
+		return
 	if visual_particles.is_empty():
 		return
 
@@ -790,6 +1164,15 @@ func _on_manual_smash_resolved(result: Dictionary) -> void:
 func _on_auto_smash_requested(request: Dictionary) -> void:
 	var target_element_id := str(request.get("target_element_id", ""))
 	var spawn_count := int(request.get("spawn_count", 1))
+	if view_mode != VIEW_ATOM:
+		var any_resolved := false
+		for _i in range(spawn_count):
+			var result: Dictionary = element_system.resolve_auto_smash(game_state, upgrades_system, target_element_id)
+			if not result.is_empty():
+				any_resolved = true
+		if any_resolved:
+			_refresh_ui()
+		return
 	for _i in range(spawn_count):
 		_spawn_proton(target_element_id)
 
@@ -800,12 +1183,20 @@ func _on_next_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": 1})
 
 func _on_zin_pressed() -> void:
-	pass
+	if view_mode != VIEW_WORLD:
+		return
+	_set_view_mode(VIEW_ATOM)
+	_refresh_ui()
 
 func _on_zout_pressed() -> void:
-	pass
+	if not game_state.has_unlocked_era(1):
+		return
+	_set_view_mode(VIEW_WORLD)
+	_refresh_ui()
 
 func _on_smash_pressed() -> void:
+	if view_mode != VIEW_ATOM:
+		return
 	tick_system.enqueue_action("manual_smash")
 
 func _on_menu_pressed() -> void:
@@ -832,17 +1223,63 @@ func _on_era_menu_pressed() -> void:
 	_set_menu_mode(MENU_ERA)
 	_refresh_ui()
 
+func _on_planets_menu_pressed() -> void:
+	if not game_state.has_unlocked_era(1):
+		return
+	_set_menu_mode(MENU_PLANETS)
+	_refresh_ui()
+
 func _on_stats_menu_pressed() -> void:
 	_set_menu_mode(MENU_STATS)
 	_refresh_ui()
 
+func _on_shop_pressed() -> void:
+	if not game_state.is_element_unlocked("ele_H"):
+		return
+	_set_menu_mode(MENU_SHOP)
+	_refresh_ui()
+
+func _on_settings_menu_pressed() -> void:
+	_set_menu_mode(MENU_SETTINGS)
+	_refresh_ui()
+
 func _on_element_tile_pressed(element_id: String) -> void:
+	if dust_mode_active:
+		_cycle_dust_selection(element_id)
+		_refresh_ui()
+		return
 	if game_state.select_element(element_id):
 		_set_menu_mode(MENU_CLOSED)
 		_refresh_ui()
 
 func _on_unlock_pressed() -> void:
 	tick_system.enqueue_action("unlock_next")
+
+func _on_make_dust_pressed() -> void:
+	if not dust_mode_active:
+		dust_mode_active = true
+		_refresh_ui()
+		return
+
+	if _perform_dust_conversion():
+		dust_mode_active = false
+		_refresh_ui()
+
+func _on_dust_close_pressed() -> void:
+	dust_mode_active = false
+	_refresh_ui()
+
+func _on_click_boxes_toggled(toggled_on: bool) -> void:
+	debug_show_element_hitboxes = toggled_on
+	_refresh_debug_hitboxes()
+
+func _on_add_dust_pressed() -> void:
+	game_state.produce_resource(GameState.DUST_RESOURCE_ID, DigitMaster.new(1000.0))
+	_refresh_ui()
+
+func _on_add_orbs_pressed() -> void:
+	game_state.orbs += 1000
+	_refresh_ui()
 
 func _on_era_unlock_pressed() -> void:
 	if game_state.unlock_next_era():

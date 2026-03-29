@@ -1,106 +1,117 @@
 # Dust Scaling Comparison
 
-This revision assumes Dust will eventually support both:
+This revision replaces the older three-method comparison with the six formulas currently under consideration.
 
-- manual conversion from the `Elements` menu
-- automated conversion through a future system that periodically consumes configured element batches
+All six formulas are built around the same design requirements:
 
-To stay automation-friendly, each method below is described as a deterministic batch-value formula that can be reused by both manual and auto-conversion flows.
+1. Dust can never exceed the elements consumed.
+2. Variety must increase Dust output.
+3. A 10-element batch with `1,000,000` of each element should land around the `100k` Dust range.
+4. The formula must be non-linear.
+5. The formula must be explainable to the player.
 
-## Concept Review
+## Shared Terms
 
-You clarified an important constraint: Dust should **not** overproduce in the early game.
+- `q_i`: amount of element `i` consumed
+- `Q = Σ q_i`: total elements consumed
+- `D`: number of distinct elements in the batch
+- `a_i`: atomic number / element index of element `i`
+- `A`: highest atomic number currently unlocked
+- `avg_atomic = Σ(q_i * a_i) / Q`
+- `q_min`: smallest non-zero selected element amount
+- `s_i`: normalized stability score for element `i`, derived from binding energy per nucleon and scaled to `0..1`
+- `t_i = sqrt(a_i / A)`: normalized tier score
+- `T = 0.5 + 0.5 * sqrt(avg_atomic / A)`: simple tier bonus used by the first family of formulas
+- `h_i = 0.65 * s_i + 0.35 * t_i`: hybrid material quality score used by the second family
+- `avg_h = Σ(q_i * h_i) / Q`: weighted average hybrid quality
 
-That changes the target behavior significantly. A good Dust formula now needs to:
+All six formulas use the same hard cap:
 
-- stay below raw input mass early
-- become more rewarding later as element tiers and batch quality improve
-- avoid exploding too hard once automation unlocks
+```text
+Dust = min(Q, floor(raw_dust))
+```
 
-Because of that, the previous "Exponential Early Ramp" version was too generous for your current design goal. Method 1 has now been revised into an **Exponential Late Ramp** model: it starts below mass with an `early_scalar`, then grows exponentially with higher-tier batches and eventually overtakes raw mass later in progression.
+That cap is the final step and enforces the "never more Dust than elements consumed" rule.
+
+## Benchmark Scenario
+
+Unless otherwise stated, the benchmark used below is:
+
+- first 10 real elements selected
+- `1,000,000` of each
+- `Q = 10,000,000`
+- `D = 10`
+- first-family tier factor `T ≈ 0.871`
+- second-family average hybrid score `avg_h ≈ 0.60`
+
+The benchmark numbers are approximate and intended for comparison, not final balance values.
+
+## Formula Families
+
+- Formulas 1-3 use element quantity, section tier, and variety only.
+- Formulas 4-6 add normalized nuclear stability as part of the element quality score.
 
 ## Comparison Table
 
-| Category | Method 1: Exponential Late Ramp | Method 2: Diminishing Quantity, Stronger Variety | Method 3: Set-Collection / Entropy Bonus |
-| --- | --- | --- | --- |
-| Core Idea | Dust starts below raw input mass, then ramps upward exponentially as higher-tier elements enter the batch. | Dust scales with weighted mass after applying diminishing returns to each element stack, then gets a stronger diversity multiplier. | Dust scales from a blend of total mass, highest-tier element used, and explicit rewards for using more unique element types. |
-| Automation-Ready Version | Auto-conversion repeatedly evaluates the configured batch and awards Dust using an exponential tier multiplier that begins conservative and grows later. | Auto-conversion repeatedly evaluates the configured batch, but diminishing returns prevent giant stockpiles from turning into runaway Dust. | Auto-conversion repeatedly evaluates the configured batch and strongly rewards recipe quality, making the auto-loadout itself part of the strategy. |
-| Formula | `Dust = floor(M * early_scalar * growth_base^(highest_weight / pivot_weight) * (1 + diversity_bonus * (D - 1)))` | `Dust = floor((sum(q_e^0.5 * w_e)) * (1 + 0.20 * (D - 1)))` | `Dust = floor(M * 0.35 + highest_weight * D^2 + set_bonus)` |
-| Default Tuning Example | `early_scalar = 0.55`, `growth_base = 1.6`, `pivot_weight = 30`, `diversity_bonus = 0.05` | `quantity_exponent = 0.5`, `diversity_bonus = 0.20` | `mass_scalar = 0.35`, `diversity_exponent = 2`, `set_bonus = +50 at 3, 5, and 8 types` |
-| Early-Game Goal Fit | Good. Specifically tuned to stay below raw mass before higher-tier batches show up. | Good. Naturally conservative in the early game. | Fair. Can still overshoot early if the bonus structure is too generous. |
-| Suggested Auto Conversion Flow | Consume a fixed configured batch every automation cycle. Early batches stay tame, while better late batches scale harder. | Consume a fixed configured batch every automation cycle. | Consume a fixed configured batch every automation cycle. |
-| Manual Experience | Easy to understand at a high level: early batches are modest, later batches become noticeably better. | Understandable, but players benefit from a live preview because value is not linear. | Most rewarding for theory-crafting, but hardest to estimate without a preview. |
-| Automated Experience | Better than an early-overpay exponential, but still likely to need automation caps or batch limits late. | Stable over time because larger piles do not scale too explosively under automation. | Feels like tuning a machine recipe, but could become solvable into one dominant batch pattern. |
-| Amount Scaling | Strong. Total mass matters a lot, but the biggest gains come from better-tier inputs over time. | Moderate. More quantity helps, but each additional stack contributes less than the last. | Moderate. Quantity matters, but it is only one part of the final score. |
-| Heavy Element Scaling | Very strong. Higher-tier inputs are what push the exponential ramp upward. | Strong. Heavy elements remain very valuable even after diminishing returns. | Very strong. Heavy elements matter through both total mass and the highest-weight bonus. |
-| Diversity Scaling | Mild to moderate. Diversity helps, but tier is the main growth driver. | Strong. Variety is a major multiplier, so mixed batches feel rewarding. | Very strong. Variety is one of the main drivers of Dust value. |
-| Automation Stability | Medium. Safer than the old early-overpay version, but still riskier than Method 2. | High. Best at preventing automation from flattening the rest of progression. | Medium. Strategic and interesting, but more likely to need retuning once automation enters the game. |
-| Best Auto Behavior | Best if Dust should start conservative, then become a stronger auto-conversion reward later. | Best if automation should stay balanced and require occasional optimization. | Best if automation should feel like building an efficient conversion recipe. |
-| UI Preview Needs | Medium. Players will benefit from seeing when a batch starts crossing from "sub-mass" into "above-mass" value. | Medium. Players benefit from seeing how diminishing returns affect output. | High. Players will likely need a full predicted Dust preview and maybe recipe hints. |
-| Player Readability | Medium to high. Easier than Method 3, and conceptually cleaner than the previous early-overpay version. | Medium. Players understand the idea, but the square-root behavior is less obvious. | Medium to low. Players may need UI previews because the result comes from several moving parts. |
-| Strategy Depth | Medium. Players are incentivized to bring in better-tier ingredients rather than just more low-tier matter. | Medium. Players balance stack size versus variety more meaningfully. | High. Players are encouraged to optimize batch composition for bonus value. |
-| Balance Risk | Medium to high. Safer than early overproduction, but still capable of spiking once high-tier automation begins. | Lowest risk. Diminishing returns naturally slow down stockpile abuse in both manual and auto modes. | Medium to high risk. Can produce strong best recipe patterns if not tuned carefully. |
-| Best Use Case | Best if Dust should begin restrained and then grow into a more rewarding late-progress conversion system. | Best for a long-term prestige/meta currency that needs stable balance. | Best if Dust conversion is meant to be a strategic mini-system on its own. |
-| Early Game Example | `100 H + 50 He` -> `119 Dust` | `100 H + 50 He` -> `28 Dust` | `100 H + 50 He` -> `78 Dust` |
-| Mid Game Example | `200 H + 150 O + 50 Ne` -> `1345 Dust` | `200 H + 150 O + 50 Ne` -> `255 Dust` | `200 H + 150 O + 50 Ne` -> `805 Dust` |
-| Late Game Example | `300 H + 200 C + 150 Fe + 25 Au` -> `16,107 Dust` | `300 H + 200 C + 150 Fe + 25 Au` -> `1304 Dust` | `300 H + 200 C + 150 Fe + 25 Au` -> `3895 Dust` |
-| Automation Example Over Time | If auto-conversion runs once per minute on `200 H + 150 O + 50 Ne`, it yields `1345 Dust/min`. After 10 minutes, that is `13,450 Dust` if supply holds. | If auto-conversion runs once per minute on `200 H + 150 O + 50 Ne`, it yields `255 Dust/min`. After 10 minutes, that is `2,550 Dust` if supply holds. | If auto-conversion runs once per minute on `200 H + 150 O + 50 Ne`, it yields `805 Dust/min`. After 10 minutes, that is `8,050 Dust` if supply holds. |
-| Main Advantage | It respects the "don't overproduce early" rule while still giving a clear sense of improving Dust efficiency later. | Best balance profile while still rewarding mixed and higher-tier batches. | Most interesting and expressive for players who like optimization. |
-| Main Drawback | Still needs careful automation tuning once the player starts feeding high-tier ingredients into it. | Harder to explain cleanly without a preview readout in the UI. | Hardest to balance and most likely to need iteration after playtesting. |
-| Recommended If | You want Dust to start conservative, then feel more powerful later without immediately overpaying. | You want Dust to stay meaningful over a long progression arc, including after automation. | You want the Elements menu and later automation systems to become a real batch-building puzzle. |
+| Category | Formula 1: Saturating Efficiency | Formula 2: Power-Law Throughput | Formula 3: Matched Stack | Formula 4: Weighted Contribution Sum | Formula 5: Batch Power Hybrid | Formula 6: Matched Set Hybrid |
+| --- | --- | --- | --- | --- | --- | --- |
+| Core Idea | Total elements drive Dust, but efficiency saturates and variety adds a readable multiplier. | Treat the whole batch as a sublinear throughput curve with variety and tier layered on top. | Reward balanced multi-element batches by keying off the smallest stack and strong variety scaling. | Sum per-element contributions using a hybrid of stability and tier, then apply a variety bonus. | Evaluate the whole batch with sublinear total quantity, variety power scaling, and weighted hybrid quality. | Reward matched sets using the smallest stack, strong variety scaling, and hybrid element quality. |
+| Formula | `raw_dust = Q * 0.011 * (Q / (Q + 5000))^(1/3) * (ln(1 + D) / ln(11)) * T` | `raw_dust = 0.023 * Q^0.90 * (1 + 0.16 * (D - 1)) * T` | `raw_dust = 0.00073 * q_min * D^2.2 * T` | `raw_dust = 0.15 * (1 + 0.12 * ln(1 + D)) * Σ(q_i^0.82 * h_i)` | `raw_dust = 0.024 * Q^0.90 * D^0.55 * avg_h` | `raw_dust = 0.063 * q_min^0.78 * D^1.75 * avg_h` |
+| Main Non-Linearity | Saturating quantity term `((Q / (Q + 5000))^(1/3))` | Total quantity power term `Q^0.90` | Variety power `D^2.2` and dependence on `q_min` | Per-element diminishing returns `q_i^0.82` | Total quantity power `Q^0.90` and variety power `D^0.55` | Smallest-stack power `q_min^0.78` and variety power `D^1.75` |
+| Variety Scaling | `ln(1 + D) / ln(11)` | `1 + 0.16 * (D - 1)` | `D^2.2` | `1 + 0.12 * ln(1 + D)` | `D^0.55` | `D^1.75` |
+| Tier / Stability Input | Simple tier factor `T` | Simple tier factor `T` | Simple tier factor `T` | Per-element hybrid score `h_i = 0.65 * s_i + 0.35 * t_i` | Weighted batch average `avg_h` | Average hybrid score across selected elements |
+| Benchmark Output | `~96k Dust` | `~97k Dust` | `~101k Dust` | `~96k Dust` | `~102k Dust` | `~101k Dust` |
+| Player-Facing Display | `Dust = Total Elements × Quantity Efficiency × Variety Bonus × Tier Bonus` | `Dust = Total Elements^0.90 × Variety Bonus × Tier Bonus` | `Dust = Smallest Stack × Variety Bonus × Tier Bonus` | `Dust = Sum of Element Contributions × Variety Bonus` | `Dust = Total Elements^0.90 × Variety Bonus × Material Quality` | `Dust = Matched Stack^0.78 × Variety Bonus × Material Quality` |
+| User Readability | High | Medium | High | Medium-High | Medium | High |
+| Recipe Sensitivity | Medium | Low-Medium | High | Medium-High | Medium | High |
+| Automation Stability | High | High | Medium | High | High | Medium |
+| Main Strength | Best general-purpose formula if the player should understand why a batch is good. | Easiest to implement and tune with a small number of parameters. | Strong identity if Dust should reward well-balanced sets. | Best way to make individual elements matter while still keeping the formula explainable. | Smoothest hybrid option for automation and balancing. | Strongest "recipe-building" hybrid formula. |
+| Main Risk | The quantity saturation term may feel opaque without a preview. | Can feel too abstract because element-specific contributions are hidden inside the batch average. | Punishes uneven batches hard. | Slightly more computationally involved and harder to explain than Formula 1. | Less expressive per element than Formula 4. | Can frustrate players if one lagging element collapses the whole batch. |
+| Best Fit | Default candidate if the system should be readable and robust. | Best if simplicity and stable automation behavior matter most. | Best if Dust should feel like assembling a matched set. | Best if Dust should reflect both recipe quality and real element identity. | Best hybrid formula for long-term balance and automation. | Best hybrid formula if Dust conversion should become a deeper optimization puzzle. |
 
-## Shared Definitions
+## Requirement Check
 
-- `q_e`: quantity of element `e` consumed
-- `w_e`: atomic weight proxy for element `e` based on its `index`
-- `D`: number of different element types used in the batch
-- `M = sum(q_e * w_e)`
-- `highest_weight`: highest atomic weight among the elements in the batch
-- `pivot_weight`: the tier scale that controls how quickly the exponential ramp grows
-- `set_bonus`: fixed bonus awarded when the batch reaches certain diversity thresholds
-- Proton is excluded from Dust conversion
+| Requirement | Formula 1 | Formula 2 | Formula 3 | Formula 4 | Formula 5 | Formula 6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Never exceed input | Yes, by final cap | Yes, by final cap | Yes, by final cap | Yes, by final cap | Yes, by final cap | Yes, by final cap |
+| Variety increases Dust | Yes | Yes | Yes | Yes | Yes | Yes |
+| Around `100k` on `10 x 1,000,000` | Yes, `~96k` | Yes, `~97k` | Yes, `~101k` | Yes, `~96k` | Yes, `~102k` | Yes, `~101k` |
+| Non-linear | Yes | Yes | Yes | Yes | Yes | Yes |
+| Can be shown to player | Yes | Yes | Yes | Yes | Yes | Yes |
 
-## Revised Findings
+## Stability Data Note
 
-- Method 1 now follows the updated design goal much better: it no longer overpays early, but it still creates a clear sense of Dust conversion improving later.
-- Method 2 remains the safest long-term economy option, especially once automation is introduced.
-- Method 3 remains the most strategic option, but it is still better suited for a recipe-optimization system than a first implementation.
+Formulas 4-6 require a per-element stability table. A gameplay-ready representation would look like:
 
-## Method 1 Breakpoints
+```json
+{
+  "ele_H":  { "isotope": "1H",  "be_per_nucleon_mev": 0.000, "stability_norm": 0.000 },
+  "ele_He": { "isotope": "4He", "be_per_nucleon_mev": 7.074, "stability_norm": 0.804 },
+  "ele_Li": { "isotope": "7Li", "be_per_nucleon_mev": 5.606, "stability_norm": 0.637 }
+}
+```
 
-Using the current Method 1 defaults:
+Representative first-section values discussed so far:
 
-- `early_scalar = 0.55`
-- `growth_base = 1.6`
-- `pivot_weight = 30`
-- `diversity_bonus = 0.05`
+| Element | Example isotope | Approx. BE / nucleon (MeV) | `stability_norm` |
+| --- | --- | ---: | ---: |
+| H | `1H` | `0.000` | `0.000` |
+| He | `4He` | `7.074` | `0.804` |
+| Li | `7Li` | `5.606` | `0.637` |
+| Be | `9Be` | `6.463` | `0.734` |
+| B | `11B` | `6.928` | `0.787` |
+| C | `12C` | `7.680` | `0.873` |
+| N | `14N` | `7.476` | `0.850` |
+| O | `16O` | `7.976` | `0.907` |
+| F | `19F` | `7.780` | `0.884` |
+| Ne | `20Ne` | `8.032` | `0.913` |
 
-The effective multiplier over raw input mass is:
+These stability values should be treated as tunable gameplay inputs until they are pulled from a finalized authoritative data pass.
 
-`Dust / Mass = 0.55 * 1.6^(highest_weight / 30) * (1 + 0.05 * (D - 1))`
+## Recommendation
 
-This means Method 1 should stay conservative in the early game, cross above parity around the mid game, and become clearly profitable later without becoming purely runaway on its own.
+If Dust should stay understandable and easy to tune, start with **Formula 1: Saturating Efficiency**.
 
-| Progression Point | Example Highest Weight | Example Diversity (`D`) | Approx. Dust / Mass | What It Means |
-| --- | --- | --- | --- | --- |
-| Early section cap | `10` | `3` | `0.71x` | Dust remains below raw mass and feels restrained. |
-| Early-mid transition | `30` | `4` | `1.01x` | Dust reaches near-parity around the first major tier pivot. |
-| Mid game | `54` | `6` | `1.58x` | Dust begins to feel meaningfully more rewarding than raw mass. |
-| Late game | `79` | `8` | `2.33x` | High-tier batches give strong returns without being absurd yet. |
-| Endgame cap | `118` | `10` | `3.79x` | Endgame Dust is several times input mass, but still mostly driven by throughput. |
+If Dust should incorporate real element identity and still remain stable under automation, start with **Formula 5: Batch Power Hybrid**.
 
-Under this tuning, endgame numbers should get large mainly because the player is feeding very large batches through the system repeatedly, not because the multiplier itself is exploding uncontrollably. In practice, that suggests:
-
-- early Dust should stay comfortably below raw input mass
-- mid game Dust should hover around parity to modest profit
-- late and endgame Dust should likely land in the `2x` to `4x` mass range for strong batches
-- total Dust per minute will mostly be determined by automation speed and batch size
-
-## Recommendation With Automation In Mind
-
-If the immediate goal is "Dust should not overproduce early," then Methods 1 and 2 are now the strongest candidates.
-
-- choose Method 1 if you want a clearer feeling of late-game Dust acceleration
-- choose Method 2 if you want the most reliable long-term automation balance
-
-At this point, Method 2 still looks like the safest production candidate, but the revised Method 1 is now much closer to your updated design target than the previous version was.
+If Dust should become a stronger recipe-building system, keep **Formula 3** or **Formula 6** in reserve for a later iteration.
