@@ -53,6 +53,18 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 	for resource_id in produced_resource_ids:
 		game_state.produce_resource(resource_id, DigitMaster.one())
 
+	var bonus_resource_ids: Array[String] = []
+	for resource_id in produced_resource_ids:
+		if is_auto and upgrades_system.should_trigger_critical_payload(game_state):
+			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 2)
+		if not is_auto and upgrades_system.should_trigger_manual_double_hit(game_state):
+			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 1)
+		if upgrades_system.should_trigger_resonant_yield(game_state):
+			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 1)
+
+	var final_resource_ids := produced_resource_ids.duplicate()
+	final_resource_ids.append_array(bonus_resource_ids)
+
 	if is_auto:
 		game_state.total_auto_smashes += 1
 	else:
@@ -60,10 +72,16 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 
 	return {
 		"source_element_id": element_id,
-		"produced_resource_ids": produced_resource_ids,
-		"produced_resource_id": produced_resource_ids[0],
+		"produced_resource_ids": final_resource_ids,
+		"produced_resource_id": final_resource_ids[0],
+		"bonus_resource_ids": bonus_resource_ids,
 		"was_fission": was_fission
 	}
+
+func _add_bonus_copies(game_state: GameState, bonus_resource_ids: Array[String], resource_id: String, copy_count: int) -> void:
+	for _copy_index in range(copy_count):
+		bonus_resource_ids.append(resource_id)
+		game_state.produce_resource(resource_id, DigitMaster.one())
 
 func _roll_fission_split(game_state: GameState, produced_resource_id: String) -> Array[String]:
 	if not game_state.is_element_id(produced_resource_id):

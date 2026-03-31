@@ -576,7 +576,10 @@ func _sync_resource_displays() -> void:
 		display.refresh()
 
 func _sync_upgrade_buttons() -> void:
-	var upgrade_ids: Array[String] = game_state.get_upgrade_ids()
+	var upgrade_ids: Array[String] = []
+	for upgrade_id in game_state.get_upgrade_ids():
+		if upgrades_system.should_show_upgrade(game_state, upgrade_id):
+			upgrade_ids.append(upgrade_id)
 	if upgrade_button_ids != upgrade_ids:
 		for child in upgrade_list.get_children():
 			child.queue_free()
@@ -632,10 +635,13 @@ func _refresh_ui() -> void:
 		_set_button_enabled_state(zin_button, false)
 		_set_button_enabled_state(zout_button, game_state.has_unlocked_era(1))
 
-	upgrades_info.text = "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%%\nFission Chance: %.0f%%" % [
+	upgrades_info.text = "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%" % [
 		upgrades_system.get_auto_smashes_per_second(game_state),
 		upgrades_system.get_global_critical_smash_chance_percent(game_state),
-		upgrades_system.get_fission_chance_percent(game_state)
+		upgrades_system.get_critical_payload_chance_percent(game_state),
+		upgrades_system.get_fission_chance_percent(game_state),
+		upgrades_system.get_manual_double_hit_chance(game_state) * 100.0,
+		upgrades_system.get_resonant_yield_chance(game_state) * 100.0
 	]
 
 	var era_menu_enabled := game_state.is_era_menu_unlocked()
@@ -980,6 +986,9 @@ func _calculate_dust_preview() -> DigitMaster:
 		DUST_BASE_SCALAR
 		* pow(float(selected_amounts.size()), DUST_DIVERSITY_EXPONENT)
 		* avg_h
+	)
+	raw_dust = raw_dust.multiply_scalar(
+		upgrades_system.get_dust_recipe_bonus_multiplier(game_state, _get_selected_dust_element_ids())
 	)
 	if raw_dust.compare(total_quantity) > 0:
 		return total_quantity

@@ -125,10 +125,13 @@ func _load_upgrades(upgrades_data: Array) -> void:
 			"current_cost": base_cost.clone(),
 			"cost_mode": str(raw_upgrade.get("cost_mode", "additive_power")),
 			"cost_scaling": float(raw_upgrade.get("cost_scaling", 1.0)),
+			"cost_step": float(raw_upgrade.get("cost_step", 0.0)),
 			"max_level": int(raw_upgrade.get("max_level", 1)),
 			"current_level": int(raw_upgrade.get("current_level", 0)),
 			"effect_type": str(raw_upgrade.get("effect_type", "")),
-			"effect_amount": float(raw_upgrade.get("effect_amount", 0.0))
+			"effect_amount": float(raw_upgrade.get("effect_amount", 0.0)),
+			"sequence_start_index": int(raw_upgrade.get("sequence_start_index", 0)),
+			"sequence_requires_unlock": bool(raw_upgrade.get("sequence_requires_unlock", false))
 		}
 
 		upgrades[upgrade_id] = upgrade

@@ -107,8 +107,9 @@ func refresh() -> void:
 
 	var level := int(upgrade.get("current_level", 0))
 	var max_level := int(upgrade.get("max_level", 0))
-	var current_cost: DigitMaster = upgrade["current_cost"]
-	var currency_name := game_state.get_resource_name(str(upgrade.get("currency_id", "")))
+	var current_cost: DigitMaster = upgrades_system.get_upgrade_purchase_cost(game_state, upgrade_id)
+	var purchase_currency_id := upgrades_system.get_upgrade_purchase_currency_id(game_state, upgrade_id)
+	var currency_name := game_state.get_resource_name(purchase_currency_id)
 	var description := str(upgrade.get("description", ""))
 	var effect_summary := upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id)
 
@@ -119,10 +120,13 @@ func refresh() -> void:
 	]
 	description_label.text = description
 	effect_label.text = effect_summary
-	cost_label.text = "%s\n%s" % [
-		current_cost.big_to_short_string(),
-		currency_name
-	]
+	if level >= max_level:
+		cost_label.text = "MAX\n-"
+	else:
+		cost_label.text = "%s\n%s" % [
+			current_cost.big_to_short_string(),
+			currency_name
+		]
 
 	var can_purchase := level < max_level and upgrades_system.can_purchase_upgrade(game_state, upgrade_id)
 	cost_button.disabled = not can_purchase
