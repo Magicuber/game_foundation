@@ -46,6 +46,7 @@ func _process(delta: float) -> void:
 func _process_tick(tick_duration: float) -> void:
 	game_state.tick_count += 1
 	game_state.total_played_seconds += tick_duration
+	game_state.process_planet_production(tick_duration)
 
 	for queued_action in action_queue.drain():
 		_apply_action(queued_action)

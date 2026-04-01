@@ -1,0 +1,14 @@
+{
+  "planets": [
+    {
+      "id": "planet_a",
+      "name": "Planet A",
+      "unlocked": false,
+      "level": 1,
+      "max_level": 25,
+      "workers": 0,
+      "xp": 0,
+      "worker_allocation_to_xp": 1.0
+    }
+  ]
+}

@@ -2,7 +2,7 @@ extends RefCounted
 
 class_name GameState
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const DUST_RESOURCE_ID := "dust"
 const ERA_NAMES := [
 	"Atomic Era",
@@ -18,6 +18,13 @@ const PLANETARY_ERA_RESOURCE_COST := 10000.0
 const PLANETARY_ERA_ORB_COST := 1000
 const UNLOCK_SECTION_ENDS := [10, 30, 54, 86, 118]
 const DEFAULT_PLANET_ID := "planet_a"
+const PLANET_WORKER_BASE_COST := 1000.0
+const PLANET_WORKER_COST_RATIO := 1.25
+const PLANET_WORKER_COST_ROUND_TO := 25.0
+const PLANET_XP_LEVEL_TWO_REQUIREMENT := 1500.0
+const PLANET_XP_LEVEL_TWENTY_FIVE_REQUIREMENT := 10000000.0
+const PLANET_A_MAX_LEVEL := 25
+const RESEARCH_POINTS_PER_PRODUCTION := 0.001
 
 var orbs: int
 var dust: DigitMaster
@@ -25,11 +32,12 @@ var elements: Dictionary
 var element_ids_in_order: Array[String]
 var upgrades: Dictionary
 var upgrade_ids_in_order: Array[String]
+var planet_ids_in_order: Array[String]
 var current_element_id: String
 var next_unlock_id: String
 var max_unlocked_element_id: String
 var player_level: int
-var world_level: int
+var prestige_count: int
 var global_multiplier: DigitMaster
 var tick_count: int
 var total_played_seconds: float
@@ -39,11 +47,14 @@ var total_auto_smashes: int
 var unlocked_era_index: int
 var planets: Dictionary
 var current_planet_id: String
+var research_points: DigitMaster
+var research_progress: float
 
-static func from_content(elements_content: Dictionary, upgrades_content: Dictionary) -> GameState:
+static func from_content(elements_content: Dictionary, upgrades_content: Dictionary, planets_content: Dictionary) -> GameState:
 	var state := GameState.new()
 	state._load_elements(elements_content.get("elements", []))
 	state._load_upgrades(upgrades_content.get("upgrades", []))
+	state._load_planets(planets_content.get("planets", []))
 	state.refresh_progression_state()
 	return state
 
@@ -54,11 +65,12 @@ func _init() -> void:
 	element_ids_in_order = []
 	upgrades = {}
 	upgrade_ids_in_order = []
+	planet_ids_in_order = []
 	current_element_id = ""
 	next_unlock_id = ""
 	max_unlocked_element_id = ""
 	player_level = 1
-	world_level = 0
+	prestige_count = 0
 	global_multiplier = DigitMaster.one()
 	tick_count = 0
 	total_played_seconds = 0.0
@@ -66,16 +78,10 @@ func _init() -> void:
 	total_manual_smashes = 0
 	total_auto_smashes = 0
 	unlocked_era_index = 0
-	planets = {
-		DEFAULT_PLANET_ID: {
-			"id": DEFAULT_PLANET_ID,
-			"name": "Planet A",
-			"unlocked": false,
-			"level": 1,
-			"max_level": 25
-		}
-	}
+	planets = {}
 	current_planet_id = DEFAULT_PLANET_ID
+	research_points = DigitMaster.zero()
+	research_progress = 0.0
 
 func _load_elements(elements_data: Array) -> void:
 	elements.clear()
@@ -137,12 +143,49 @@ func _load_upgrades(upgrades_data: Array) -> void:
 		upgrades[upgrade_id] = upgrade
 		upgrade_ids_in_order.append(upgrade_id)
 
+func _load_planets(planets_data: Array) -> void:
+	planets.clear()
+	planet_ids_in_order.clear()
+
+	for raw_planet in planets_data:
+		if typeof(raw_planet) != TYPE_DICTIONARY:
+			continue
+
+		var planet_id := str(raw_planet.get("id", ""))
+		if planet_id.is_empty():
+			continue
+
+		var level := maxi(1, int(raw_planet.get("level", 1)))
+		var planet := {
+			"id": planet_id,
+			"name": str(raw_planet.get("name", planet_id)),
+			"unlocked": bool(raw_planet.get("unlocked", false)),
+			"level": level,
+			"max_level": maxi(1, int(raw_planet.get("max_level", 1))),
+			"workers": DigitMaster.from_variant(raw_planet.get("workers", 0)),
+			"xp": DigitMaster.from_variant(raw_planet.get("xp", 0)),
+			"xp_to_next_level": _calculate_planet_xp_requirement(level),
+			"worker_allocation_to_xp": clampf(float(raw_planet.get("worker_allocation_to_xp", 1.0)), 0.0, 1.0)
+		}
+
+		planets[planet_id] = planet
+		planet_ids_in_order.append(planet_id)
+
+	if current_planet_id.is_empty() and not planet_ids_in_order.is_empty():
+		current_planet_id = planet_ids_in_order[0]
+
 func refresh_progression_state() -> void:
 	var highest_unlocked_id := ""
 	for element_id in element_ids_in_order:
 		var element: Dictionary = elements[element_id]
 		if bool(element.get("unlocked", false)):
 			highest_unlocked_id = element_id
+
+	if has_unlocked_era(1) and has_planet(DEFAULT_PLANET_ID):
+		var starting_planet: Dictionary = planets[DEFAULT_PLANET_ID]
+		starting_planet["unlocked"] = true
+		starting_planet["level"] = maxi(1, int(starting_planet.get("level", 1)))
+		starting_planet["xp_to_next_level"] = _calculate_planet_xp_requirement(int(starting_planet.get("level", 1)))
 
 	max_unlocked_element_id = highest_unlocked_id
 	next_unlock_id = ""
@@ -164,6 +207,14 @@ func refresh_progression_state() -> void:
 			current_element_id = highest_unlocked_id
 		elif not element_ids_in_order.is_empty():
 			current_element_id = element_ids_in_order[0]
+
+	if current_planet_id.is_empty() or not is_planet_unlocked(current_planet_id):
+		for planet_id in planet_ids_in_order:
+			if is_planet_unlocked(planet_id):
+				current_planet_id = planet_id
+				break
+		if current_planet_id.is_empty() and not planet_ids_in_order.is_empty():
+			current_planet_id = planet_ids_in_order[0]
 
 func has_element(element_id: String) -> bool:
 	return elements.has(element_id)
@@ -195,7 +246,7 @@ func get_next_unlock_element() -> Dictionary:
 	return get_element(next_unlock_id)
 
 func get_max_unlockable_element_index() -> int:
-	var section_index := clampi(world_level, 0, UNLOCK_SECTION_ENDS.size() - 1)
+	var section_index := clampi(prestige_count, 0, UNLOCK_SECTION_ENDS.size() - 1)
 	return int(UNLOCK_SECTION_ENDS[section_index])
 
 func is_next_unlock_within_visible_sections() -> bool:
@@ -233,6 +284,9 @@ func get_visible_counter_element_ids() -> Array[String]:
 func has_planet(planet_id: String) -> bool:
 	return planets.has(planet_id)
 
+func get_planet_ids() -> Array[String]:
+	return planet_ids_in_order.duplicate()
+
 func get_planet(planet_id: String) -> Dictionary:
 	return planets.get(planet_id, {})
 
@@ -243,6 +297,101 @@ func is_planet_unlocked(planet_id: String) -> bool:
 	if not has_planet(planet_id):
 		return false
 	return bool(planets[planet_id].get("unlocked", false))
+
+func get_current_planet_workers() -> DigitMaster:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return DigitMaster.zero()
+	var workers: DigitMaster = planet["workers"]
+	return workers.clone()
+
+func get_current_planet_worker_cost() -> DigitMaster:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return DigitMaster.zero()
+
+	var worker_count: float = _digit_master_to_float(planet["workers"])
+	var raw_cost: float = PLANET_WORKER_BASE_COST * pow(PLANET_WORKER_COST_RATIO, worker_count)
+	var rounded_cost: float = ceil(raw_cost / PLANET_WORKER_COST_ROUND_TO) * PLANET_WORKER_COST_ROUND_TO
+	return DigitMaster.new(rounded_cost)
+
+func can_buy_current_planet_worker() -> bool:
+	var planet := get_current_planet()
+	if planet.is_empty() or not bool(planet.get("unlocked", false)):
+		return false
+	return can_afford_resource(DUST_RESOURCE_ID, get_current_planet_worker_cost())
+
+func buy_current_planet_worker() -> bool:
+	if not can_buy_current_planet_worker():
+		return false
+	if not spend_resource(DUST_RESOURCE_ID, get_current_planet_worker_cost()):
+		return false
+
+	var planet := get_current_planet()
+	var workers: DigitMaster = planet["workers"]
+	planet["workers"] = workers.add(DigitMaster.one())
+	return true
+
+func set_current_planet_worker_allocation_to_xp(allocation_ratio: float) -> void:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return
+	planet["worker_allocation_to_xp"] = clampf(allocation_ratio, 0.0, 1.0)
+
+func get_current_planet_worker_allocation_to_xp() -> float:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return 1.0
+	return clampf(float(planet.get("worker_allocation_to_xp", 1.0)), 0.0, 1.0)
+
+func process_planet_production(delta_seconds: float) -> void:
+	if delta_seconds <= 0.0:
+		return
+
+	for planet_id in planet_ids_in_order:
+		var planet := get_planet(planet_id)
+		if planet.is_empty() or not bool(planet.get("unlocked", false)):
+			continue
+
+		var workers: DigitMaster = planet["workers"]
+		if workers.is_zero():
+			continue
+
+		var total_production := workers.multiply_scalar(delta_seconds)
+		var allocation_to_xp := clampf(float(planet.get("worker_allocation_to_xp", 1.0)), 0.0, 1.0)
+		if allocation_to_xp > 0.0:
+			_apply_planet_xp(planet, total_production.multiply_scalar(allocation_to_xp))
+		if allocation_to_xp < 1.0:
+			_apply_research_progress(total_production.multiply_scalar((1.0 - allocation_to_xp) * RESEARCH_POINTS_PER_PRODUCTION))
+
+func get_current_planet_level_progress_ratio() -> float:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return 0.0
+	return _get_digit_ratio(planet["xp"], planet["xp_to_next_level"])
+
+func get_research_progress_ratio() -> float:
+	return clampf(research_progress, 0.0, 1.0)
+
+func get_current_planet_xp() -> DigitMaster:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return DigitMaster.zero()
+	var xp: DigitMaster = planet["xp"]
+	return xp.clone()
+
+func get_current_planet_xp_to_next_level() -> DigitMaster:
+	var planet := get_current_planet()
+	if planet.is_empty():
+		return DigitMaster.one()
+	var xp_to_next: DigitMaster = planet["xp_to_next_level"]
+	return xp_to_next.clone()
+
+func get_research_points() -> DigitMaster:
+	return research_points.clone()
+
+func get_research_progress_display() -> String:
+	return "%.1f%%" % (get_research_progress_ratio() * 100.0)
 
 func get_upgrade(upgrade_id: String) -> Dictionary:
 	return upgrades.get(upgrade_id, {})
@@ -415,6 +564,8 @@ func unlock_next_era() -> bool:
 		var starting_planet: Dictionary = planets[DEFAULT_PLANET_ID]
 		starting_planet["unlocked"] = true
 		starting_planet["level"] = maxi(1, int(starting_planet.get("level", 1)))
+		starting_planet["xp_to_next_level"] = _calculate_planet_xp_requirement(int(starting_planet.get("level", 1)))
+	refresh_progression_state()
 	return true
 
 func select_element(element_id: String) -> bool:
@@ -520,7 +671,7 @@ func to_save_dict() -> Dictionary:
 		"upgrades": serialized_upgrades,
 		"current_element_id": current_element_id,
 		"player_level": player_level,
-		"world_level": world_level,
+		"prestige_count": prestige_count,
 		"global_multiplier": global_multiplier.to_save_data(),
 		"tick_count": tick_count,
 		"total_played_seconds": total_played_seconds,
@@ -528,15 +679,17 @@ func to_save_dict() -> Dictionary:
 		"total_manual_smashes": total_manual_smashes,
 		"total_auto_smashes": total_auto_smashes,
 		"unlocked_era_index": unlocked_era_index,
+		"research_points": research_points.to_save_data(),
+		"research_progress": research_progress,
 		"current_planet_id": current_planet_id,
-		"planets": planets
+		"planets": _serialize_planets()
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
 	orbs = int(save_data.get("orbs", 0))
 	dust = DigitMaster.from_variant(save_data.get("dust", 0))
 	player_level = int(save_data.get("player_level", 1))
-	world_level = int(save_data.get("world_level", 0))
+	prestige_count = int(save_data.get("prestige_count", save_data.get("world_level", 0)))
 	global_multiplier = DigitMaster.from_variant(save_data.get("global_multiplier", 1))
 	tick_count = int(save_data.get("tick_count", 0))
 	total_played_seconds = float(save_data.get("total_played_seconds", 0.0))
@@ -544,6 +697,8 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	total_manual_smashes = int(save_data.get("total_manual_smashes", 0))
 	total_auto_smashes = int(save_data.get("total_auto_smashes", 0))
 	unlocked_era_index = int(save_data.get("unlocked_era_index", unlocked_era_index))
+	research_points = DigitMaster.from_variant(save_data.get("research_points", 0))
+	research_progress = clampf(float(save_data.get("research_progress", 0.0)), 0.0, 1.0)
 
 	var saved_elements: Dictionary = save_data.get("elements", {})
 	for element_id in saved_elements.keys():
@@ -573,5 +728,89 @@ func apply_save_dict(save_data: Dictionary) -> void:
 		var planet_save: Dictionary = saved_planets[planet_id]
 		planet["unlocked"] = bool(planet_save.get("unlocked", planet.get("unlocked", false)))
 		planet["level"] = int(planet_save.get("level", planet.get("level", 1)))
+		planet["workers"] = DigitMaster.from_variant(planet_save.get("workers", planet["workers"]))
+		planet["xp"] = DigitMaster.from_variant(planet_save.get("xp", planet["xp"]))
+		planet["worker_allocation_to_xp"] = clampf(float(planet_save.get("worker_allocation_to_xp", planet.get("worker_allocation_to_xp", 1.0))), 0.0, 1.0)
+		planet["xp_to_next_level"] = _calculate_planet_xp_requirement(int(planet.get("level", 1)))
 	current_planet_id = str(save_data.get("current_planet_id", current_planet_id))
 	refresh_progression_state()
+
+func _serialize_planets() -> Dictionary:
+	var serialized_planets := {}
+	for planet_id in planet_ids_in_order:
+		var planet: Dictionary = planets[planet_id]
+		var workers: DigitMaster = planet["workers"]
+		var xp: DigitMaster = planet["xp"]
+		serialized_planets[planet_id] = {
+			"unlocked": bool(planet.get("unlocked", false)),
+			"level": int(planet.get("level", 1)),
+			"workers": workers.to_save_data(),
+			"xp": xp.to_save_data(),
+			"worker_allocation_to_xp": float(planet.get("worker_allocation_to_xp", 1.0))
+		}
+	return serialized_planets
+
+func _calculate_planet_xp_requirement(level: int) -> DigitMaster:
+	if level <= 1:
+		return DigitMaster.new(PLANET_XP_LEVEL_TWO_REQUIREMENT)
+
+	var growth_steps := float(maxi(1, PLANET_A_MAX_LEVEL - 2))
+	var growth_ratio := pow(
+		PLANET_XP_LEVEL_TWENTY_FIVE_REQUIREMENT / PLANET_XP_LEVEL_TWO_REQUIREMENT,
+		1.0 / growth_steps
+	)
+	var requirement_float := PLANET_XP_LEVEL_TWO_REQUIREMENT * pow(growth_ratio, float(level - 1))
+	return DigitMaster.new(round(requirement_float))
+
+func _apply_planet_xp(planet: Dictionary, xp_amount: DigitMaster) -> void:
+	if xp_amount.is_zero():
+		return
+
+	var level := int(planet.get("level", 1))
+	var max_level := int(planet.get("max_level", 1))
+	if level >= max_level:
+		return
+
+	var current_xp: DigitMaster = planet["xp"]
+	current_xp = current_xp.add(xp_amount)
+	var xp_to_next: DigitMaster = planet["xp_to_next_level"]
+	while level < max_level and current_xp.compare(xp_to_next) >= 0:
+		current_xp = current_xp.subtract(xp_to_next)
+		level += 1
+		planet["level"] = level
+		if level >= max_level:
+			current_xp = DigitMaster.zero()
+			break
+		xp_to_next = _calculate_planet_xp_requirement(level)
+
+	planet["xp"] = current_xp
+	planet["xp_to_next_level"] = DigitMaster.one() if level >= max_level else xp_to_next
+
+func _apply_research_progress(rp_amount: DigitMaster) -> void:
+	if rp_amount.is_zero():
+		return
+
+	var amount_float := _digit_master_to_float(rp_amount)
+	if is_inf(amount_float):
+		research_points = research_points.add(rp_amount)
+		research_progress = 0.0
+		return
+
+	var total_progress := research_progress + amount_float
+	var whole_rp: float = floor(total_progress)
+	if whole_rp >= 1.0:
+		research_points = research_points.add(DigitMaster.new(whole_rp))
+	research_progress = fmod(total_progress, 1.0)
+
+func _get_digit_ratio(current: DigitMaster, maximum: DigitMaster) -> float:
+	var max_float := _digit_master_to_float(maximum)
+	if max_float <= 0.0:
+		return 0.0
+	return clampf(_digit_master_to_float(current) / max_float, 0.0, 1.0)
+
+func _digit_master_to_float(value: DigitMaster) -> float:
+	if value.is_infinite:
+		return INF
+	if value.is_zero():
+		return 0.0
+	return value.mantissa * pow(10.0, value.exponent)
