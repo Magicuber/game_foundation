@@ -129,6 +129,7 @@ func apply_style() -> void:
 		_dust_label.add_theme_font_override("font", ui_font)
 		_profile_button.add_theme_font_override("font", ui_font)
 
+	_profile_button.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	_orbs_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
@@ -143,6 +144,7 @@ func apply_shell_metrics() -> void:
 	_dust_row.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
 	_orbs_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
 	_dust_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
+	_profile_button.custom_minimum_size = UIMetrics.TOP_BAR_PROFILE_SIZE
 	_nav_slots.add_theme_constant_override("separation", UIMetrics.NAV_SLOT_SEPARATION)
 	for slot in [_prev_slot, _next_slot, _zin_slot, _zout_slot, _menu_slot]:
 		slot.custom_minimum_size = UIMetrics.NAV_SLOT_SIZE

@@ -112,6 +112,10 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var planets_info: Label = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel/PlanetsInfo
 @onready var settings_title: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsTitle
 @onready var settings_info: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsInfo
+@onready var prestige_debug_row: HBoxContainer = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow
+@onready var prestige_decrement_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow/PrestigeDecrementButton
+@onready var prestige_count_label: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow/PrestigeCountLabel
+@onready var prestige_increment_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow/PrestigeIncrementButton
 @onready var click_boxes_toggle: CheckButton = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/ClickBoxesToggle
 @onready var add_dust_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddDustButton
 @onready var add_orbs_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddOrbsButton
@@ -193,6 +197,8 @@ func _ready() -> void:
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
 	shop_menu_button.pressed.connect(_on_shop_pressed)
 	settings_menu_button.pressed.connect(_on_settings_menu_pressed)
+	prestige_decrement_button.pressed.connect(_on_prestige_decrement_pressed)
+	prestige_increment_button.pressed.connect(_on_prestige_increment_pressed)
 	click_boxes_toggle.toggled.connect(_on_click_boxes_toggled)
 	add_dust_button.pressed.connect(_on_add_dust_pressed)
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
@@ -296,6 +302,10 @@ func _ready() -> void:
 		planets_info,
 		settings_title,
 		settings_info,
+		prestige_debug_row,
+		prestige_decrement_button,
+		prestige_count_label,
+		prestige_increment_button,
 		click_boxes_toggle,
 		add_dust_button,
 		add_orbs_button,
@@ -647,7 +657,8 @@ func _refresh_settings_panel() -> void:
 	if not settings_panel.visible:
 		return
 
-	settings_info.text = "Developer Tools"
+	settings_info.text = "Developer Tools\nAdjust prestige for debug testing."
+	prestige_count_label.text = "Prestige Count: %d" % game_state.prestige_count
 	click_boxes_toggle.button_pressed = debug_show_element_hitboxes
 
 func _refresh_elements_panel() -> void:
@@ -840,6 +851,12 @@ func _on_add_orbs_pressed() -> void:
 	game_state.orbs += 1000
 	_refresh_ui(UI_DIRTY_TOP_BAR | UI_DIRTY_ERA)
 
+func _on_prestige_decrement_pressed() -> void:
+	_adjust_prestige_count(-1)
+
+func _on_prestige_increment_pressed() -> void:
+	_adjust_prestige_count(1)
+
 func _on_era_unlock_pressed() -> void:
 	if game_state.unlock_next_era():
 		dust_recipe_service.invalidate()
@@ -857,6 +874,11 @@ func _on_world_worker_slider_changed(value: float) -> void:
 
 func _on_upgrade_purchase_requested(upgrade_id: String) -> void:
 	tick_system.enqueue_action("purchase_upgrade", {"id": upgrade_id})
+
+func _adjust_prestige_count(delta: int) -> void:
+	if not game_state.adjust_prestige_count(delta):
+		return
+	_refresh_ui(_get_selection_refresh_flags() | UI_DIRTY_SETTINGS)
 
 func _pulse_fuse_element() -> void:
 	if not is_instance_valid(fuse_button):

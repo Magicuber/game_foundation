@@ -215,6 +215,24 @@ func get_max_unlockable_element_index() -> int:
 	var section_index := clampi(prestige_count, 0, UNLOCK_SECTION_ENDS.size() - 1)
 	return int(UNLOCK_SECTION_ENDS[section_index])
 
+func get_max_prestige_count() -> int:
+	return maxi(0, UNLOCK_SECTION_ENDS.size() - 1)
+
+func set_prestige_count(value: int) -> bool:
+	var clamped_value := clampi(value, 0, get_max_prestige_count())
+	if prestige_count == clamped_value:
+		return false
+
+	prestige_count = clamped_value
+	refresh_progression_state()
+	_clamp_current_element_to_visible_sections()
+	return true
+
+func adjust_prestige_count(delta: int) -> bool:
+	if delta == 0:
+		return false
+	return set_prestige_count(prestige_count + delta)
+
 func is_next_unlock_within_visible_sections() -> bool:
 	var next_element := get_next_unlock_element_state()
 	if next_element == null:
@@ -648,7 +666,7 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	orbs = int(save_data.get("orbs", 0))
 	dust = DigitMaster.from_variant(save_data.get("dust", 0))
 	player_level = int(save_data.get("player_level", 1))
-	prestige_count = int(save_data.get("prestige_count", save_data.get("world_level", 0)))
+	prestige_count = clampi(int(save_data.get("prestige_count", save_data.get("world_level", 0))), 0, get_max_prestige_count())
 	global_multiplier = DigitMaster.from_variant(save_data.get("global_multiplier", 1))
 	tick_count = int(save_data.get("tick_count", 0))
 	total_played_seconds = float(save_data.get("total_played_seconds", 0.0))
@@ -761,3 +779,19 @@ func _digit_master_to_float(value: DigitMaster) -> float:
 	if value.is_zero():
 		return 0.0
 	return value.mantissa * pow(10.0, value.exponent)
+
+func _clamp_current_element_to_visible_sections() -> void:
+	var current_element := get_current_element_state()
+	if current_element != null and current_element.index <= get_max_unlockable_element_index():
+		return
+
+	var max_visible_index := get_max_unlockable_element_index()
+	var fallback_element_id := ""
+	for element_id in element_ids_in_order:
+		var element := get_element_state(element_id)
+		if element == null or not element.unlocked or element.index > max_visible_index:
+			continue
+		fallback_element_id = element.id
+
+	if not fallback_element_id.is_empty():
+		current_element_id = fallback_element_id

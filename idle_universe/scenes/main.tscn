@@ -538,6 +538,27 @@ layout_mode = 2
 text = "Developer Tools"
 horizontal_alignment = 1
 
+[node name="PrestigeDebugRow" type="HBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=1505967749]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PrestigeDecrementButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow" unique_id=41147932]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Prestige -1"
+
+[node name="PrestigeCountLabel" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow" unique_id=2112886055]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Prestige Count: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PrestigeIncrementButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow" unique_id=57017814]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Prestige +1"
+
 [node name="ClickBoxesToggle" type="CheckButton" parent="MenuOverlay/MenuContent/MenuPanels/SettingsPanel" unique_id=2000604]
 layout_mode = 2
 size_flags_horizontal = 3

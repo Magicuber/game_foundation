@@ -47,6 +47,10 @@ var _planets_title: Label
 var _planets_info: Label
 var _settings_title: Label
 var _settings_info: Label
+var _prestige_debug_row: HBoxContainer
+var _prestige_decrement_button: Button
+var _prestige_count_label: Label
+var _prestige_increment_button: Button
 var _click_boxes_toggle: CheckButton
 var _add_dust_button: Button
 var _add_orbs_button: Button
@@ -102,6 +106,10 @@ func configure(
 	planets_info: Label,
 	settings_title: Label,
 	settings_info: Label,
+	prestige_debug_row: HBoxContainer,
+	prestige_decrement_button: Button,
+	prestige_count_label: Label,
+	prestige_increment_button: Button,
 	click_boxes_toggle: CheckButton,
 	add_dust_button: Button,
 	add_orbs_button: Button,
@@ -158,6 +166,10 @@ func configure(
 	_planets_info = planets_info
 	_settings_title = settings_title
 	_settings_info = settings_info
+	_prestige_debug_row = prestige_debug_row
+	_prestige_decrement_button = prestige_decrement_button
+	_prestige_count_label = prestige_count_label
+	_prestige_increment_button = prestige_increment_button
 	_click_boxes_toggle = click_boxes_toggle
 	_add_dust_button = add_dust_button
 	_add_orbs_button = add_orbs_button
@@ -225,6 +237,9 @@ func apply_style() -> void:
 			_planets_info,
 			_settings_title,
 			_settings_info,
+			_prestige_decrement_button,
+			_prestige_count_label,
+			_prestige_increment_button,
 			_click_boxes_toggle,
 			_add_dust_button,
 			_add_orbs_button,
@@ -251,6 +266,33 @@ func apply_style() -> void:
 	_shop_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_planets_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_settings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	for control in [
+		_upgrades_info,
+		_elements_info,
+		_era_status,
+		_era_requirement_title,
+		_era_unlock_button,
+		_stats_info,
+		_planetary_stats_info,
+		_shop_info,
+		_planets_info,
+		_settings_info,
+		_prestige_decrement_button,
+		_prestige_count_label,
+		_prestige_increment_button,
+		_click_boxes_toggle,
+		_add_dust_button,
+		_add_orbs_button,
+		_upgrades_menu_button,
+		_elements_menu_button,
+		_era_menu_button,
+		_planets_menu_button,
+		_stats_menu_button,
+		_shop_menu_button,
+		_settings_menu_button,
+		_unlock_button
+	]:
+		control.add_theme_font_size_override("font_size", UIMetrics.FONT_SIZE_BODY)
 
 	for label in [
 		_main_menu_title,
@@ -270,11 +312,15 @@ func apply_style() -> void:
 		_planets_info,
 		_settings_title,
 		_settings_info,
+		_prestige_count_label,
 		_click_boxes_toggle,
 		_add_dust_button,
 		_add_orbs_button
 	]:
 		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+	for button in [_prestige_decrement_button, _prestige_increment_button]:
+		button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 	_make_dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_make_dust_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
@@ -296,6 +342,25 @@ func apply_shell_metrics() -> void:
 	_elements_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_elements_section_list.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_LIST_SEPARATION)
 	_dust_action_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
+	_prestige_debug_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
+	for button in [
+		_prestige_decrement_button,
+		_prestige_increment_button,
+		_upgrades_menu_button,
+		_elements_menu_button,
+		_era_menu_button,
+		_planets_menu_button,
+		_stats_menu_button,
+		_shop_menu_button,
+		_settings_menu_button,
+		_unlock_button,
+		_era_unlock_button,
+		_click_boxes_toggle,
+		_add_dust_button,
+		_add_orbs_button
+	]:
+		button.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
+	_prestige_count_label.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
 	_make_dust_button.custom_minimum_size = UIMetrics.DUST_ACTION_PRIMARY_BUTTON_SIZE
 	_dust_close_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
 	_era_requirement_margin.add_theme_constant_override("margin_left", UIMetrics.ERA_REQUIREMENT_MARGIN)

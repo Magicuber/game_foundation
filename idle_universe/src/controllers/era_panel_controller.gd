@@ -187,6 +187,7 @@ func _update_requirement_card_position() -> void:
 	_requirement_card.offset_left = UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
 	_requirement_card.offset_right = -UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
 	_requirement_card.offset_top = top_offset
+	_requirement_card.offset_bottom = top_offset + UIMetrics.ERA_REQUIREMENT_CARD_HEIGHT
 
 func _on_unlock_pressed() -> void:
 	unlock_requested.emit()
