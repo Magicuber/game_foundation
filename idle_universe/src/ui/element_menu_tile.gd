@@ -12,6 +12,8 @@ const SELECTED_BORDER_COLOR := Color8(105, 145, 102)
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const DUST_FILL_COLOR := Color(0.82, 0.14, 0.14, 0.42)
 
+static var _background_cache: Dictionary = {}
+
 var game_state: GameState
 var element_id := ""
 var is_unlocked := false
@@ -124,13 +126,7 @@ func refresh(current_selected_id: String, new_dust_selection_fraction: float = 0
 	visible = true
 	var element: Dictionary = game_state.get_element(element_id)
 	var element_index := int(element.get("index", 0))
-	var background := AtlasTexture.new()
-	background.atlas = ATOM_MENU_SHEET
-	background.region = Rect2(
-		Vector2(element_index * FRAME_SIZE.x, 0),
-		Vector2(FRAME_SIZE.x, FRAME_SIZE.y)
-	)
-	background_rect.texture = background
+	background_rect.texture = _get_background_texture(element_index)
 
 	is_unlocked = bool(element.get("unlocked", false))
 	dust_selection_fraction = clampf(new_dust_selection_fraction, 0.0, 1.0)
@@ -183,3 +179,14 @@ func _update_dust_fill() -> void:
 	var fill_height := round(size.y * dust_selection_fraction)
 	dust_fill_rect.visible = fill_height > 0.0
 	dust_fill_rect.offset_bottom = fill_height
+
+func _get_background_texture(element_index: int) -> AtlasTexture:
+	if not _background_cache.has(element_index):
+		var background := AtlasTexture.new()
+		background.atlas = ATOM_MENU_SHEET
+		background.region = Rect2(
+			Vector2(element_index * FRAME_SIZE.x, 0),
+			Vector2(FRAME_SIZE.x, FRAME_SIZE.y)
+		)
+		_background_cache[element_index] = background
+	return _background_cache[element_index]

@@ -17,9 +17,19 @@ const EFFECT_DUST_RESONANCE_SEQUENCE := "dust_resonance_sequence"
 const FISSION_MAX_CHANCE_PERCENT := 25.0
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _aggregate_cache_dirty := true
+var _cached_auto_smash_interval_multiplier := 1.0
+var _cached_global_critical_smash_chance_percent := 0.0
+var _cached_fission_chance_percent := 0.0
+var _cached_manual_double_hit_chance := 0.0
+var _cached_critical_payload_chance_percent := 0.0
+var _cached_resonant_yield_chance := 0.0
 
 func _init() -> void:
 	rng.randomize()
+
+func mark_cache_dirty() -> void:
+	_aggregate_cache_dirty = true
 
 func can_purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if game_state == null:
@@ -54,6 +64,7 @@ func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 		upgrade["current_cost"] = get_upgrade_purchase_cost(game_state, upgrade_id)
 	else:
 		upgrade["current_cost"] = _calculate_next_cost(upgrade)
+	mark_cache_dirty()
 	return true
 
 func get_upgrade_level(game_state: GameState, upgrade_id: String) -> int:
@@ -79,27 +90,14 @@ func get_auto_smashes_per_second(game_state: GameState) -> float:
 func get_auto_smash_interval_multiplier(game_state: GameState) -> float:
 	if game_state == null:
 		return 1.0
-	var multiplier := 1.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_AUTO_SMASH_SPEED_BONUS:
-			continue
-
-		var level := int(upgrade.get("current_level", 0))
-		var reduction := clampf(1.0 - float(upgrade.get("effect_amount", 0.0)), 0.01, 1.0)
-		multiplier *= pow(reduction, float(level))
-	return multiplier
+	_ensure_aggregate_cache(game_state)
+	return _cached_auto_smash_interval_multiplier
 
 func get_global_critical_smash_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
-	var total_chance := 0.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_CRITICAL_AUTO_SMASH:
-			continue
-		total_chance += _get_upgrade_scaled_effect(upgrade)
-	return total_chance
+	_ensure_aggregate_cache(game_state)
+	return _cached_global_critical_smash_chance_percent
 
 func get_auto_smash_spawn_count(game_state: GameState) -> int:
 	var crit_chance := get_global_critical_smash_chance_percent(game_state)
@@ -112,13 +110,8 @@ func get_auto_smash_spawn_count(game_state: GameState) -> int:
 func get_fission_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
-	var total_chance := 0.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_FISSION_SPLIT:
-			continue
-		total_chance += _get_upgrade_scaled_effect(upgrade)
-	return minf(FISSION_MAX_CHANCE_PERCENT, total_chance)
+	_ensure_aggregate_cache(game_state)
+	return _cached_fission_chance_percent
 
 func should_trigger_fission(game_state: GameState) -> bool:
 	var chance := get_fission_chance_percent(game_state)
@@ -129,13 +122,8 @@ func should_trigger_fission(game_state: GameState) -> bool:
 func get_manual_double_hit_chance(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
-	var total_chance := 0.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_MANUAL_BONUS_OUTPUT:
-			continue
-		total_chance += _get_upgrade_scaled_effect(upgrade)
-	return maxf(0.0, total_chance)
+	_ensure_aggregate_cache(game_state)
+	return _cached_manual_double_hit_chance
 
 func should_trigger_manual_double_hit(game_state: GameState) -> bool:
 	var chance := minf(1.0, get_manual_double_hit_chance(game_state))
@@ -146,13 +134,8 @@ func should_trigger_manual_double_hit(game_state: GameState) -> bool:
 func get_critical_payload_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
-	var total_chance := 0.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_CRITICAL_PAYLOAD_BONUS:
-			continue
-		total_chance += _get_upgrade_scaled_effect(upgrade)
-	return maxf(0.0, total_chance)
+	_ensure_aggregate_cache(game_state)
+	return _cached_critical_payload_chance_percent
 
 func should_trigger_critical_payload(game_state: GameState) -> bool:
 	var chance := get_critical_payload_chance_percent(game_state)
@@ -163,13 +146,8 @@ func should_trigger_critical_payload(game_state: GameState) -> bool:
 func get_resonant_yield_chance(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
-	var total_chance := 0.0
-	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_BONUS_ELEMENT_OUTPUT:
-			continue
-		total_chance += _get_upgrade_scaled_effect(upgrade)
-	return maxf(0.0, total_chance)
+	_ensure_aggregate_cache(game_state)
+	return _cached_resonant_yield_chance
 
 func should_trigger_resonant_yield(game_state: GameState) -> bool:
 	var chance := minf(1.0, get_resonant_yield_chance(game_state))
@@ -409,3 +387,38 @@ func _calculate_next_cost(upgrade: Dictionary) -> DigitMaster:
 			return current_cost.multiply_scalar(float(upgrade.get("cost_scaling", 1.0)))
 		_:
 			return current_cost.clone()
+
+func _ensure_aggregate_cache(game_state: GameState) -> void:
+	if game_state == null or not _aggregate_cache_dirty:
+		return
+
+	_cached_auto_smash_interval_multiplier = 1.0
+	_cached_global_critical_smash_chance_percent = 0.0
+	_cached_fission_chance_percent = 0.0
+	_cached_manual_double_hit_chance = 0.0
+	_cached_critical_payload_chance_percent = 0.0
+	_cached_resonant_yield_chance = 0.0
+
+	for upgrade_id in game_state.get_upgrade_ids():
+		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
+		match str(upgrade.get("effect_type", "")):
+			EFFECT_AUTO_SMASH_SPEED_BONUS:
+				var level := int(upgrade.get("current_level", 0))
+				var reduction := clampf(1.0 - float(upgrade.get("effect_amount", 0.0)), 0.01, 1.0)
+				_cached_auto_smash_interval_multiplier *= pow(reduction, float(level))
+			EFFECT_CRITICAL_AUTO_SMASH:
+				_cached_global_critical_smash_chance_percent += _get_upgrade_scaled_effect(upgrade)
+			EFFECT_FISSION_SPLIT:
+				_cached_fission_chance_percent += _get_upgrade_scaled_effect(upgrade)
+			EFFECT_MANUAL_BONUS_OUTPUT:
+				_cached_manual_double_hit_chance += _get_upgrade_scaled_effect(upgrade)
+			EFFECT_CRITICAL_PAYLOAD_BONUS:
+				_cached_critical_payload_chance_percent += _get_upgrade_scaled_effect(upgrade)
+			EFFECT_BONUS_ELEMENT_OUTPUT:
+				_cached_resonant_yield_chance += _get_upgrade_scaled_effect(upgrade)
+
+	_cached_fission_chance_percent = minf(FISSION_MAX_CHANCE_PERCENT, _cached_fission_chance_percent)
+	_cached_manual_double_hit_chance = maxf(0.0, _cached_manual_double_hit_chance)
+	_cached_critical_payload_chance_percent = maxf(0.0, _cached_critical_payload_chance_percent)
+	_cached_resonant_yield_chance = maxf(0.0, _cached_resonant_yield_chance)
+	_aggregate_cache_dirty = false

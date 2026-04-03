@@ -2,7 +2,7 @@ extends Node
 
 class_name TickSystem
 
-signal tick_processed(tick_count: int)
+signal tick_processed(tick_count: int, processed_actions: Array)
 signal manual_smash_resolved(result: Dictionary)
 signal auto_smash_requested(request: Dictionary)
 
@@ -48,14 +48,16 @@ func _process_tick(tick_duration: float) -> void:
 	game_state.total_played_seconds += tick_duration
 	game_state.process_planet_production(tick_duration)
 
+	var processed_actions: Array[String] = []
 	for queued_action in action_queue.drain():
-		_apply_action(queued_action)
+		if _apply_action(queued_action):
+			processed_actions.append(str(queued_action.get("type", "")))
 
 	_process_auto_smash(tick_duration)
 
-	emit_signal("tick_processed", game_state.tick_count)
+	emit_signal("tick_processed", game_state.tick_count, processed_actions)
 
-func _apply_action(action: Dictionary) -> void:
+func _apply_action(action: Dictionary) -> bool:
 	var action_type := str(action.get("type", ""))
 	var payload: Dictionary = action.get("payload", {})
 
@@ -64,14 +66,17 @@ func _apply_action(action: Dictionary) -> void:
 			var result: Dictionary = element_system.manual_smash(game_state, upgrades_system)
 			if not result.is_empty():
 				emit_signal("manual_smash_resolved", result)
+				return true
+			return false
 		"unlock_next":
-			element_system.unlock_next_element(game_state)
+			return element_system.unlock_next_element(game_state)
 		"select_adjacent":
-			element_system.select_adjacent(game_state, int(payload.get("direction", 0)))
+			return element_system.select_adjacent(game_state, int(payload.get("direction", 0)))
 		"select_element":
-			element_system.select_element(game_state, str(payload.get("id", "")))
+			return element_system.select_element(game_state, str(payload.get("id", "")))
 		"purchase_upgrade":
-			upgrades_system.purchase_upgrade(game_state, str(payload.get("id", "")))
+			return upgrades_system.purchase_upgrade(game_state, str(payload.get("id", "")))
+	return false
 
 func _process_auto_smash(tick_duration: float) -> void:
 	var interval := upgrades_system.get_auto_smash_interval_seconds(game_state)
