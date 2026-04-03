@@ -108,6 +108,7 @@ func _init() -> void:
 	symbol_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	symbol_label.custom_minimum_size = Vector2(0.0, UIMetrics.ELEMENT_TILE_SYMBOL_MIN_HEIGHT)
 	symbol_label.add_theme_font_size_override("font_size", UIMetrics.ELEMENT_TILE_SYMBOL_FONT_SIZE)
+	symbol_label.visible = false
 	content_box.add_child(symbol_label)
 
 	content_spacer = Control.new()
@@ -155,7 +156,7 @@ func refresh(current_selected_id: String, new_dust_selection_fraction: float = 0
 	else:
 		background_rect.modulate = LOCKED_MODULATE
 
-	symbol_label.text = element.name
+	symbol_label.text = ""
 	amount_label.text = game_state.get_resource_amount(element_id).big_to_short_string()
 	_update_dust_fill()
 
