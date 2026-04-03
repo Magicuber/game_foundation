@@ -5,6 +5,7 @@ class_name ElementMenuTile
 signal element_pressed(element_id: String)
 
 const ATOM_MENU_SHEET = preload("res://assests/sprites/atoms_menu_strip119.png")
+const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const FRAME_SIZE := Vector2i(32, 32)
 const UNLOCKED_MODULATE := Color(1, 1, 1, 1)
 const LOCKED_MODULATE := Color(0.4, 0.4, 0.4, 1)
@@ -23,11 +24,14 @@ var background_rect: TextureRect
 var dust_fill_rect: ColorRect
 var selected_border: Panel
 var debug_hitbox_border: Panel
+var content_margin: MarginContainer
+var content_box: VBoxContainer
+var content_spacer: Control
 var symbol_label: Label
 var amount_label: Label
 
 func _init() -> void:
-	custom_minimum_size = Vector2(0, 56)
+	custom_minimum_size = Vector2(UIMetrics.ELEMENT_TILE_MIN_SIZE, UIMetrics.ELEMENT_TILE_MIN_SIZE)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
@@ -82,31 +86,42 @@ func _init() -> void:
 	debug_hitbox_border.add_theme_stylebox_override("panel", debug_style)
 	add_child(debug_hitbox_border)
 
+	content_margin = MarginContainer.new()
+	content_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content_margin.add_theme_constant_override("margin_left", UIMetrics.ELEMENT_TILE_PADDING)
+	content_margin.add_theme_constant_override("margin_top", UIMetrics.ELEMENT_TILE_PADDING)
+	content_margin.add_theme_constant_override("margin_right", UIMetrics.ELEMENT_TILE_PADDING)
+	content_margin.add_theme_constant_override("margin_bottom", UIMetrics.ELEMENT_TILE_PADDING)
+	add_child(content_margin)
+
+	content_box = VBoxContainer.new()
+	content_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_box.add_theme_constant_override("separation", UIMetrics.ELEMENT_TILE_SEPARATION)
+	content_margin.add_child(content_box)
+
 	symbol_label = Label.new()
 	symbol_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	symbol_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	symbol_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	symbol_label.anchor_left = 0.0
-	symbol_label.anchor_top = 0.0
-	symbol_label.anchor_right = 1.0
-	symbol_label.anchor_bottom = 0.0
-	symbol_label.offset_top = 6.0
-	symbol_label.offset_bottom = 26.0
-	symbol_label.add_theme_font_size_override("font_size", 14)
-	add_child(symbol_label)
+	symbol_label.custom_minimum_size = Vector2(0.0, UIMetrics.ELEMENT_TILE_SYMBOL_MIN_HEIGHT)
+	symbol_label.add_theme_font_size_override("font_size", UIMetrics.ELEMENT_TILE_SYMBOL_FONT_SIZE)
+	content_box.add_child(symbol_label)
+
+	content_spacer = Control.new()
+	content_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content_box.add_child(content_spacer)
 
 	amount_label = Label.new()
 	amount_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	amount_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	amount_label.anchor_left = 0.0
-	amount_label.anchor_top = 1.0
-	amount_label.anchor_right = 1.0
-	amount_label.anchor_bottom = 1.0
-	amount_label.offset_top = -20.0
-	amount_label.offset_bottom = -4.0
-	amount_label.add_theme_font_size_override("font_size", 10)
-	add_child(amount_label)
+	amount_label.custom_minimum_size = Vector2(0.0, UIMetrics.ELEMENT_TILE_AMOUNT_MIN_HEIGHT)
+	amount_label.add_theme_font_size_override("font_size", UIMetrics.ELEMENT_TILE_AMOUNT_FONT_SIZE)
+	content_box.add_child(amount_label)
 
 	_apply_font()
 	call_deferred("_update_square_size")

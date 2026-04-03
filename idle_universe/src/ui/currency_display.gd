@@ -2,6 +2,8 @@ extends PanelContainer
 
 class_name CurrencyDisplay
 
+const UIMetrics = preload("res://src/ui/ui_metrics.gd")
+
 var game_state: GameState
 var resource_id := ""
 var value_label: Label
@@ -9,7 +11,7 @@ var value_label: Label
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	custom_minimum_size = Vector2(0, 28)
+	custom_minimum_size = Vector2(0, UIMetrics.CURRENCY_DISPLAY_MIN_HEIGHT)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color8(213, 165, 104)
@@ -18,16 +20,17 @@ func _init() -> void:
 	style.border_width_right = 2
 	style.border_width_bottom = 2
 	style.border_color = Color8(89, 60, 27)
-	style.content_margin_left = 8
-	style.content_margin_top = 3
-	style.content_margin_right = 8
-	style.content_margin_bottom = 3
+	style.content_margin_left = UIMetrics.CURRENCY_PANEL_MARGIN_X
+	style.content_margin_top = UIMetrics.CURRENCY_PANEL_MARGIN_Y
+	style.content_margin_right = UIMetrics.CURRENCY_PANEL_MARGIN_X
+	style.content_margin_bottom = UIMetrics.CURRENCY_PANEL_MARGIN_Y
 	add_theme_stylebox_override("panel", style)
 
 	value_label = Label.new()
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value_label.add_theme_font_size_override("font_size", 14)
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value_label.add_theme_font_size_override("font_size", UIMetrics.CURRENCY_DISPLAY_FONT_SIZE)
 	var ui_font: FontFile = UIFont.load_ui_font()
 	if ui_font != null:
 		value_label.add_theme_font_override("font", ui_font)

@@ -3,9 +3,8 @@ extends Control
 const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
 const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
 const PLANETS_DATA_PATH := "res://src/data/planets.json"
+const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const AUTO_SAVE_INTERVAL_TICKS := 50
-const ERA_REQUIREMENT_CARD_TOP_RATIO := 0.80
-const ERA_REQUIREMENT_CARD_SIDE_MARGIN := 8.0
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const MAX_COUNTERS := 10
@@ -20,7 +19,6 @@ const ELEMENT_MENU_SECTIONS := [
 	{"title": "87-118", "start": 87, "end": 118, "columns": 8}
 ]
 const WORLD_WORKER_VISUAL_CAP := 1000
-const WORLD_WORKER_PARTICLE_SIZE := 3.0
 const WORLD_ORBIT_MIN_RADIUS := 168.0
 const WORLD_ORBIT_MAX_RADIUS := 240.0
 const WORLD_ORBIT_SPEED_MIN := 0.35
@@ -84,11 +82,30 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var world_title: Label = $WorldPage/WorldTitle
 @onready var planet_sprite: TextureRect = $WorldPage/PlanetSprite
 @onready var world_info: Label = $WorldPage/WorldInfo
+@onready var world_particle_layer: Control = $WorldPage/WorldParticleLayer
+@onready var world_action_stack: VBoxContainer = $WorldPage/WorldActionStack
+@onready var world_worker_slider: HSlider = $WorldPage/WorldActionStack/WorldWorkerSlider
+@onready var world_worker_button: TextureButton = $WorldPage/WorldActionStack/WorldWorkerButton
+@onready var world_worker_button_label: Label = $WorldPage/WorldActionStack/WorldWorkerButton/WorldWorkerButtonLabel
+@onready var world_progress_margin: MarginContainer = $WorldPage/WorldProgressMargin
+@onready var world_progress_vbox: VBoxContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox
+@onready var world_level_panel: PanelContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel
+@onready var world_level_bar_back: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelBarBack
+@onready var world_level_progress_fill: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelBarBack/WorldLevelProgressFill
+@onready var world_level_progress_label: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelProgressLabel
+@onready var world_level_progress_value: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelProgressValue
+@onready var world_rp_panel: PanelContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel
+@onready var world_rp_bar_back: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPBarBack
+@onready var world_rp_progress_fill: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPBarBack/WorldRPProgressFill
+@onready var world_rp_progress_label: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPProgressLabel
+@onready var world_rp_progress_value: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPProgressValue
 @onready var effects_layer: Control = $EffectsLayer
 @onready var fuse_button: TextureButton = $FuseButton
 @onready var fuse_hitbox_debug: Panel = $FuseButton/FuseHitboxDebug
 @onready var menu_overlay: Control = $MenuOverlay
+@onready var overlay_dim: ColorRect = $MenuOverlay/OverlayDim
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
+@onready var menu_content: MarginContainer = $MenuOverlay/MenuContent
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
 @onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
 @onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
@@ -102,7 +119,9 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var upgrades_info: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesInfo
 @onready var elements_title: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsTitle
 @onready var elements_info: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsInfo
+@onready var elements_scroll: ScrollContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll
 @onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
+@onready var dust_action_row: HBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow
 @onready var make_dust_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton
 @onready var make_dust_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton/MakeDustLabel
 @onready var dust_close_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCloseButton
@@ -111,6 +130,8 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var era_timeline: TextureRect = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraTimeline
 @onready var era_status: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraStatus
 @onready var era_requirement_card: PanelContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard
+@onready var era_requirement_margin: MarginContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin
+@onready var era_requirement_vbox: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox
 @onready var era_requirement_title: Label = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraRequirementTitle
 @onready var era_requirement_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraRequirementList
 @onready var era_unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/EraPanel/EraRequirementCard/EraRequirementMargin/EraRequirementVBox/EraUnlockButton
@@ -140,13 +161,22 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var top_bar: ColorRect = $TopBar
 @onready var profile_button: Button = $TopBar/ProfileButton
 @onready var level_label: Label = $TopBar/LevelLabel
+@onready var currency_boxes: VBoxContainer = $TopBar/CurrencyBoxes
 @onready var orbs_panel: PanelContainer = $TopBar/CurrencyBoxes/OrbsPanel
 @onready var dust_panel: PanelContainer = $TopBar/CurrencyBoxes/DustPanel
+@onready var orbs_row: HBoxContainer = $TopBar/CurrencyBoxes/OrbsPanel/OrbsRow
+@onready var dust_row: HBoxContainer = $TopBar/CurrencyBoxes/DustPanel/DustRow
 @onready var orbs_icon_slot: ColorRect = $TopBar/CurrencyBoxes/OrbsPanel/OrbsRow/OrbsIconSlot
 @onready var dust_icon_slot: ColorRect = $TopBar/CurrencyBoxes/DustPanel/DustRow/DustIconSlot
 @onready var orbs_label: Label = $TopBar/CurrencyBoxes/OrbsPanel/OrbsRow/OrbsLabel
 @onready var dust_label: Label = $TopBar/CurrencyBoxes/DustPanel/DustRow/DustLabel
 @onready var bottom_bar: ColorRect = $BottomBar
+@onready var nav_slots: HBoxContainer = $BottomBar/NavSlots
+@onready var prev_slot: Control = $BottomBar/NavSlots/PrevSlot
+@onready var next_slot: Control = $BottomBar/NavSlots/NextSlot
+@onready var zin_slot: Control = $BottomBar/NavSlots/ZinSlot
+@onready var zout_slot: Control = $BottomBar/NavSlots/ZoutSlot
+@onready var menu_slot: Control = $BottomBar/NavSlots/MenuSlot
 @onready var prev_button: TextureButton = $BottomBar/NavSlots/PrevSlot/PrevButton
 @onready var next_button: TextureButton = $BottomBar/NavSlots/NextSlot/NextButton
 @onready var zin_button: TextureButton = $BottomBar/NavSlots/ZinSlot/ZinButton
@@ -170,18 +200,6 @@ var menu_mode: int = MENU_CLOSED
 var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
 var dust_mode_active := false
-var world_particle_layer: Control
-var world_action_stack: VBoxContainer
-var world_worker_slider: HSlider
-var world_worker_button: TextureButton
-var world_worker_button_label: Label
-var world_progress_margin: MarginContainer
-var world_level_progress_fill: ColorRect
-var world_level_progress_label: Label
-var world_level_progress_value: Label
-var world_rp_progress_fill: ColorRect
-var world_rp_progress_label: Label
-var world_rp_progress_value: Label
 var _ui_dirty_flags: int = UI_DIRTY_ALL
 var icon_cache: GameIconCache = GameIconCache.new()
 var dust_recipe_service: DustRecipeService = DustRecipeService.new()
@@ -264,7 +282,9 @@ func _ready() -> void:
 	_configure_placeholder_slot(orbs_icon_slot)
 	_configure_placeholder_slot(dust_icon_slot)
 	_setup_world_ui()
+	_apply_shell_metrics()
 	_ensure_era_requirement_labels()
+	_apply_reference_layout()
 
 	effects_layer.z_index = 1
 	world_page.z_index = 5
@@ -290,6 +310,10 @@ func _ready() -> void:
 
 	_set_menu_mode(MENU_CLOSED)
 	_refresh_ui()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and is_node_ready():
+		_apply_reference_layout()
 
 func _process(delta: float) -> void:
 	if view_mode == VIEW_ATOM:
@@ -341,83 +365,62 @@ func _configure_texture_button(button: TextureButton, texture: Texture2D) -> voi
 	button.focus_mode = Control.FOCUS_NONE
 
 func _setup_world_ui() -> void:
-	world_particle_layer = Control.new()
 	world_particle_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world_particle_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	world_page.add_child(world_particle_layer)
 	world_page.move_child(world_particle_layer, 1)
-
-	world_action_stack = VBoxContainer.new()
 	world_action_stack.visible = false
 	world_action_stack.mouse_filter = Control.MOUSE_FILTER_STOP
-	world_action_stack.anchor_left = 0.5
-	world_action_stack.anchor_top = 1.0
-	world_action_stack.anchor_right = 0.5
-	world_action_stack.anchor_bottom = 1.0
-	world_action_stack.offset_left = -132.0
-	world_action_stack.offset_top = -222.0
-	world_action_stack.offset_right = 132.0
-	world_action_stack.offset_bottom = -138.0
 	world_action_stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	world_action_stack.add_theme_constant_override("separation", 8)
-	add_child(world_action_stack)
+	world_action_stack.add_theme_constant_override("separation", UIMetrics.WORLD_ACTION_STACK_SEPARATION)
 
-	world_worker_slider = HSlider.new()
-	world_worker_slider.custom_minimum_size = Vector2(264, 24)
+	world_worker_slider.custom_minimum_size = UIMetrics.WORLD_WORKER_SLIDER_SIZE
 	world_worker_slider.min_value = 0.0
 	world_worker_slider.max_value = 100.0
 	world_worker_slider.value = 100.0
 	world_worker_slider.step = 100.0
 	world_worker_slider.value_changed.connect(_on_world_worker_slider_changed)
-	world_action_stack.add_child(world_worker_slider)
 
-	world_worker_button = TextureButton.new()
-	world_worker_button.custom_minimum_size = Vector2(192, 54)
+	world_worker_button.custom_minimum_size = UIMetrics.WORLD_WORKER_BUTTON_SIZE
 	world_worker_button.stretch_mode = TextureButton.STRETCH_SCALE
 	_configure_texture_button(world_worker_button, UPGRADE_BUTTON_TEXTURE)
 	world_worker_button.pressed.connect(_on_world_worker_button_pressed)
-	world_action_stack.add_child(world_worker_button)
 
-	world_worker_button_label = Label.new()
 	world_worker_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world_worker_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	world_worker_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	world_worker_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	world_worker_button.add_child(world_worker_button_label)
 
-	world_progress_margin = MarginContainer.new()
 	world_progress_margin.visible = false
-	world_progress_margin.anchor_left = 0.0
-	world_progress_margin.anchor_top = 0.0
-	world_progress_margin.anchor_right = 0.0
-	world_progress_margin.anchor_bottom = 1.0
-	world_progress_margin.offset_left = 12.0
-	world_progress_margin.offset_top = 116.0
-	world_progress_margin.offset_right = 156.0
-	world_progress_margin.offset_bottom = -82.0
-	add_child(world_progress_margin)
+	world_progress_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	world_progress_vbox.add_theme_constant_override("separation", UIMetrics.WORLD_PROGRESS_STACK_SEPARATION)
 
-	var progress_vbox := VBoxContainer.new()
-	progress_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	progress_vbox.add_theme_constant_override("separation", 12)
-	world_progress_margin.add_child(progress_vbox)
-
-	var level_panel := _create_world_progress_panel("Planet Level Progress")
-	progress_vbox.add_child(level_panel["root"])
-	world_level_progress_fill = level_panel["fill"]
-	world_level_progress_label = level_panel["title"]
-	world_level_progress_value = level_panel["value"]
-
-	var rp_panel := _create_world_progress_panel("RP Progress")
-	progress_vbox.add_child(rp_panel["root"])
-	world_rp_progress_fill = rp_panel["fill"]
-	world_rp_progress_label = rp_panel["title"]
-	world_rp_progress_value = rp_panel["value"]
+	_configure_world_progress_panel(
+		world_level_panel,
+		world_level_bar_back,
+		world_level_progress_fill,
+		world_level_progress_label,
+		world_level_progress_value,
+		"Planet Level Progress"
+	)
+	_configure_world_progress_panel(
+		world_rp_panel,
+		world_rp_bar_back,
+		world_rp_progress_fill,
+		world_rp_progress_label,
+		world_rp_progress_value,
+		"RP Progress"
+	)
 
 	_apply_world_ui_style()
 
-func _create_world_progress_panel(title: String) -> Dictionary:
-	var panel := PanelContainer.new()
+func _configure_world_progress_panel(
+	panel: PanelContainer,
+	bar_back: ColorRect,
+	fill: ColorRect,
+	title_label: Label,
+	value_label: Label,
+	title: String
+) -> void:
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var style := StyleBoxFlat.new()
@@ -427,27 +430,18 @@ func _create_world_progress_panel(title: String) -> Dictionary:
 	style.border_width_right = 2
 	style.border_width_bottom = 2
 	style.border_color = Color8(16, 16, 16)
-	style.content_margin_left = 8
-	style.content_margin_top = 8
-	style.content_margin_right = 8
-	style.content_margin_bottom = 8
+	style.content_margin_left = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
+	style.content_margin_top = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
+	style.content_margin_right = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
+	style.content_margin_bottom = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
 	panel.add_theme_stylebox_override("panel", style)
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
-
-	var title_label := Label.new()
 	title_label.text = title
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	box.add_child(title_label)
 
-	var bar_back := ColorRect.new()
-	bar_back.custom_minimum_size = Vector2(128, 16)
+	bar_back.custom_minimum_size = UIMetrics.WORLD_PROGRESS_BAR_SIZE
 	bar_back.color = Color8(18, 18, 18)
-	box.add_child(bar_back)
 
-	var fill := ColorRect.new()
 	fill.anchor_left = 0.0
 	fill.anchor_top = 0.0
 	fill.anchor_right = 0.0
@@ -457,18 +451,7 @@ func _create_world_progress_panel(title: String) -> Dictionary:
 	fill.offset_right = 0.0
 	fill.offset_bottom = 0.0
 	fill.color = Color8(84, 201, 124)
-	bar_back.add_child(fill)
-
-	var value_label := Label.new()
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	box.add_child(value_label)
-
-	return {
-		"root": panel,
-		"title": title_label,
-		"fill": fill,
-		"value": value_label
-	}
 
 func _apply_world_ui_style() -> void:
 	var ui_font: FontFile = UIFont.load_ui_font()
@@ -479,16 +462,196 @@ func _apply_world_ui_style() -> void:
 		world_rp_progress_label.add_theme_font_override("font", ui_font)
 		world_rp_progress_value.add_theme_font_override("font", ui_font)
 
-	world_worker_button_label.add_theme_font_size_override("font_size", 14)
+	world_worker_button_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	world_worker_button_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-	world_level_progress_label.add_theme_font_size_override("font_size", 14)
+	world_level_progress_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	world_level_progress_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_level_progress_value.add_theme_font_size_override("font_size", 12)
+	world_level_progress_value.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_SMALL)
 	world_level_progress_value.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_rp_progress_label.add_theme_font_size_override("font_size", 14)
+	world_rp_progress_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	world_rp_progress_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_rp_progress_value.add_theme_font_size_override("font_size", 12)
+	world_rp_progress_value.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_SMALL)
 	world_rp_progress_value.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _apply_shell_metrics() -> void:
+	counter_list.add_theme_constant_override("separation", UIMetrics.COUNTER_LIST_SEPARATION)
+	for panel in [
+		main_menu_panel,
+		upgrades_panel,
+		elements_panel,
+		stats_panel,
+		shop_panel,
+		planets_panel,
+		settings_panel
+	]:
+		panel.add_theme_constant_override("separation", UIMetrics.MENU_PANEL_SEPARATION)
+
+	elements_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	elements_section_list.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_LIST_SEPARATION)
+	dust_action_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
+	make_dust_button.custom_minimum_size = UIMetrics.DUST_ACTION_PRIMARY_BUTTON_SIZE
+	dust_close_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
+
+	era_timeline.custom_minimum_size = Vector2(0.0, UIMetrics.ERA_TIMELINE_MIN_HEIGHT)
+	era_requirement_margin.add_theme_constant_override("margin_left", UIMetrics.ERA_REQUIREMENT_MARGIN)
+	era_requirement_margin.add_theme_constant_override("margin_top", UIMetrics.ERA_REQUIREMENT_MARGIN)
+	era_requirement_margin.add_theme_constant_override("margin_right", UIMetrics.ERA_REQUIREMENT_MARGIN)
+	era_requirement_margin.add_theme_constant_override("margin_bottom", UIMetrics.ERA_REQUIREMENT_MARGIN)
+	era_requirement_vbox.add_theme_constant_override("separation", UIMetrics.ERA_REQUIREMENT_VBOX_SEPARATION)
+	era_requirement_list.add_theme_constant_override("separation", UIMetrics.ERA_REQUIREMENT_LIST_SEPARATION)
+
+	currency_boxes.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
+	orbs_row.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
+	dust_row.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
+	orbs_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
+	dust_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
+
+	nav_slots.add_theme_constant_override("separation", UIMetrics.NAV_SLOT_SEPARATION)
+	for slot in [prev_slot, next_slot, zin_slot, zout_slot, menu_slot]:
+		slot.custom_minimum_size = UIMetrics.NAV_SLOT_SIZE
+
+func _apply_reference_layout() -> void:
+	custom_minimum_size = UIMetrics.REFERENCE_VIEWPORT_SIZE
+	_layout_root_overlays()
+	_layout_top_bar()
+	_layout_bottom_bar()
+	_layout_counter_column()
+	_layout_atom_focus_controls()
+	_layout_world_page()
+
+func _layout_root_overlays() -> void:
+	_set_fill_rect(overlay_dim, 0.0, 0.0, 0.0, 0.0)
+	_set_fill_rect(menu_overlay, 0.0, UIMetrics.TOP_BAR_HEIGHT, 0.0, UIMetrics.BOTTOM_BAR_HEIGHT)
+	_set_fill_rect(menu_background, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN)
+	_set_fill_rect(menu_content, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN)
+
+func _layout_top_bar() -> void:
+	_set_top_strip_rect(top_bar, UIMetrics.TOP_BAR_HEIGHT)
+	_set_top_left_rect(profile_button, UIMetrics.TOP_BAR_PROFILE_MARGIN, UIMetrics.TOP_BAR_PROFILE_SIZE)
+	_set_top_left_rect(level_label, UIMetrics.TOP_BAR_LEVEL_MARGIN, UIMetrics.TOP_BAR_LEVEL_SIZE)
+	_set_center_anchor_rect(currency_boxes, UIMetrics.CURRENCY_BOXES_SIZE)
+
+func _layout_bottom_bar() -> void:
+	_set_bottom_strip_rect(bottom_bar, UIMetrics.BOTTOM_BAR_HEIGHT)
+	_set_center_anchor_rect(nav_slots, UIMetrics.NAV_SLOTS_SIZE)
+
+func _layout_counter_column() -> void:
+	_set_left_column_rect(
+		counter_margin,
+		UIMetrics.COUNTER_MARGIN_LEFT,
+		UIMetrics.COUNTER_MARGIN_TOP,
+		UIMetrics.COUNTER_COLUMN_WIDTH,
+		UIMetrics.COUNTER_MARGIN_BOTTOM
+	)
+
+func _layout_atom_focus_controls() -> void:
+	_set_center_anchor_rect(fuse_button, UIMetrics.FUSE_BUTTON_SIZE)
+	_set_top_right_rect(shop_button, UIMetrics.SHOP_BUTTON_TOP_MARGIN, UIMetrics.SHOP_BUTTON_RIGHT_MARGIN, UIMetrics.SHOP_BUTTON_SIZE)
+
+func _layout_world_page() -> void:
+	_set_fill_rect(world_page, 0.0, 0.0, 0.0, 0.0)
+	_set_fill_rect(world_particle_layer, 0.0, 0.0, 0.0, 0.0)
+	_set_top_wide_rect(world_title, UIMetrics.WORLD_TITLE_TOP_MARGIN, UIMetrics.WORLD_TITLE_HEIGHT)
+	_set_center_anchor_rect(planet_sprite, UIMetrics.WORLD_PLANET_SIZE)
+	_set_center_anchor_rect(world_info, UIMetrics.WORLD_INFO_SIZE, UIMetrics.WORLD_INFO_CENTER_OFFSET)
+	_set_bottom_center_rect(world_action_stack, UIMetrics.WORLD_ACTION_STACK_SIZE, UIMetrics.WORLD_ACTION_STACK_BOTTOM_MARGIN)
+	_set_left_column_rect(
+		world_progress_margin,
+		UIMetrics.COUNTER_MARGIN_LEFT,
+		UIMetrics.WORLD_PROGRESS_TOP_MARGIN,
+		UIMetrics.WORLD_PROGRESS_WIDTH,
+		UIMetrics.WORLD_PROGRESS_BOTTOM_MARGIN
+	)
+
+func _set_fill_rect(control: Control, left: float, top: float, right: float, bottom: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 1.0
+	control.offset_left = left
+	control.offset_top = top
+	control.offset_right = -right
+	control.offset_bottom = -bottom
+
+func _set_top_strip_rect(control: Control, height: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 0.0
+	control.offset_left = 0.0
+	control.offset_top = 0.0
+	control.offset_right = 0.0
+	control.offset_bottom = height
+
+func _set_bottom_strip_rect(control: Control, height: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 1.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 1.0
+	control.offset_left = 0.0
+	control.offset_top = -height
+	control.offset_right = 0.0
+	control.offset_bottom = 0.0
+
+func _set_top_wide_rect(control: Control, top: float, height: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 0.0
+	control.offset_left = 0.0
+	control.offset_top = top
+	control.offset_right = 0.0
+	control.offset_bottom = top + height
+
+func _set_top_left_rect(control: Control, margin: Vector2, size_value: Vector2) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 0.0
+	control.anchor_bottom = 0.0
+	control.offset_left = margin.x
+	control.offset_top = margin.y
+	control.offset_right = margin.x + size_value.x
+	control.offset_bottom = margin.y + size_value.y
+
+func _set_top_right_rect(control: Control, top: float, right: float, size_value: Vector2) -> void:
+	control.anchor_left = 1.0
+	control.anchor_top = 0.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 0.0
+	control.offset_left = -(right + size_value.x)
+	control.offset_top = top
+	control.offset_right = -right
+	control.offset_bottom = top + size_value.y
+
+func _set_left_column_rect(control: Control, left: float, top: float, width: float, bottom: float) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 0.0
+	control.anchor_bottom = 1.0
+	control.offset_left = left
+	control.offset_top = top
+	control.offset_right = left + width
+	control.offset_bottom = -bottom
+
+func _set_center_anchor_rect(control: Control, size_value: Vector2, center_offset: Vector2 = Vector2.ZERO) -> void:
+	control.anchor_left = 0.5
+	control.anchor_top = 0.5
+	control.anchor_right = 0.5
+	control.anchor_bottom = 0.5
+	control.offset_left = center_offset.x - (size_value.x * 0.5)
+	control.offset_top = center_offset.y - (size_value.y * 0.5)
+	control.offset_right = center_offset.x + (size_value.x * 0.5)
+	control.offset_bottom = center_offset.y + (size_value.y * 0.5)
+
+func _set_bottom_center_rect(control: Control, size_value: Vector2, bottom: float) -> void:
+	control.anchor_left = 0.5
+	control.anchor_top = 1.0
+	control.anchor_right = 0.5
+	control.anchor_bottom = 1.0
+	control.offset_left = -(size_value.x * 0.5)
+	control.offset_top = -(bottom + size_value.y)
+	control.offset_right = size_value.x * 0.5
+	control.offset_bottom = -bottom
 
 func _update_menu_button_texture() -> void:
 	var texture: Texture2D = MENU_BUTTON_TEXTURE
@@ -565,35 +728,35 @@ func _apply_currency_box_style(panel: PanelContainer) -> void:
 	style.border_width_right = 2
 	style.border_width_bottom = 2
 	style.border_color = Color8(16, 16, 16)
-	style.content_margin_left = 8
-	style.content_margin_top = 3
-	style.content_margin_right = 8
-	style.content_margin_bottom = 3
+	style.content_margin_left = UIMetrics.CURRENCY_PANEL_MARGIN_X
+	style.content_margin_top = UIMetrics.CURRENCY_PANEL_MARGIN_Y
+	style.content_margin_right = UIMetrics.CURRENCY_PANEL_MARGIN_X
+	style.content_margin_bottom = UIMetrics.CURRENCY_PANEL_MARGIN_Y
 	panel.add_theme_stylebox_override("panel", style)
 
 func _apply_currency_labels() -> void:
-	level_label.add_theme_font_size_override("font_size", 14)
-	world_title.add_theme_font_size_override("font_size", 26)
-	world_info.add_theme_font_size_override("font_size", 18)
+	level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
+	world_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	world_info.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_LARGE)
 	level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	world_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	world_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	orbs_label.add_theme_font_size_override("font_size", 14)
+	orbs_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	dust_label.add_theme_font_size_override("font_size", 14)
+	dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	dust_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 func _apply_menu_text_style() -> void:
-	main_menu_title.add_theme_font_size_override("font_size", 26)
-	upgrades_title.add_theme_font_size_override("font_size", 26)
-	elements_title.add_theme_font_size_override("font_size", 26)
-	era_title.add_theme_font_size_override("font_size", 26)
-	era_status.add_theme_font_size_override("font_size", 16)
-	era_requirement_title.add_theme_font_size_override("font_size", 18)
-	stats_title.add_theme_font_size_override("font_size", 26)
-	shop_title.add_theme_font_size_override("font_size", 26)
-	planets_title.add_theme_font_size_override("font_size", 26)
-	settings_title.add_theme_font_size_override("font_size", 26)
+	main_menu_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	upgrades_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	elements_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	era_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	era_status.add_theme_font_size_override("font_size", UIMetrics.ERA_STATUS_FONT_SIZE)
+	era_requirement_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_LARGE)
+	stats_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	shop_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	planets_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	settings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	main_menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	upgrades_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	elements_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
@@ -616,9 +779,9 @@ func _apply_menu_text_style() -> void:
 	add_orbs_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 func _apply_dust_action_text_style() -> void:
-	make_dust_label.add_theme_font_size_override("font_size", 14)
+	make_dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	make_dust_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-	dust_close_label.add_theme_font_size_override("font_size", 14)
+	dust_close_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	dust_close_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
 
 func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
@@ -734,7 +897,7 @@ func _ensure_era_requirement_labels() -> void:
 		var label := Label.new()
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 14)
+		label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 		if ui_font != null:
 			label.add_theme_font_override("font", ui_font)
@@ -1121,8 +1284,8 @@ func _add_world_worker_particle() -> void:
 	var node := ColorRect.new()
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	node.color = Color8(238, 240, 255, 220)
-	node.custom_minimum_size = Vector2(WORLD_WORKER_PARTICLE_SIZE, WORLD_WORKER_PARTICLE_SIZE)
-	node.size = Vector2(WORLD_WORKER_PARTICLE_SIZE, WORLD_WORKER_PARTICLE_SIZE)
+	node.custom_minimum_size = UIMetrics.WORLD_PARTICLE_SIZE
+	node.size = UIMetrics.WORLD_PARTICLE_SIZE
 	world_particle_layer.add_child(node)
 
 	world_worker_particles.append({
@@ -1244,9 +1407,9 @@ func _update_era_requirement_card_position() -> void:
 	if not is_instance_valid(era_requirement_card):
 		return
 
-	var top_offset := round(era_timeline.custom_minimum_size.y * ERA_REQUIREMENT_CARD_TOP_RATIO)
-	era_requirement_card.offset_left = ERA_REQUIREMENT_CARD_SIDE_MARGIN
-	era_requirement_card.offset_right = -ERA_REQUIREMENT_CARD_SIDE_MARGIN
+	var top_offset := round(era_timeline.custom_minimum_size.y * UIMetrics.ERA_REQUIREMENT_CARD_TOP_RATIO)
+	era_requirement_card.offset_left = UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
+	era_requirement_card.offset_right = -UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
 	era_requirement_card.offset_top = top_offset
 
 func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
@@ -1275,12 +1438,12 @@ func _sync_element_menu_tiles() -> void:
 			var section_data: Dictionary = ELEMENT_MENU_SECTIONS[section_index]
 			var section_box := VBoxContainer.new()
 			section_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			section_box.add_theme_constant_override("separation", 6)
+			section_box.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_BOX_SEPARATION)
 			elements_section_list.add_child(section_box)
 
 			var header := Label.new()
 			header.text = str(section_data.get("title", ""))
-			header.add_theme_font_size_override("font_size", 16)
+			header.add_theme_font_size_override("font_size", UIMetrics.MENU_SECTION_HEADER_FONT_SIZE)
 			header.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 			var ui_font: FontFile = UIFont.load_ui_font()
 			if ui_font != null:
@@ -1290,8 +1453,8 @@ func _sync_element_menu_tiles() -> void:
 			var grid := GridContainer.new()
 			grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			grid.columns = int(section_data.get("columns", 5))
-			grid.add_theme_constant_override("h_separation", 6)
-			grid.add_theme_constant_override("v_separation", 6)
+			grid.add_theme_constant_override("h_separation", UIMetrics.MENU_GRID_SPACING)
+			grid.add_theme_constant_override("v_separation", UIMetrics.MENU_GRID_SPACING)
 			section_box.add_child(grid)
 
 			var section_start := int(section_data.get("start", 1))

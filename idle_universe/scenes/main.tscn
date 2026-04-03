@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://do5uy6hpelkd6" path="res://src/core/tick_system.gd" id="2_tick"]
 
 [node name="GameRoot" type="Control" unique_id=2086593814]
+custom_minimum_size = Vector2(1080, 1920)
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -77,6 +78,69 @@ grow_horizontal = 2
 grow_vertical = 2
 horizontal_alignment = 1
 autowrap_mode = 3
+
+[node name="WorldParticleLayer" type="Control" parent="WorldPage" unique_id=1596619736]
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="WorldActionStack" type="VBoxContainer" parent="WorldPage" unique_id=1307968014]
+visible = false
+layout_mode = 0
+mouse_filter = 0
+
+[node name="WorldWorkerSlider" type="HSlider" parent="WorldPage/WorldActionStack" unique_id=1338971321]
+layout_mode = 2
+
+[node name="WorldWorkerButton" type="TextureButton" parent="WorldPage/WorldActionStack" unique_id=135785801]
+layout_mode = 2
+
+[node name="WorldWorkerButtonLabel" type="Label" parent="WorldPage/WorldActionStack/WorldWorkerButton" unique_id=1543519341]
+layout_mode = 0
+
+[node name="WorldProgressMargin" type="MarginContainer" parent="WorldPage" unique_id=691199733]
+visible = false
+layout_mode = 0
+
+[node name="WorldProgressVBox" type="VBoxContainer" parent="WorldPage/WorldProgressMargin" unique_id=920935324]
+layout_mode = 2
+
+[node name="WorldLevelPanel" type="PanelContainer" parent="WorldPage/WorldProgressMargin/WorldProgressVBox" unique_id=912901730]
+layout_mode = 2
+
+[node name="WorldLevelBox" type="VBoxContainer" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel" unique_id=330301546]
+layout_mode = 2
+
+[node name="WorldLevelProgressLabel" type="Label" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox" unique_id=1673771652]
+layout_mode = 2
+text = "Planet Level Progress"
+
+[node name="WorldLevelBarBack" type="ColorRect" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox" unique_id=2073871053]
+layout_mode = 2
+
+[node name="WorldLevelProgressFill" type="ColorRect" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelBarBack" unique_id=126654971]
+layout_mode = 0
+
+[node name="WorldLevelProgressValue" type="Label" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox" unique_id=1839112169]
+layout_mode = 2
+
+[node name="WorldRPPanel" type="PanelContainer" parent="WorldPage/WorldProgressMargin/WorldProgressVBox" unique_id=209136579]
+layout_mode = 2
+
+[node name="WorldRPBox" type="VBoxContainer" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel" unique_id=1550693880]
+layout_mode = 2
+
+[node name="WorldRPProgressLabel" type="Label" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox" unique_id=1466342631]
+layout_mode = 2
+text = "RP Progress"
+
+[node name="WorldRPBarBack" type="ColorRect" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox" unique_id=140644445]
+layout_mode = 2
+
+[node name="WorldRPProgressFill" type="ColorRect" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPBarBack" unique_id=2120274787]
+layout_mode = 0
+
+[node name="WorldRPProgressValue" type="Label" parent="WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox" unique_id=139776421]
+layout_mode = 2
 
 [node name="EffectsLayer" type="Control" parent="." unique_id=2127717752]
 layout_mode = 1
