@@ -4,19 +4,9 @@ const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
 const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
 const PLANETS_DATA_PATH := "res://src/data/planets.json"
 const AUTO_SAVE_INTERVAL_TICKS := 50
-const ELEMENT_SHEET_FRAME_SIZE := Vector2i(32, 32)
-const ERA_SHEET_FRAME_SIZE := Vector2i(540, 750)
 const ERA_REQUIREMENT_CARD_TOP_RATIO := 0.80
 const ERA_REQUIREMENT_CARD_SIDE_MARGIN := 8.0
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
-const OFFSCREEN_MARGIN := 96.0
-const PRODUCT_PARTICLE_SIZE := 52.0
-const PROTON_PARTICLE_SIZE := 56.0
-const PRODUCT_SPEED_MIN := 210.0
-const PRODUCT_SPEED_MAX := 320.0
-const PROTON_SPEED_MIN := 260.0
-const PROTON_SPEED_MAX := 360.0
-const PROTON_SPEED_VARIATION := 0.15
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const MAX_COUNTERS := 10
 const FIRST_TIER_UNLOCK_COUNT := 10
@@ -29,25 +19,6 @@ const ELEMENT_MENU_SECTIONS := [
 	{"title": "55-86", "start": 55, "end": 86, "columns": 8},
 	{"title": "87-118", "start": 87, "end": 118, "columns": 8}
 ]
-const DUST_SELECTION_STEPS := [0.0, 0.10, 0.25, 0.50, 1.0]
-const DUST_BASE_SCALAR := 0.024
-const DUST_QUANTITY_EXPONENT := 0.90
-const DUST_DIVERSITY_EXPONENT := 0.55
-const DUST_STABILITY_WEIGHT := 0.65
-const DUST_TIER_WEIGHT := 0.35
-const DUST_STABILITY_BY_INDEX := {
-	1: 0.000,
-	2: 0.804,
-	3: 0.637,
-	4: 0.734,
-	5: 0.787,
-	6: 0.873,
-	7: 0.850,
-	8: 0.907,
-	9: 0.884,
-	10: 0.913
-}
-const PLANET_SHEET_FRAME_SIZE := Vector2i(100, 100)
 const WORLD_WORKER_VISUAL_CAP := 1000
 const WORLD_WORKER_PARTICLE_SIZE := 3.0
 const WORLD_ORBIT_MIN_RADIUS := 168.0
@@ -99,9 +70,6 @@ const UI_DIRTY_ALL := (
 	| UI_DIRTY_DEBUG
 )
 
-const ELEMENT_SHEET = preload("res://assests/sprites/elements_01_strip119.png")
-const PLANET_SHEET = preload("res://assests/sprites/planet_A_split25.png")
-const ERA_SHEET = preload("res://assests/sprites/spr_era_strip4.png")
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
 const NEXT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_next_btn.png")
 const MENU_BUTTON_TEXTURE = preload("res://assests/sprites/spr_menu_btn.png")
@@ -195,7 +163,6 @@ var upgrade_buttons: Dictionary = {}
 var upgrade_button_ids: Array[String] = []
 var element_menu_tiles: Dictionary = {}
 var visible_element_section_count := -1
-var visual_particles: Array[Dictionary] = []
 var world_worker_particles: Array[Dictionary] = []
 var era_requirement_labels: Array[Label] = []
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -203,7 +170,6 @@ var menu_mode: int = MENU_CLOSED
 var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
 var dust_mode_active := false
-var dust_selection_indices: Dictionary = {}
 var world_particle_layer: Control
 var world_action_stack: VBoxContainer
 var world_worker_slider: HSlider
@@ -217,13 +183,9 @@ var world_rp_progress_fill: ColorRect
 var world_rp_progress_label: Label
 var world_rp_progress_value: Label
 var _ui_dirty_flags: int = UI_DIRTY_ALL
-var _element_icon_cache: Dictionary = {}
-var _planet_icon_cache: Dictionary = {}
-var _era_frame_cache: Dictionary = {}
-var _dust_cache_dirty := true
-var _cached_selected_dust_amounts: Dictionary = {}
-var _cached_selected_dust_element_ids: Array[String] = []
-var _cached_dust_preview: DigitMaster = DigitMaster.zero()
+var icon_cache: GameIconCache = GameIconCache.new()
+var dust_recipe_service: DustRecipeService = DustRecipeService.new()
+var atom_effects_controller: AtomEffectsController = AtomEffectsController.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -317,12 +279,25 @@ func _ready() -> void:
 	tick_system.tick_processed.connect(_on_tick_processed)
 	tick_system.manual_smash_resolved.connect(_on_manual_smash_resolved)
 	tick_system.auto_smash_requested.connect(_on_auto_smash_requested)
+	atom_effects_controller.configure(
+		effects_layer,
+		fuse_button,
+		game_state,
+		element_system,
+		upgrades_system,
+		icon_cache
+	)
 
 	_set_menu_mode(MENU_CLOSED)
 	_refresh_ui()
 
 func _process(delta: float) -> void:
-	_update_particles(delta)
+	if view_mode == VIEW_ATOM:
+		var resolved_auto_smashes := atom_effects_controller.update(delta)
+		if resolved_auto_smashes > 0:
+			dust_recipe_service.invalidate()
+			_pulse_fuse_element()
+			_refresh_ui(_get_resource_refresh_flags())
 	_update_world_worker_particles(delta)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -696,17 +671,10 @@ func _set_view_mode(new_mode: int) -> void:
 		return
 	view_mode = new_mode
 	if view_mode == VIEW_WORLD:
-		_clear_visual_particles()
+		atom_effects_controller.clear()
 	else:
 		_clear_world_worker_particles()
 	_mark_ui_dirty(UI_DIRTY_DEBUG)
-
-func _clear_visual_particles() -> void:
-	for particle in visual_particles:
-		var node: TextureRect = particle.get("node", null)
-		if is_instance_valid(node):
-			node.queue_free()
-	visual_particles.clear()
 
 func _clear_world_worker_particles() -> void:
 	for particle in world_worker_particles:
@@ -719,9 +687,6 @@ func _mark_ui_dirty(flags: int) -> void:
 	if flags == 0:
 		return
 	_ui_dirty_flags |= flags
-
-func _invalidate_dust_cache() -> void:
-	_dust_cache_dirty = true
 
 func _get_resource_refresh_flags() -> int:
 	return (
@@ -803,18 +768,6 @@ func _get_era_card_color(era_index: int) -> Color:
 			return Color8(112, 74, 143)
 		_:
 			return Color8(126, 126, 126)
-
-func _make_era_frame(frame_index: int) -> AtlasTexture:
-	var clamped_index := clampi(frame_index, 0, 3)
-	if not _era_frame_cache.has(clamped_index):
-		var icon := AtlasTexture.new()
-		icon.atlas = ERA_SHEET
-		icon.region = Rect2(
-			Vector2(clamped_index * ERA_SHEET_FRAME_SIZE.x, 0),
-			Vector2(ERA_SHEET_FRAME_SIZE.x, ERA_SHEET_FRAME_SIZE.y)
-		)
-		_era_frame_cache[clamped_index] = icon
-	return _era_frame_cache[clamped_index]
 
 func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
@@ -922,7 +875,7 @@ func _refresh_top_bar() -> void:
 func _refresh_selection_ui() -> void:
 	var current_element: Dictionary = game_state.get_current_element()
 	var current_index := int(current_element.get("index", 0))
-	var current_icon := _make_element_icon(current_index)
+	var current_icon := icon_cache.get_element_icon(current_index)
 	fuse_button.texture_normal = current_icon
 	fuse_button.texture_pressed = current_icon
 	fuse_button.texture_hover = current_icon
@@ -1023,8 +976,8 @@ func _refresh_elements_panel() -> void:
 	var dust_preview := DigitMaster.zero()
 	var selected_batch_count := 0
 	if dust_mode_active:
-		dust_preview = _calculate_dust_preview()
-		selected_batch_count = _get_selected_dust_element_ids().size()
+		dust_preview = dust_recipe_service.get_preview(game_state, upgrades_system)
+		selected_batch_count = dust_recipe_service.get_selected_element_ids(game_state, upgrades_system).size()
 	if next_unlock.is_empty():
 		if dust_mode_active:
 			elements_info.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
@@ -1121,7 +1074,7 @@ func _refresh_world_ui() -> void:
 		int(round(allocation_ratio * 100.0)),
 		int(round((1.0 - allocation_ratio) * 100.0))
 	]
-	planet_sprite.texture = _make_planet_icon(planet_level)
+	planet_sprite.texture = icon_cache.get_planet_icon(planet_level)
 	world_worker_slider.set_block_signals(true)
 	world_worker_slider.step = slider_step
 	world_worker_slider.value = allocation_ratio * 100.0
@@ -1209,7 +1162,7 @@ func _refresh_era_ui() -> void:
 		return
 
 	var unlocked_era_index := game_state.get_unlocked_era_index()
-	era_timeline.texture = _make_era_frame(unlocked_era_index)
+	era_timeline.texture = icon_cache.get_era_frame(unlocked_era_index)
 	_update_era_timeline_height()
 	_update_era_requirement_card_position()
 
@@ -1277,7 +1230,12 @@ func _update_era_timeline_height() -> void:
 	if target_width <= 0.0:
 		return
 
-	var target_height := round(target_width * (float(ERA_SHEET_FRAME_SIZE.y) / float(ERA_SHEET_FRAME_SIZE.x)))
+	var target_height := round(
+		target_width * (
+			float(GameIconCache.ERA_SHEET_FRAME_SIZE.y)
+			/ float(GameIconCache.ERA_SHEET_FRAME_SIZE.x)
+		)
+	)
 	if absf(era_timeline.custom_minimum_size.y - target_height) > 0.5:
 		era_timeline.custom_minimum_size = Vector2(0.0, target_height)
 		era_timeline.offset_bottom = target_height
@@ -1353,140 +1311,16 @@ func _sync_element_menu_tiles() -> void:
 		var tile: ElementMenuTile = element_menu_tiles[element_id]
 		var dust_fraction := 0.0
 		if dust_mode_active:
-			dust_fraction = _get_dust_selection_fraction(element_id)
+			dust_fraction = dust_recipe_service.get_selection_fraction(element_id)
 		tile.refresh(game_state.current_element_id, dust_fraction)
 		tile.set_debug_hitbox_visible(debug_show_element_hitboxes)
 
-func _get_dust_selection_index(element_id: String) -> int:
-	return int(dust_selection_indices.get(element_id, 0))
-
-func _get_dust_selection_fraction(element_id: String) -> float:
-	var selection_index := clampi(_get_dust_selection_index(element_id), 0, DUST_SELECTION_STEPS.size() - 1)
-	return float(DUST_SELECTION_STEPS[selection_index])
-
-func _cycle_dust_selection(element_id: String) -> void:
-	var current_index := _get_dust_selection_index(element_id)
-	var next_index := (current_index + 1) % DUST_SELECTION_STEPS.size()
-	if next_index == 0:
-		dust_selection_indices.erase(element_id)
-	else:
-		dust_selection_indices[element_id] = next_index
-	_invalidate_dust_cache()
-
-func _get_selected_dust_amounts() -> Dictionary:
-	_ensure_dust_cache()
-	return _cached_selected_dust_amounts
-
-func _get_selected_dust_element_ids() -> Array[String]:
-	_ensure_dust_cache()
-	return _cached_selected_dust_element_ids.duplicate()
-
-func _get_highest_unlocked_atomic_number() -> int:
-	var highest_index := 1
-	for element_id in game_state.get_unlocked_real_element_ids():
-		var element: Dictionary = game_state.get_element(element_id)
-		highest_index = maxi(highest_index, int(element.get("index", 1)))
-	return highest_index
-
-func _get_stability_score(element_index: int) -> float:
-	if DUST_STABILITY_BY_INDEX.has(element_index):
-		return float(DUST_STABILITY_BY_INDEX[element_index])
-	var tier_ratio := sqrt(clampf(float(element_index) / 118.0, 0.0, 1.0))
-	return clampf(0.45 + (0.45 * tier_ratio), 0.0, 1.0)
-
-func _get_hybrid_quality(element_id: String, highest_unlocked_atomic_number: int) -> float:
-	var element: Dictionary = game_state.get_element(element_id)
-	var atomic_number := int(element.get("index", 1))
-	var tier_score := sqrt(clampf(float(atomic_number) / float(maxi(1, highest_unlocked_atomic_number)), 0.0, 1.0))
-	var stability_score := _get_stability_score(atomic_number)
-	return clampf(
-		(DUST_STABILITY_WEIGHT * stability_score) + (DUST_TIER_WEIGHT * tier_score),
-		0.0,
-		1.0
-	)
-
-func _calculate_dust_preview() -> DigitMaster:
-	_ensure_dust_cache()
-	return _cached_dust_preview.clone()
-
-func _ensure_dust_cache() -> void:
-	if not _dust_cache_dirty:
-		return
-
-	_cached_selected_dust_amounts.clear()
-	_cached_selected_dust_element_ids.clear()
-	_cached_dust_preview = DigitMaster.zero()
-
-	for element_id_variant in dust_selection_indices.keys():
-		var element_id := str(element_id_variant)
-		var fraction := _get_dust_selection_fraction(element_id)
-		if fraction <= 0.0:
-			continue
-		if not game_state.is_element_unlocked(element_id):
-			continue
-		var amount: DigitMaster = game_state.get_resource_amount(element_id)
-		if amount.is_zero():
-			continue
-		_cached_selected_dust_amounts[element_id] = amount.multiply_scalar(fraction)
-		_cached_selected_dust_element_ids.append(element_id)
-
-	_cached_selected_dust_element_ids.sort()
-	if _cached_selected_dust_amounts.is_empty():
-		_dust_cache_dirty = false
-		return
-
-	var total_quantity := DigitMaster.zero()
-	var max_exponent := -999999
-	for element_id_variant in _cached_selected_dust_amounts.keys():
-		var amount: DigitMaster = _cached_selected_dust_amounts[element_id_variant]
-		if amount.is_zero():
-			continue
-		total_quantity = total_quantity.add(amount)
-		max_exponent = maxi(max_exponent, amount.exponent)
-
-	if total_quantity.is_zero():
-		_dust_cache_dirty = false
-		return
-
-	var highest_unlocked_atomic_number := _get_highest_unlocked_atomic_number()
-	var scaled_quantity_sum := 0.0
-	var weighted_quality_sum := 0.0
-	for element_id_variant in _cached_selected_dust_amounts.keys():
-		var element_id := str(element_id_variant)
-		var amount: DigitMaster = _cached_selected_dust_amounts[element_id]
-		if amount.is_zero():
-			continue
-		var scaled_quantity := amount.mantissa * pow(10.0, amount.exponent - max_exponent)
-		scaled_quantity_sum += scaled_quantity
-		weighted_quality_sum += scaled_quantity * _get_hybrid_quality(element_id, highest_unlocked_atomic_number)
-
-	if scaled_quantity_sum <= 0.0:
-		_dust_cache_dirty = false
-		return
-
-	var avg_h := weighted_quality_sum / scaled_quantity_sum
-	var raw_dust := total_quantity.power(DUST_QUANTITY_EXPONENT)
-	raw_dust = raw_dust.multiply_scalar(
-		DUST_BASE_SCALAR
-		* pow(float(_cached_selected_dust_amounts.size()), DUST_DIVERSITY_EXPONENT)
-		* avg_h
-	)
-	raw_dust = raw_dust.multiply_scalar(
-		upgrades_system.get_dust_recipe_bonus_multiplier(game_state, _cached_selected_dust_element_ids)
-	)
-	if raw_dust.compare(total_quantity) > 0:
-		_cached_dust_preview = total_quantity
-	else:
-		_cached_dust_preview = raw_dust
-
-	_dust_cache_dirty = false
-
 func _perform_dust_conversion() -> bool:
-	var selected_amounts: Dictionary = _get_selected_dust_amounts()
+	var selected_amounts: Dictionary = dust_recipe_service.get_selected_amounts(game_state, upgrades_system)
 	if selected_amounts.is_empty():
 		return false
 
-	var dust_preview: DigitMaster = _calculate_dust_preview()
+	var dust_preview: DigitMaster = dust_recipe_service.get_preview(game_state, upgrades_system)
 	if dust_preview.is_zero():
 		return false
 
@@ -1503,7 +1337,7 @@ func _perform_dust_conversion() -> bool:
 			return false
 
 	game_state.produce_resource(GameState.DUST_RESOURCE_ID, dust_preview)
-	_invalidate_dust_cache()
+	dust_recipe_service.invalidate()
 	return true
 
 func _autosave_if_needed() -> void:
@@ -1512,172 +1346,26 @@ func _autosave_if_needed() -> void:
 	if SaveManager.save_state(game_state):
 		game_state.last_save_tick = game_state.tick_count
 
-func _make_element_icon(element_index: int) -> AtlasTexture:
-	if not _element_icon_cache.has(element_index):
-		var icon := AtlasTexture.new()
-		icon.atlas = ELEMENT_SHEET
-		icon.region = Rect2(
-			Vector2(element_index * ELEMENT_SHEET_FRAME_SIZE.x, 0),
-			Vector2(ELEMENT_SHEET_FRAME_SIZE.x, ELEMENT_SHEET_FRAME_SIZE.y)
-		)
-		_element_icon_cache[element_index] = icon
-	return _element_icon_cache[element_index]
-
-func _make_planet_icon(planet_level: int) -> AtlasTexture:
-	var frame_index := clampi(planet_level - 1, 0, 24)
-	if not _planet_icon_cache.has(frame_index):
-		var icon := AtlasTexture.new()
-		icon.atlas = PLANET_SHEET
-		icon.region = Rect2(
-			Vector2(frame_index * PLANET_SHEET_FRAME_SIZE.x, 0),
-			Vector2(PLANET_SHEET_FRAME_SIZE.x, PLANET_SHEET_FRAME_SIZE.y)
-		)
-		_planet_icon_cache[frame_index] = icon
-	return _planet_icon_cache[frame_index]
-
-func _fuse_center() -> Vector2:
-	return fuse_button.position + (fuse_button.size * 0.5)
-
-func _fuse_radius() -> float:
-	return minf(fuse_button.size.x, fuse_button.size.y) * 0.5 * fuse_button.scale.x
-
-func _random_offscreen_point() -> Vector2:
-	var viewport_size := get_viewport_rect().size
-	var edge := rng.randi_range(0, 3)
-	match edge:
-		0:
-			return Vector2(rng.randf_range(0.0, viewport_size.x), -OFFSCREEN_MARGIN)
-		1:
-			return Vector2(rng.randf_range(0.0, viewport_size.x), viewport_size.y + OFFSCREEN_MARGIN)
-		2:
-			return Vector2(-OFFSCREEN_MARGIN, rng.randf_range(0.0, viewport_size.y))
-		_:
-			return Vector2(viewport_size.x + OFFSCREEN_MARGIN, rng.randf_range(0.0, viewport_size.y))
-
-func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2) -> void:
-	if not game_state.is_element_id(resource_id):
-		return
-
-	var element: Dictionary = game_state.get_element(resource_id)
-	var element_index := int(element.get("index", 0))
-	var target := _random_offscreen_point()
-	var direction := (target - spawn_center).normalized()
-	if direction == Vector2.ZERO:
-		direction = Vector2.RIGHT
-	var speed := rng.randf_range(PRODUCT_SPEED_MIN, PRODUCT_SPEED_MAX)
-	_spawn_particle(_make_element_icon(element_index), spawn_center, direction * speed, PRODUCT_PARTICLE_SIZE, "product", "")
-
-func _spawn_proton(target_element_id: String) -> void:
-	var proton_start := _random_offscreen_point()
-	var center := _fuse_center()
-	var direction := (center - proton_start).normalized()
-	var speed_variation := rng.randf_range(1.0 - PROTON_SPEED_VARIATION, 1.0 + PROTON_SPEED_VARIATION)
-	var speed := rng.randf_range(PROTON_SPEED_MIN, PROTON_SPEED_MAX) * speed_variation
-	_spawn_particle(_make_element_icon(0), proton_start, direction * speed, PROTON_PARTICLE_SIZE, "proton", target_element_id)
-
-func _spawn_particle(texture: Texture2D, center_position: Vector2, velocity: Vector2, icon_size: float, kind: String, target_element_id: String) -> void:
-	if view_mode != VIEW_ATOM:
-		return
-	var rect := TextureRect.new()
-	rect.texture = texture
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	rect.size = Vector2(icon_size, icon_size)
-	rect.position = center_position - (rect.size * 0.5)
-	effects_layer.add_child(rect)
-
-	visual_particles.append({
-		"node": rect,
-		"velocity": velocity,
-		"kind": kind,
-		"target_element_id": target_element_id
-	})
-
-func _update_particles(delta: float) -> void:
-	if view_mode != VIEW_ATOM:
-		return
-	if visual_particles.is_empty():
-		return
-
-	var viewport_size := get_viewport_rect().size
-	var should_refresh_resources := false
-	for i in range(visual_particles.size() - 1, -1, -1):
-		var particle: Dictionary = visual_particles[i]
-		var node: TextureRect = particle["node"]
-		var velocity: Vector2 = particle["velocity"]
-		node.position += velocity * delta
-
-		if str(particle.get("kind", "")) == "proton":
-			var collision_point := _get_particle_collision_point(node)
-			if collision_point != Vector2.INF:
-				var result: Dictionary = element_system.resolve_auto_smash(game_state, upgrades_system, str(particle.get("target_element_id", "")))
-				if not result.is_empty():
-					_invalidate_dust_cache()
-					_pulse_fuse_element()
-					_spawn_result_particles(result, collision_point)
-					should_refresh_resources = true
-				_remove_particle_at(i)
-				continue
-
-		if _is_offscreen(node, viewport_size):
-			_remove_particle_at(i)
-
-	if should_refresh_resources:
-		_refresh_ui(_get_resource_refresh_flags())
-
-func _get_particle_collision_point(node: TextureRect) -> Vector2:
-	var particle_center := node.position + (node.size * 0.5)
-	var fuse_center := _fuse_center()
-	var offset := particle_center - fuse_center
-	var distance := offset.length()
-	var particle_radius: float = minf(node.size.x, node.size.y) * 0.5
-	var fuse_radius: float = _fuse_radius()
-	if distance > fuse_radius + particle_radius:
-		return Vector2.INF
-	if distance == 0.0:
-		return fuse_center + Vector2.RIGHT * fuse_radius
-	return fuse_center + offset.normalized() * fuse_radius
-
-func _is_offscreen(node: TextureRect, viewport_size: Vector2) -> bool:
-	return node.position.x > viewport_size.x + OFFSCREEN_MARGIN \
-		or node.position.x + node.size.x < -OFFSCREEN_MARGIN \
-		or node.position.y > viewport_size.y + OFFSCREEN_MARGIN \
-		or node.position.y + node.size.y < -OFFSCREEN_MARGIN
-
-func _remove_particle_at(index: int) -> void:
-	var particle: Dictionary = visual_particles[index]
-	var node: TextureRect = particle["node"]
-	if is_instance_valid(node):
-		node.queue_free()
-	visual_particles.remove_at(index)
-
 func _on_tick_processed(_tick_count: int, processed_actions: Array) -> void:
 	var dirty_flags := UI_DIRTY_WORLD | UI_DIRTY_PLANETS
 	for action_type_variant in processed_actions:
 		match str(action_type_variant):
 			"unlock_next":
-				_invalidate_dust_cache()
+				dust_recipe_service.invalidate()
 				dirty_flags |= _get_resource_refresh_flags() | _get_selection_refresh_flags() | UI_DIRTY_MENU_BUTTONS
 			"select_adjacent", "select_element":
 				dirty_flags |= _get_selection_refresh_flags()
 			"purchase_upgrade":
-				_invalidate_dust_cache()
+				dust_recipe_service.invalidate()
 				dirty_flags |= _get_resource_refresh_flags()
 	if dirty_flags != 0:
 		_refresh_ui(dirty_flags)
 	_autosave_if_needed()
 
 func _on_manual_smash_resolved(result: Dictionary) -> void:
-	_invalidate_dust_cache()
+	dust_recipe_service.invalidate()
 	_pulse_fuse_element()
-	var spawn_target := _random_offscreen_point()
-	var spawn_direction := (spawn_target - _fuse_center()).normalized()
-	if spawn_direction == Vector2.ZERO:
-		spawn_direction = Vector2.RIGHT
-	var spawn_point := _fuse_center() + (spawn_direction * _fuse_radius())
-	_spawn_result_particles(result, spawn_point)
+	atom_effects_controller.spawn_manual_result(result)
 	_refresh_ui(_get_resource_refresh_flags())
 
 func _on_auto_smash_requested(request: Dictionary) -> void:
@@ -1690,11 +1378,10 @@ func _on_auto_smash_requested(request: Dictionary) -> void:
 			if not result.is_empty():
 				any_resolved = true
 		if any_resolved:
-			_invalidate_dust_cache()
+			dust_recipe_service.invalidate()
 			_refresh_ui(_get_resource_refresh_flags())
 		return
-	for _i in range(spawn_count):
-		_spawn_proton(target_element_id)
+	atom_effects_controller.spawn_auto_smashes(target_element_id, spawn_count)
 
 func _on_prev_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": -1})
@@ -1765,7 +1452,7 @@ func _on_settings_menu_pressed() -> void:
 
 func _on_element_tile_pressed(element_id: String) -> void:
 	if dust_mode_active:
-		_cycle_dust_selection(element_id)
+		dust_recipe_service.cycle_selection(element_id)
 		_refresh_ui(UI_DIRTY_ELEMENTS)
 		return
 	if game_state.select_element(element_id):
@@ -1778,7 +1465,7 @@ func _on_unlock_pressed() -> void:
 func _on_make_dust_pressed() -> void:
 	if not dust_mode_active:
 		dust_mode_active = true
-		_invalidate_dust_cache()
+		dust_recipe_service.invalidate()
 		_refresh_ui(UI_DIRTY_ELEMENTS)
 		return
 
@@ -1796,7 +1483,7 @@ func _on_click_boxes_toggled(toggled_on: bool) -> void:
 
 func _on_add_dust_pressed() -> void:
 	game_state.produce_resource(GameState.DUST_RESOURCE_ID, DigitMaster.new(1000.0))
-	_invalidate_dust_cache()
+	dust_recipe_service.invalidate()
 	_refresh_ui(_get_resource_refresh_flags())
 
 func _on_add_orbs_pressed() -> void:
@@ -1805,12 +1492,12 @@ func _on_add_orbs_pressed() -> void:
 
 func _on_era_unlock_pressed() -> void:
 	if game_state.unlock_next_era():
-		_invalidate_dust_cache()
+		dust_recipe_service.invalidate()
 		_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_NAVIGATION | UI_DIRTY_MENU_BUTTONS | UI_DIRTY_ERA)
 
 func _on_world_worker_button_pressed() -> void:
 	if game_state.buy_current_planet_worker():
-		_invalidate_dust_cache()
+		dust_recipe_service.invalidate()
 		_refresh_ui(_get_resource_refresh_flags())
 
 func _on_world_worker_slider_changed(value: float) -> void:
@@ -1830,22 +1517,6 @@ func _pulse_fuse_element() -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(fuse_button, "scale", Vector2(0.9, 0.9), 0.06)
 	tween.tween_property(fuse_button, "scale", Vector2.ONE, 0.08)
-
-func _spawn_result_particles(result: Dictionary, spawn_center: Vector2) -> void:
-	for resource_id in _get_result_resource_ids(result):
-		_spawn_outgoing_element(resource_id, spawn_center)
-
-func _get_result_resource_ids(result: Dictionary) -> Array[String]:
-	var resource_ids: Array[String] = []
-	var raw_ids: Variant = result.get("produced_resource_ids", [])
-	if typeof(raw_ids) == TYPE_ARRAY:
-		for raw_id in raw_ids:
-			resource_ids.append(str(raw_id))
-	if resource_ids.is_empty():
-		var fallback_id := str(result.get("produced_resource_id", ""))
-		if not fallback_id.is_empty():
-			resource_ids.append(fallback_id)
-	return resource_ids
 
 func _digit_master_to_float(value: DigitMaster) -> float:
 	if value.is_infinite:
