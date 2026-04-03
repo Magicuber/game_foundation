@@ -89,12 +89,12 @@ func refresh(
 		_unlock_button.text = "All elements unlocked"
 		_unlock_button.disabled = true
 		_unlock_button.visible = false
-		else:
-			var unlock_id := next_unlock.id
-			var unlock_cost := next_unlock.cost
-			if not game_state.is_next_unlock_within_visible_sections():
-				if dust_mode_active:
-					_info_label.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
+	else:
+		var unlock_id := next_unlock.id
+		var unlock_cost := next_unlock.cost
+		if not game_state.is_next_unlock_within_visible_sections():
+			if dust_mode_active:
+				_info_label.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
 					selected_batch_count,
 					dust_preview.big_to_short_string()
 				]
