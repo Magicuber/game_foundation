@@ -18,11 +18,6 @@ const ELEMENT_MENU_SECTIONS := [
 	{"title": "55-86", "start": 55, "end": 86, "columns": 8},
 	{"title": "87-118", "start": 87, "end": 118, "columns": 8}
 ]
-const WORLD_WORKER_VISUAL_CAP := 1000
-const WORLD_ORBIT_MIN_RADIUS := 168.0
-const WORLD_ORBIT_MAX_RADIUS := 240.0
-const WORLD_ORBIT_SPEED_MIN := 0.35
-const WORLD_ORBIT_SPEED_MAX := 1.15
 
 const MENU_CLOSED := 0
 const MENU_MAIN := 1
@@ -79,26 +74,6 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 
 @onready var tick_system: TickSystem = $TickSystem
 @onready var world_page: Control = $WorldPage
-@onready var world_title: Label = $WorldPage/WorldTitle
-@onready var planet_sprite: TextureRect = $WorldPage/PlanetSprite
-@onready var world_info: Label = $WorldPage/WorldInfo
-@onready var world_particle_layer: Control = $WorldPage/WorldParticleLayer
-@onready var world_action_stack: VBoxContainer = $WorldPage/WorldActionStack
-@onready var world_worker_slider: HSlider = $WorldPage/WorldActionStack/WorldWorkerSlider
-@onready var world_worker_button: TextureButton = $WorldPage/WorldActionStack/WorldWorkerButton
-@onready var world_worker_button_label: Label = $WorldPage/WorldActionStack/WorldWorkerButton/WorldWorkerButtonLabel
-@onready var world_progress_margin: MarginContainer = $WorldPage/WorldProgressMargin
-@onready var world_progress_vbox: VBoxContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox
-@onready var world_level_panel: PanelContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel
-@onready var world_level_bar_back: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelBarBack
-@onready var world_level_progress_fill: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelBarBack/WorldLevelProgressFill
-@onready var world_level_progress_label: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelProgressLabel
-@onready var world_level_progress_value: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldLevelPanel/WorldLevelBox/WorldLevelProgressValue
-@onready var world_rp_panel: PanelContainer = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel
-@onready var world_rp_bar_back: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPBarBack
-@onready var world_rp_progress_fill: ColorRect = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPBarBack/WorldRPProgressFill
-@onready var world_rp_progress_label: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPProgressLabel
-@onready var world_rp_progress_value: Label = $WorldPage/WorldProgressMargin/WorldProgressVBox/WorldRPPanel/WorldRPBox/WorldRPProgressValue
 @onready var effects_layer: Control = $EffectsLayer
 @onready var fuse_button: TextureButton = $FuseButton
 @onready var fuse_hitbox_debug: Panel = $FuseButton/FuseHitboxDebug
@@ -193,9 +168,7 @@ var upgrade_buttons: Dictionary = {}
 var upgrade_button_ids: Array[String] = []
 var element_menu_tiles: Dictionary = {}
 var visible_element_section_count := -1
-var world_worker_particles: Array[Dictionary] = []
 var era_requirement_labels: Array[Label] = []
-var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var menu_mode: int = MENU_CLOSED
 var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
@@ -204,10 +177,10 @@ var _ui_dirty_flags: int = UI_DIRTY_ALL
 var icon_cache: GameIconCache = GameIconCache.new()
 var dust_recipe_service: DustRecipeService = DustRecipeService.new()
 var atom_effects_controller: AtomEffectsController = AtomEffectsController.new()
+var world_view_controller: WorldViewController = WorldViewController.new()
 
 func _ready() -> void:
 	set_process(true)
-	rng.randomize()
 
 	game_state = _build_default_state()
 	SaveManager.load_into_state(game_state)
@@ -251,9 +224,6 @@ func _ready() -> void:
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
-	planet_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	planet_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	planet_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	era_timeline.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	era_timeline.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	era_timeline.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -281,10 +251,8 @@ func _ready() -> void:
 	_apply_menu_button_style(settings_menu_button, true)
 	_configure_placeholder_slot(orbs_icon_slot)
 	_configure_placeholder_slot(dust_icon_slot)
-	_setup_world_ui()
 	_apply_shell_metrics()
 	_ensure_era_requirement_labels()
-	_apply_reference_layout()
 
 	effects_layer.z_index = 1
 	world_page.z_index = 5
@@ -307,6 +275,16 @@ func _ready() -> void:
 		upgrades_system,
 		icon_cache
 	)
+	world_view_controller.configure(
+		world_page,
+		icon_cache,
+		UPGRADE_BUTTON_TEXTURE,
+		ENABLED_BUTTON_MODULATE,
+		DISABLED_BUTTON_MODULATE
+	)
+	world_view_controller.worker_purchase_requested.connect(_on_world_worker_button_pressed)
+	world_view_controller.worker_allocation_changed.connect(_on_world_worker_slider_changed)
+	_apply_reference_layout()
 
 	_set_menu_mode(MENU_CLOSED)
 	_refresh_ui()
@@ -322,7 +300,7 @@ func _process(delta: float) -> void:
 			dust_recipe_service.invalidate()
 			_pulse_fuse_element()
 			_refresh_ui(_get_resource_refresh_flags())
-	_update_world_worker_particles(delta)
+	world_view_controller.update(delta, view_mode == VIEW_WORLD)
 
 func _unhandled_input(event: InputEvent) -> void:
 	pass
@@ -363,115 +341,6 @@ func _configure_texture_button(button: TextureButton, texture: Texture2D) -> voi
 	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	button.ignore_texture_size = true
 	button.focus_mode = Control.FOCUS_NONE
-
-func _setup_world_ui() -> void:
-	world_particle_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	world_particle_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	world_page.move_child(world_particle_layer, 1)
-	world_action_stack.visible = false
-	world_action_stack.mouse_filter = Control.MOUSE_FILTER_STOP
-	world_action_stack.alignment = BoxContainer.ALIGNMENT_CENTER
-	world_action_stack.add_theme_constant_override("separation", UIMetrics.WORLD_ACTION_STACK_SEPARATION)
-
-	world_worker_slider.custom_minimum_size = UIMetrics.WORLD_WORKER_SLIDER_SIZE
-	world_worker_slider.min_value = 0.0
-	world_worker_slider.max_value = 100.0
-	world_worker_slider.value = 100.0
-	world_worker_slider.step = 100.0
-	world_worker_slider.value_changed.connect(_on_world_worker_slider_changed)
-
-	world_worker_button.custom_minimum_size = UIMetrics.WORLD_WORKER_BUTTON_SIZE
-	world_worker_button.stretch_mode = TextureButton.STRETCH_SCALE
-	_configure_texture_button(world_worker_button, UPGRADE_BUTTON_TEXTURE)
-	world_worker_button.pressed.connect(_on_world_worker_button_pressed)
-
-	world_worker_button_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	world_worker_button_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	world_worker_button_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	world_worker_button_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	world_progress_margin.visible = false
-	world_progress_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	world_progress_vbox.add_theme_constant_override("separation", UIMetrics.WORLD_PROGRESS_STACK_SEPARATION)
-
-	_configure_world_progress_panel(
-		world_level_panel,
-		world_level_bar_back,
-		world_level_progress_fill,
-		world_level_progress_label,
-		world_level_progress_value,
-		"Planet Level Progress"
-	)
-	_configure_world_progress_panel(
-		world_rp_panel,
-		world_rp_bar_back,
-		world_rp_progress_fill,
-		world_rp_progress_label,
-		world_rp_progress_value,
-		"RP Progress"
-	)
-
-	_apply_world_ui_style()
-
-func _configure_world_progress_panel(
-	panel: PanelContainer,
-	bar_back: ColorRect,
-	fill: ColorRect,
-	title_label: Label,
-	value_label: Label,
-	title: String
-) -> void:
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color8(32, 32, 32, 210)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color8(16, 16, 16)
-	style.content_margin_left = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
-	style.content_margin_top = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
-	style.content_margin_right = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
-	style.content_margin_bottom = UIMetrics.WORLD_PROGRESS_PANEL_PADDING
-	panel.add_theme_stylebox_override("panel", style)
-
-	title_label.text = title
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-
-	bar_back.custom_minimum_size = UIMetrics.WORLD_PROGRESS_BAR_SIZE
-	bar_back.color = Color8(18, 18, 18)
-
-	fill.anchor_left = 0.0
-	fill.anchor_top = 0.0
-	fill.anchor_right = 0.0
-	fill.anchor_bottom = 1.0
-	fill.offset_left = 0.0
-	fill.offset_top = 0.0
-	fill.offset_right = 0.0
-	fill.offset_bottom = 0.0
-	fill.color = Color8(84, 201, 124)
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-
-func _apply_world_ui_style() -> void:
-	var ui_font: FontFile = UIFont.load_ui_font()
-	if ui_font != null:
-		world_worker_button_label.add_theme_font_override("font", ui_font)
-		world_level_progress_label.add_theme_font_override("font", ui_font)
-		world_level_progress_value.add_theme_font_override("font", ui_font)
-		world_rp_progress_label.add_theme_font_override("font", ui_font)
-		world_rp_progress_value.add_theme_font_override("font", ui_font)
-
-	world_worker_button_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	world_worker_button_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-	world_level_progress_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	world_level_progress_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_level_progress_value.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_SMALL)
-	world_level_progress_value.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_rp_progress_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	world_rp_progress_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_rp_progress_value.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_SMALL)
-	world_rp_progress_value.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
 func _apply_shell_metrics() -> void:
 	counter_list.add_theme_constant_override("separation", UIMetrics.COUNTER_LIST_SEPARATION)
@@ -517,7 +386,7 @@ func _apply_reference_layout() -> void:
 	_layout_bottom_bar()
 	_layout_counter_column()
 	_layout_atom_focus_controls()
-	_layout_world_page()
+	world_view_controller.apply_reference_layout()
 
 func _layout_root_overlays() -> void:
 	_set_fill_rect(overlay_dim, 0.0, 0.0, 0.0, 0.0)
@@ -547,21 +416,6 @@ func _layout_counter_column() -> void:
 func _layout_atom_focus_controls() -> void:
 	_set_center_anchor_rect(fuse_button, UIMetrics.FUSE_BUTTON_SIZE)
 	_set_top_right_rect(shop_button, UIMetrics.SHOP_BUTTON_TOP_MARGIN, UIMetrics.SHOP_BUTTON_RIGHT_MARGIN, UIMetrics.SHOP_BUTTON_SIZE)
-
-func _layout_world_page() -> void:
-	_set_fill_rect(world_page, 0.0, 0.0, 0.0, 0.0)
-	_set_fill_rect(world_particle_layer, 0.0, 0.0, 0.0, 0.0)
-	_set_top_wide_rect(world_title, UIMetrics.WORLD_TITLE_TOP_MARGIN, UIMetrics.WORLD_TITLE_HEIGHT)
-	_set_center_anchor_rect(planet_sprite, UIMetrics.WORLD_PLANET_SIZE)
-	_set_center_anchor_rect(world_info, UIMetrics.WORLD_INFO_SIZE, UIMetrics.WORLD_INFO_CENTER_OFFSET)
-	_set_bottom_center_rect(world_action_stack, UIMetrics.WORLD_ACTION_STACK_SIZE, UIMetrics.WORLD_ACTION_STACK_BOTTOM_MARGIN)
-	_set_left_column_rect(
-		world_progress_margin,
-		UIMetrics.COUNTER_MARGIN_LEFT,
-		UIMetrics.WORLD_PROGRESS_TOP_MARGIN,
-		UIMetrics.WORLD_PROGRESS_WIDTH,
-		UIMetrics.WORLD_PROGRESS_BOTTOM_MARGIN
-	)
 
 func _set_fill_rect(control: Control, left: float, top: float, right: float, bottom: float) -> void:
 	control.anchor_left = 0.0
@@ -683,8 +537,6 @@ func _apply_ui_font() -> void:
 		return
 
 	level_label.add_theme_font_override("font", ui_font)
-	world_title.add_theme_font_override("font", ui_font)
-	world_info.add_theme_font_override("font", ui_font)
 	orbs_label.add_theme_font_override("font", ui_font)
 	dust_label.add_theme_font_override("font", ui_font)
 	main_menu_title.add_theme_font_override("font", ui_font)
@@ -736,11 +588,7 @@ func _apply_currency_box_style(panel: PanelContainer) -> void:
 
 func _apply_currency_labels() -> void:
 	level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	world_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	world_info.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_LARGE)
 	level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	world_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	orbs_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
@@ -836,15 +684,8 @@ func _set_view_mode(new_mode: int) -> void:
 	if view_mode == VIEW_WORLD:
 		atom_effects_controller.clear()
 	else:
-		_clear_world_worker_particles()
+		world_view_controller.clear_particles()
 	_mark_ui_dirty(UI_DIRTY_DEBUG)
-
-func _clear_world_worker_particles() -> void:
-	for particle in world_worker_particles:
-		var node: ColorRect = particle.get("node", null)
-		if is_instance_valid(node):
-			node.queue_free()
-	world_worker_particles.clear()
 
 func _mark_ui_dirty(flags: int) -> void:
 	if flags == 0:
@@ -1045,12 +886,10 @@ func _refresh_selection_ui() -> void:
 	fuse_button.texture_disabled = current_icon
 
 func _refresh_navigation() -> void:
-	world_page.visible = view_mode == VIEW_WORLD
 	fuse_button.visible = view_mode == VIEW_ATOM
 	effects_layer.visible = view_mode == VIEW_ATOM
 	counter_margin.visible = view_mode == VIEW_ATOM
-	world_progress_margin.visible = view_mode == VIEW_WORLD and game_state.has_unlocked_era(1)
-	world_action_stack.visible = view_mode == VIEW_WORLD and game_state.has_unlocked_era(1)
+	world_view_controller.set_navigation_state(view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
 
 	if view_mode == VIEW_WORLD:
 		_set_button_enabled_state(prev_button, false)
@@ -1199,126 +1038,7 @@ func _refresh_elements_panel() -> void:
 	dust_close_button.modulate = ENABLED_BUTTON_MODULATE
 
 func _refresh_world_ui() -> void:
-	if view_mode != VIEW_WORLD:
-		return
-
-	var planet: Dictionary = game_state.get_current_planet()
-	if planet.is_empty():
-		world_title.text = "World"
-		world_info.text = "No planets available."
-		planet_sprite.texture = null
-		world_worker_button.disabled = true
-		world_worker_button.modulate = DISABLED_BUTTON_MODULATE
-		return
-
-	var planet_level := int(planet.get("level", 1))
-	var max_level := int(planet.get("max_level", 1))
-	var planet_name := str(planet.get("name", "Planet"))
-	var workers: DigitMaster = planet["workers"]
-	var worker_cost := game_state.get_current_planet_worker_cost()
-	var can_buy_worker := game_state.can_buy_current_planet_worker()
-	var level_ratio := 1.0 if planet_level >= max_level else game_state.get_current_planet_level_progress_ratio()
-	var current_xp: DigitMaster = game_state.get_current_planet_xp()
-	var xp_to_next: DigitMaster = game_state.get_current_planet_xp_to_next_level()
-	var allocation_ratio := game_state.get_current_planet_worker_allocation_to_xp()
-	var worker_count_float := _digit_master_to_float(workers)
-	var slider_step := 100.0 if worker_count_float <= 0.0 else (100.0 / worker_count_float)
-	slider_step = clampf(slider_step, 0.001, 100.0)
-
-	world_title.text = "World"
-	world_info.text = "%s\nLv. %d/%d\nWorkers: %s\nRP: %s" % [
-		planet_name,
-		planet_level,
-		max_level,
-		workers.big_to_short_string(),
-		game_state.get_research_points().big_to_short_string()
-	]
-	world_info.text += "\nAllocation XP/RP: %d%% / %d%%" % [
-		int(round(allocation_ratio * 100.0)),
-		int(round((1.0 - allocation_ratio) * 100.0))
-	]
-	planet_sprite.texture = icon_cache.get_planet_icon(planet_level)
-	world_worker_slider.set_block_signals(true)
-	world_worker_slider.step = slider_step
-	world_worker_slider.value = allocation_ratio * 100.0
-	world_worker_slider.set_block_signals(false)
-	world_worker_slider.editable = bool(planet.get("unlocked", false))
-	world_worker_button.disabled = not can_buy_worker
-	world_worker_button.modulate = ENABLED_BUTTON_MODULATE if can_buy_worker else DISABLED_BUTTON_MODULATE
-	world_worker_button_label.text = "BUY WORKER\n%s Dust" % worker_cost.big_to_short_string()
-	_set_progress_fill_ratio(world_level_progress_fill, level_ratio)
-	_set_progress_fill_ratio(world_rp_progress_fill, game_state.get_research_progress_ratio())
-	if planet_level >= max_level:
-		world_level_progress_value.text = "MAX LEVEL"
-	else:
-		world_level_progress_value.text = "%s / %s" % [
-			current_xp.big_to_short_string(),
-			xp_to_next.big_to_short_string()
-		]
-	world_rp_progress_value.text = "%s RP\n%s" % [
-		game_state.get_research_points().big_to_short_string(),
-		game_state.get_research_progress_display()
-	]
-	_sync_world_worker_particles(_estimate_visible_worker_particle_count(workers))
-
-func _set_progress_fill_ratio(fill: ColorRect, ratio: float) -> void:
-	if not is_instance_valid(fill) or fill.get_parent() == null:
-		return
-	var parent_rect := fill.get_parent()
-	var width := maxf(0.0, parent_rect.size.x * clampf(ratio, 0.0, 1.0))
-	fill.offset_right = width
-
-func _estimate_visible_worker_particle_count(workers: DigitMaster) -> int:
-	if workers.is_infinite or workers.exponent >= 4:
-		return WORLD_WORKER_VISUAL_CAP
-	return mini(int(floor(_digit_master_to_float(workers))), WORLD_WORKER_VISUAL_CAP)
-
-func _sync_world_worker_particles(target_count: int) -> void:
-	target_count = clampi(target_count, 0, WORLD_WORKER_VISUAL_CAP)
-	while world_worker_particles.size() < target_count:
-		_add_world_worker_particle()
-	while world_worker_particles.size() > target_count:
-		_remove_world_worker_particle_at(world_worker_particles.size() - 1)
-
-func _add_world_worker_particle() -> void:
-	var node := ColorRect.new()
-	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	node.color = Color8(238, 240, 255, 220)
-	node.custom_minimum_size = UIMetrics.WORLD_PARTICLE_SIZE
-	node.size = UIMetrics.WORLD_PARTICLE_SIZE
-	world_particle_layer.add_child(node)
-
-	world_worker_particles.append({
-		"node": node,
-		"angle": rng.randf_range(0.0, TAU),
-		"radius": rng.randf_range(WORLD_ORBIT_MIN_RADIUS, WORLD_ORBIT_MAX_RADIUS),
-		"speed": rng.randf_range(WORLD_ORBIT_SPEED_MIN, WORLD_ORBIT_SPEED_MAX),
-		"phase": rng.randf_range(0.6, 1.4)
-	})
-
-func _update_world_worker_particles(delta: float) -> void:
-	if view_mode != VIEW_WORLD or world_worker_particles.is_empty():
-		return
-
-	var center := planet_sprite.global_position + (planet_sprite.size * 0.5)
-	for i in range(world_worker_particles.size()):
-		var particle: Dictionary = world_worker_particles[i]
-		var node: ColorRect = particle["node"]
-		var angle := float(particle.get("angle", 0.0)) + (float(particle.get("speed", 0.0)) * delta)
-		particle["angle"] = fmod(angle, TAU)
-		world_worker_particles[i] = particle
-		var radius := float(particle.get("radius", WORLD_ORBIT_MIN_RADIUS))
-		var phase := float(particle.get("phase", 1.0))
-		var offset := Vector2.RIGHT.rotated(angle) * radius
-		offset.y *= phase
-		node.global_position = center + offset - (node.size * 0.5)
-
-func _remove_world_worker_particle_at(index: int) -> void:
-	var particle: Dictionary = world_worker_particles[index]
-	var node: ColorRect = particle["node"]
-	if is_instance_valid(node):
-		node.queue_free()
-	world_worker_particles.remove_at(index)
+	world_view_controller.refresh(game_state, view_mode == VIEW_WORLD)
 
 func _refresh_era_ui() -> void:
 	if not era_panel.visible:
@@ -1680,10 +1400,3 @@ func _pulse_fuse_element() -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(fuse_button, "scale", Vector2(0.9, 0.9), 0.06)
 	tween.tween_property(fuse_button, "scale", Vector2.ONE, 0.08)
-
-func _digit_master_to_float(value: DigitMaster) -> float:
-	if value.is_infinite:
-		return INF
-	if value.is_zero():
-		return 0.0
-	return value.mantissa * pow(10.0, value.exponent)
