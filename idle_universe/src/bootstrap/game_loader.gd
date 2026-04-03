@@ -157,7 +157,6 @@ var element_system: ElementSystem = ElementSystem.new()
 var upgrades_system: UpgradesSystem = UpgradesSystem.new()
 var resource_displays: Dictionary = {}
 var resource_display_ids: Array[String] = []
-var era_requirement_labels: Array[Label] = []
 var menu_mode: int = MENU_CLOSED
 var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
@@ -171,6 +170,7 @@ var hud_controller: HudController = HudController.new()
 var menu_controller: MenuController = MenuController.new()
 var element_menu_controller: ElementMenuController = ElementMenuController.new()
 var upgrades_panel_controller: UpgradesPanelController = UpgradesPanelController.new()
+var era_panel_controller: EraPanelController = EraPanelController.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -193,21 +193,13 @@ func _ready() -> void:
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
 	shop_menu_button.pressed.connect(_on_shop_pressed)
 	settings_menu_button.pressed.connect(_on_settings_menu_pressed)
-	era_unlock_button.pressed.connect(_on_era_unlock_pressed)
 	click_boxes_toggle.toggled.connect(_on_click_boxes_toggled)
 	add_dust_button.pressed.connect(_on_add_dust_pressed)
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
-	era_timeline.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	era_timeline.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	era_timeline.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	era_timeline.custom_minimum_size = Vector2(0.0, UIMetrics.ERA_TIMELINE_MIN_HEIGHT)
-	era_title.visible = false
-	era_status.visible = false
 	_apply_debug_hitbox_style(fuse_hitbox_debug)
-	_ensure_era_requirement_labels()
 
 	effects_layer.z_index = 1
 	world_page.z_index = 5
@@ -346,6 +338,18 @@ func _ready() -> void:
 	element_menu_controller.dust_close_requested.connect(_on_dust_close_pressed)
 	upgrades_panel_controller.configure(upgrades_panel, upgrades_info, upgrade_list)
 	upgrades_panel_controller.purchase_requested.connect(_on_upgrade_purchase_requested)
+	era_panel_controller.configure(
+		era_panel,
+		era_timeline,
+		era_title,
+		era_status,
+		era_requirement_card,
+		era_requirement_title,
+		era_requirement_list,
+		era_unlock_button,
+		icon_cache
+	)
+	era_panel_controller.unlock_requested.connect(_on_era_unlock_pressed)
 	world_view_controller.configure(
 		world_page,
 		icon_cache,
@@ -409,6 +413,7 @@ func _apply_reference_layout() -> void:
 	menu_controller.apply_reference_layout()
 	hud_controller.apply_reference_layout(shop_button)
 	_layout_atom_focus_controls()
+	era_panel_controller.update_layout()
 	world_view_controller.apply_reference_layout()
 
 func _layout_atom_focus_controls() -> void:
@@ -498,50 +503,6 @@ func _get_menu_mode_refresh_flags() -> int:
 
 func _get_view_mode_refresh_flags() -> int:
 	return UI_DIRTY_NAVIGATION | UI_DIRTY_COUNTERS | UI_DIRTY_WORLD | UI_DIRTY_DEBUG | UI_DIRTY_MENU_BUTTONS
-
-func _ensure_era_requirement_labels() -> void:
-	if not era_requirement_labels.is_empty():
-		return
-
-	var ui_font: FontFile = UIFont.load_ui_font()
-	for _i in range(7):
-		var label := Label.new()
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-		label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-		if ui_font != null:
-			label.add_theme_font_override("font", ui_font)
-		era_requirement_list.add_child(label)
-		era_requirement_labels.append(label)
-
-func _apply_era_requirement_card_style(era_index: int) -> void:
-	var accent_color := _get_era_card_color(era_index)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(accent_color.r * 0.28, accent_color.g * 0.28, accent_color.b * 0.28, 0.92)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = accent_color
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	era_requirement_card.add_theme_stylebox_override("panel", style)
-
-func _get_era_card_color(era_index: int) -> Color:
-	match era_index:
-		0:
-			return Color8(197, 70, 70)
-		1:
-			return Color8(99, 150, 255)
-		2:
-			return Color8(255, 241, 65)
-		3:
-			return Color8(112, 74, 143)
-		_:
-			return Color8(126, 126, 126)
 
 func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
@@ -702,96 +663,7 @@ func _refresh_world_ui() -> void:
 	world_view_controller.refresh(game_state, view_mode == VIEW_WORLD)
 
 func _refresh_era_ui() -> void:
-	if not era_panel.visible:
-		return
-
-	var unlocked_era_index := game_state.get_unlocked_era_index()
-	era_timeline.texture = icon_cache.get_era_frame(unlocked_era_index)
-	_update_era_timeline_height()
-	_update_era_requirement_card_position()
-
-	if not game_state.is_era_menu_unlocked():
-		era_requirement_title.text = "Era Menu Locked"
-		for label in era_requirement_labels:
-			label.visible = false
-			label.text = ""
-		era_unlock_button.visible = false
-		_apply_era_requirement_card_style(0)
-		return
-
-	var next_era_index := game_state.get_next_implemented_era_index()
-	if next_era_index < 0:
-		var current_era_name := game_state.get_era_name(unlocked_era_index)
-		era_requirement_title.text = "%s Unlocked" % current_era_name
-		for label in era_requirement_labels:
-			label.visible = false
-			label.text = ""
-		era_unlock_button.visible = false
-		_apply_era_requirement_card_style(unlocked_era_index)
-		return
-
-	var next_era_name := game_state.get_era_name(next_era_index)
-	era_requirement_title.text = "Next Era: %s" % next_era_name
-	var requirements: Array[Dictionary] = game_state.get_next_era_requirements()
-	for label_index in range(era_requirement_labels.size()):
-		var label := era_requirement_labels[label_index]
-		if label_index >= requirements.size():
-			label.visible = false
-			label.text = ""
-			continue
-
-		var requirement: Dictionary = requirements[label_index]
-		label.visible = true
-		if bool(requirement.get("is_orb_requirement", false)):
-			var required_orbs := int(requirement.get("required_amount", 0))
-			label.text = "%s: %s / %s" % [
-				str(requirement.get("resource_name", "Orbs")),
-				str(game_state.orbs),
-				str(required_orbs)
-			]
-			continue
-
-		var resource_id := str(requirement.get("resource_id", ""))
-		var required_amount: DigitMaster = requirement["required_amount"]
-		label.text = "%s: %s / %s" % [
-			str(requirement.get("resource_name", resource_id)),
-			game_state.get_resource_amount(resource_id).big_to_short_string(),
-			required_amount.big_to_short_string()
-		]
-
-	era_unlock_button.visible = true
-	era_unlock_button.text = "Unlock %s" % next_era_name
-	era_unlock_button.disabled = not game_state.can_unlock_next_era()
-	_apply_era_requirement_card_style(next_era_index)
-
-func _update_era_timeline_height() -> void:
-	if not is_instance_valid(era_timeline):
-		return
-
-	var target_width := era_panel.size.x
-	if target_width <= 0.0:
-		target_width = era_timeline.size.x
-	if target_width <= 0.0:
-		return
-
-	var target_height := round(
-		target_width * (
-			float(GameIconCache.ERA_SHEET_FRAME_SIZE.y)
-			/ float(GameIconCache.ERA_SHEET_FRAME_SIZE.x)
-		)
-	)
-	if absf(era_timeline.custom_minimum_size.y - target_height) > 0.5:
-		era_timeline.custom_minimum_size = Vector2(0.0, target_height)
-		era_timeline.offset_bottom = target_height
-
-func _update_era_requirement_card_position() -> void:
-	if not is_instance_valid(era_requirement_card):
-		return
-
-	var top_offset := round(era_timeline.custom_minimum_size.y * UIMetrics.ERA_REQUIREMENT_CARD_TOP_RATIO)
-	era_requirement_card.offset_left = UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
-	era_requirement_card.offset_right = -UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
-	era_requirement_card.offset_top = top_offset
+	era_panel_controller.refresh(game_state)
 
 func _perform_dust_conversion() -> bool:
 	var selected_amounts: Dictionary = dust_recipe_service.get_selected_amounts(game_state, upgrades_system)
