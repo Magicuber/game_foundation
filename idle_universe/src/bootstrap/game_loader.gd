@@ -178,6 +178,8 @@ var icon_cache: GameIconCache = GameIconCache.new()
 var dust_recipe_service: DustRecipeService = DustRecipeService.new()
 var atom_effects_controller: AtomEffectsController = AtomEffectsController.new()
 var world_view_controller: WorldViewController = WorldViewController.new()
+var hud_controller: HudController = HudController.new()
+var menu_controller: MenuController = MenuController.new()
 
 func _ready() -> void:
 	set_process(true)
@@ -208,50 +210,15 @@ func _ready() -> void:
 	add_dust_button.pressed.connect(_on_add_dust_pressed)
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
 
-	_configure_texture_button(prev_button, PREV_BUTTON_TEXTURE)
-	_configure_texture_button(next_button, NEXT_BUTTON_TEXTURE)
-	_configure_texture_button(zin_button, ZIN_BUTTON_TEXTURE)
-	_configure_texture_button(zout_button, ZOUT_BUTTON_TEXTURE)
-	_configure_texture_button(shop_button, SHOP_BUTTON_TEXTURE)
-	_configure_texture_button(make_dust_button, UPGRADE_BUTTON_TEXTURE)
-	_configure_texture_button(dust_close_button, UPGRADE_BUTTON_TEXTURE)
-
-	menu_background.texture = MENU_BACKGROUND_TEXTURE
-	menu_background.modulate = Color(1, 1, 1, 0.7)
-	menu_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	menu_background.stretch_mode = TextureRect.STRETCH_SCALE
-	menu_background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
 	era_timeline.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	era_timeline.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	era_timeline.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	era_timeline.custom_minimum_size = Vector2(0.0, UIMetrics.ERA_TIMELINE_MIN_HEIGHT)
 	era_title.visible = false
 	era_status.visible = false
 	_apply_debug_hitbox_style(fuse_hitbox_debug)
-	profile_button.focus_mode = Control.FOCUS_NONE
-	unlock_button.focus_mode = Control.FOCUS_NONE
-	era_unlock_button.focus_mode = Control.FOCUS_NONE
-	make_dust_button.focus_mode = Control.FOCUS_NONE
-	dust_close_button.focus_mode = Control.FOCUS_NONE
-	_apply_profile_button_style()
-	_apply_currency_box_style(orbs_panel)
-	_apply_currency_box_style(dust_panel)
-	_apply_ui_font()
-	_apply_currency_labels()
-	_apply_menu_text_style()
-	_apply_dust_action_text_style()
-	_apply_menu_button_style(upgrades_menu_button, true)
-	_apply_menu_button_style(elements_menu_button, true)
-	_apply_menu_button_style(era_menu_button, false)
-	_apply_menu_button_style(planets_menu_button, false)
-	_apply_menu_button_style(stats_menu_button, true)
-	_apply_menu_button_style(shop_menu_button, false)
-	_apply_menu_button_style(settings_menu_button, true)
-	_configure_placeholder_slot(orbs_icon_slot)
-	_configure_placeholder_slot(dust_icon_slot)
-	_apply_shell_metrics()
 	_ensure_era_requirement_labels()
 
 	effects_layer.z_index = 1
@@ -275,6 +242,105 @@ func _ready() -> void:
 		upgrades_system,
 		icon_cache
 	)
+	hud_controller.configure(
+		counter_margin,
+		counter_list,
+		top_bar,
+		profile_button,
+		level_label,
+		currency_boxes,
+		orbs_panel,
+		dust_panel,
+		orbs_row,
+		dust_row,
+		orbs_icon_slot,
+		dust_icon_slot,
+		orbs_label,
+		dust_label,
+		bottom_bar,
+		nav_slots,
+		prev_slot,
+		next_slot,
+		zin_slot,
+		zout_slot,
+		menu_slot,
+		prev_button,
+		next_button,
+		zin_button,
+		zout_button,
+		menu_button,
+		shop_button,
+		PREV_BUTTON_TEXTURE,
+		NEXT_BUTTON_TEXTURE,
+		ZIN_BUTTON_TEXTURE,
+		ZOUT_BUTTON_TEXTURE,
+		MENU_BUTTON_TEXTURE,
+		CLOSE_BUTTON_TEXTURE,
+		SHOP_BUTTON_TEXTURE,
+		ENABLED_BUTTON_MODULATE,
+		DISABLED_BUTTON_MODULATE
+	)
+	hud_controller.apply_style()
+	hud_controller.apply_shell_metrics()
+	menu_controller.configure(
+		menu_overlay,
+		overlay_dim,
+		menu_background,
+		menu_content,
+		main_menu_panel,
+		upgrades_panel,
+		elements_panel,
+		era_panel,
+		stats_panel,
+		shop_panel,
+		planets_panel,
+		settings_panel,
+		main_menu_title,
+		upgrades_title,
+		upgrades_info,
+		elements_title,
+		elements_info,
+		era_title,
+		era_status,
+		era_requirement_margin,
+		era_requirement_vbox,
+		era_requirement_title,
+		era_requirement_list,
+		era_unlock_button,
+		stats_title,
+		stats_info,
+		planetary_stats_info,
+		shop_title,
+		shop_info,
+		planets_title,
+		planets_info,
+		settings_title,
+		settings_info,
+		click_boxes_toggle,
+		add_dust_button,
+		add_orbs_button,
+		upgrades_menu_button,
+		elements_menu_button,
+		era_menu_button,
+		planets_menu_button,
+		stats_menu_button,
+		shop_menu_button,
+		settings_menu_button,
+		unlock_button,
+		elements_scroll,
+		elements_section_list,
+		dust_action_row,
+		make_dust_button,
+		make_dust_label,
+		dust_close_button,
+		dust_close_label,
+		MENU_BACKGROUND_TEXTURE,
+		UPGRADE_BUTTON_TEXTURE,
+		ENABLED_BUTTON_MODULATE,
+		DISABLED_BUTTON_MODULATE
+	)
+	menu_controller.apply_style()
+	menu_controller.apply_shell_metrics()
 	world_view_controller.configure(
 		world_page,
 		icon_cache,
@@ -333,159 +399,15 @@ func _load_json_dictionary(path: String) -> Dictionary:
 	var parsed: Dictionary = parsed_value
 	return parsed
 
-func _configure_texture_button(button: TextureButton, texture: Texture2D) -> void:
-	button.texture_normal = texture
-	button.texture_pressed = texture
-	button.texture_hover = texture
-	button.texture_disabled = texture
-	button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	button.ignore_texture_size = true
-	button.focus_mode = Control.FOCUS_NONE
-
-func _apply_shell_metrics() -> void:
-	counter_list.add_theme_constant_override("separation", UIMetrics.COUNTER_LIST_SEPARATION)
-	for panel in [
-		main_menu_panel,
-		upgrades_panel,
-		elements_panel,
-		stats_panel,
-		shop_panel,
-		planets_panel,
-		settings_panel
-	]:
-		panel.add_theme_constant_override("separation", UIMetrics.MENU_PANEL_SEPARATION)
-
-	elements_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	elements_section_list.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_LIST_SEPARATION)
-	dust_action_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
-	make_dust_button.custom_minimum_size = UIMetrics.DUST_ACTION_PRIMARY_BUTTON_SIZE
-	dust_close_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
-
-	era_timeline.custom_minimum_size = Vector2(0.0, UIMetrics.ERA_TIMELINE_MIN_HEIGHT)
-	era_requirement_margin.add_theme_constant_override("margin_left", UIMetrics.ERA_REQUIREMENT_MARGIN)
-	era_requirement_margin.add_theme_constant_override("margin_top", UIMetrics.ERA_REQUIREMENT_MARGIN)
-	era_requirement_margin.add_theme_constant_override("margin_right", UIMetrics.ERA_REQUIREMENT_MARGIN)
-	era_requirement_margin.add_theme_constant_override("margin_bottom", UIMetrics.ERA_REQUIREMENT_MARGIN)
-	era_requirement_vbox.add_theme_constant_override("separation", UIMetrics.ERA_REQUIREMENT_VBOX_SEPARATION)
-	era_requirement_list.add_theme_constant_override("separation", UIMetrics.ERA_REQUIREMENT_LIST_SEPARATION)
-
-	currency_boxes.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
-	orbs_row.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
-	dust_row.add_theme_constant_override("separation", UIMetrics.TOP_BAR_ROW_SEPARATION)
-	orbs_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
-	dust_icon_slot.custom_minimum_size = UIMetrics.TOP_BAR_ICON_SLOT_SIZE
-
-	nav_slots.add_theme_constant_override("separation", UIMetrics.NAV_SLOT_SEPARATION)
-	for slot in [prev_slot, next_slot, zin_slot, zout_slot, menu_slot]:
-		slot.custom_minimum_size = UIMetrics.NAV_SLOT_SIZE
-
 func _apply_reference_layout() -> void:
 	custom_minimum_size = UIMetrics.REFERENCE_VIEWPORT_SIZE
-	_layout_root_overlays()
-	_layout_top_bar()
-	_layout_bottom_bar()
-	_layout_counter_column()
+	menu_controller.apply_reference_layout()
+	hud_controller.apply_reference_layout(shop_button)
 	_layout_atom_focus_controls()
 	world_view_controller.apply_reference_layout()
 
-func _layout_root_overlays() -> void:
-	_set_fill_rect(overlay_dim, 0.0, 0.0, 0.0, 0.0)
-	_set_fill_rect(menu_overlay, 0.0, UIMetrics.TOP_BAR_HEIGHT, 0.0, UIMetrics.BOTTOM_BAR_HEIGHT)
-	_set_fill_rect(menu_background, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN, UIMetrics.MENU_BACKGROUND_MARGIN)
-	_set_fill_rect(menu_content, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN, UIMetrics.MENU_CONTENT_MARGIN)
-
-func _layout_top_bar() -> void:
-	_set_top_strip_rect(top_bar, UIMetrics.TOP_BAR_HEIGHT)
-	_set_top_left_rect(profile_button, UIMetrics.TOP_BAR_PROFILE_MARGIN, UIMetrics.TOP_BAR_PROFILE_SIZE)
-	_set_top_left_rect(level_label, UIMetrics.TOP_BAR_LEVEL_MARGIN, UIMetrics.TOP_BAR_LEVEL_SIZE)
-	_set_center_anchor_rect(currency_boxes, UIMetrics.CURRENCY_BOXES_SIZE)
-
-func _layout_bottom_bar() -> void:
-	_set_bottom_strip_rect(bottom_bar, UIMetrics.BOTTOM_BAR_HEIGHT)
-	_set_center_anchor_rect(nav_slots, UIMetrics.NAV_SLOTS_SIZE)
-
-func _layout_counter_column() -> void:
-	_set_left_column_rect(
-		counter_margin,
-		UIMetrics.COUNTER_MARGIN_LEFT,
-		UIMetrics.COUNTER_MARGIN_TOP,
-		UIMetrics.COUNTER_COLUMN_WIDTH,
-		UIMetrics.COUNTER_MARGIN_BOTTOM
-	)
-
 func _layout_atom_focus_controls() -> void:
 	_set_center_anchor_rect(fuse_button, UIMetrics.FUSE_BUTTON_SIZE)
-	_set_top_right_rect(shop_button, UIMetrics.SHOP_BUTTON_TOP_MARGIN, UIMetrics.SHOP_BUTTON_RIGHT_MARGIN, UIMetrics.SHOP_BUTTON_SIZE)
-
-func _set_fill_rect(control: Control, left: float, top: float, right: float, bottom: float) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 0.0
-	control.anchor_right = 1.0
-	control.anchor_bottom = 1.0
-	control.offset_left = left
-	control.offset_top = top
-	control.offset_right = -right
-	control.offset_bottom = -bottom
-
-func _set_top_strip_rect(control: Control, height: float) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 0.0
-	control.anchor_right = 1.0
-	control.anchor_bottom = 0.0
-	control.offset_left = 0.0
-	control.offset_top = 0.0
-	control.offset_right = 0.0
-	control.offset_bottom = height
-
-func _set_bottom_strip_rect(control: Control, height: float) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 1.0
-	control.anchor_right = 1.0
-	control.anchor_bottom = 1.0
-	control.offset_left = 0.0
-	control.offset_top = -height
-	control.offset_right = 0.0
-	control.offset_bottom = 0.0
-
-func _set_top_wide_rect(control: Control, top: float, height: float) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 0.0
-	control.anchor_right = 1.0
-	control.anchor_bottom = 0.0
-	control.offset_left = 0.0
-	control.offset_top = top
-	control.offset_right = 0.0
-	control.offset_bottom = top + height
-
-func _set_top_left_rect(control: Control, margin: Vector2, size_value: Vector2) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 0.0
-	control.anchor_right = 0.0
-	control.anchor_bottom = 0.0
-	control.offset_left = margin.x
-	control.offset_top = margin.y
-	control.offset_right = margin.x + size_value.x
-	control.offset_bottom = margin.y + size_value.y
-
-func _set_top_right_rect(control: Control, top: float, right: float, size_value: Vector2) -> void:
-	control.anchor_left = 1.0
-	control.anchor_top = 0.0
-	control.anchor_right = 1.0
-	control.anchor_bottom = 0.0
-	control.offset_left = -(right + size_value.x)
-	control.offset_top = top
-	control.offset_right = -right
-	control.offset_bottom = top + size_value.y
-
-func _set_left_column_rect(control: Control, left: float, top: float, width: float, bottom: float) -> void:
-	control.anchor_left = 0.0
-	control.anchor_top = 0.0
-	control.anchor_right = 0.0
-	control.anchor_bottom = 1.0
-	control.offset_left = left
-	control.offset_top = top
-	control.offset_right = left + width
-	control.offset_bottom = -bottom
 
 func _set_center_anchor_rect(control: Control, size_value: Vector2, center_offset: Vector2 = Vector2.ZERO) -> void:
 	control.anchor_left = 0.5
@@ -496,152 +418,6 @@ func _set_center_anchor_rect(control: Control, size_value: Vector2, center_offse
 	control.offset_top = center_offset.y - (size_value.y * 0.5)
 	control.offset_right = center_offset.x + (size_value.x * 0.5)
 	control.offset_bottom = center_offset.y + (size_value.y * 0.5)
-
-func _set_bottom_center_rect(control: Control, size_value: Vector2, bottom: float) -> void:
-	control.anchor_left = 0.5
-	control.anchor_top = 1.0
-	control.anchor_right = 0.5
-	control.anchor_bottom = 1.0
-	control.offset_left = -(size_value.x * 0.5)
-	control.offset_top = -(bottom + size_value.y)
-	control.offset_right = size_value.x * 0.5
-	control.offset_bottom = -bottom
-
-func _update_menu_button_texture() -> void:
-	var texture: Texture2D = MENU_BUTTON_TEXTURE
-	if menu_mode != MENU_CLOSED:
-		texture = CLOSE_BUTTON_TEXTURE
-	_configure_texture_button(menu_button, texture)
-	menu_button.modulate = ENABLED_BUTTON_MODULATE
-
-func _apply_profile_button_style() -> void:
-	var normal_style := StyleBoxFlat.new()
-	normal_style.bg_color = Color8(15, 100, 63)
-	normal_style.border_width_left = 2
-	normal_style.border_width_top = 2
-	normal_style.border_width_right = 2
-	normal_style.border_width_bottom = 2
-	normal_style.border_color = Color8(8, 54, 34)
-
-	var pressed_style: StyleBoxFlat = normal_style.duplicate()
-	pressed_style.bg_color = Color8(12, 84, 53)
-
-	profile_button.add_theme_stylebox_override("normal", normal_style)
-	profile_button.add_theme_stylebox_override("hover", normal_style)
-	profile_button.add_theme_stylebox_override("pressed", pressed_style)
-	profile_button.add_theme_stylebox_override("disabled", normal_style)
-
-func _apply_ui_font() -> void:
-	var ui_font: FontFile = UIFont.load_ui_font()
-	if ui_font == null:
-		return
-
-	level_label.add_theme_font_override("font", ui_font)
-	orbs_label.add_theme_font_override("font", ui_font)
-	dust_label.add_theme_font_override("font", ui_font)
-	main_menu_title.add_theme_font_override("font", ui_font)
-	upgrades_title.add_theme_font_override("font", ui_font)
-	upgrades_info.add_theme_font_override("font", ui_font)
-	elements_title.add_theme_font_override("font", ui_font)
-	elements_info.add_theme_font_override("font", ui_font)
-	era_title.add_theme_font_override("font", ui_font)
-	era_status.add_theme_font_override("font", ui_font)
-	era_requirement_title.add_theme_font_override("font", ui_font)
-	era_unlock_button.add_theme_font_override("font", ui_font)
-	stats_title.add_theme_font_override("font", ui_font)
-	stats_info.add_theme_font_override("font", ui_font)
-	planetary_stats_info.add_theme_font_override("font", ui_font)
-	shop_title.add_theme_font_override("font", ui_font)
-	shop_info.add_theme_font_override("font", ui_font)
-	planets_title.add_theme_font_override("font", ui_font)
-	planets_info.add_theme_font_override("font", ui_font)
-	settings_title.add_theme_font_override("font", ui_font)
-	settings_info.add_theme_font_override("font", ui_font)
-	click_boxes_toggle.add_theme_font_override("font", ui_font)
-	add_dust_button.add_theme_font_override("font", ui_font)
-	add_orbs_button.add_theme_font_override("font", ui_font)
-	upgrades_menu_button.add_theme_font_override("font", ui_font)
-	elements_menu_button.add_theme_font_override("font", ui_font)
-	era_menu_button.add_theme_font_override("font", ui_font)
-	planets_menu_button.add_theme_font_override("font", ui_font)
-	stats_menu_button.add_theme_font_override("font", ui_font)
-	shop_menu_button.add_theme_font_override("font", ui_font)
-	settings_menu_button.add_theme_font_override("font", ui_font)
-	unlock_button.add_theme_font_override("font", ui_font)
-	profile_button.add_theme_font_override("font", ui_font)
-	make_dust_label.add_theme_font_override("font", ui_font)
-	dust_close_label.add_theme_font_override("font", ui_font)
-
-func _apply_currency_box_style(panel: PanelContainer) -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color8(45, 45, 45)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.border_color = Color8(16, 16, 16)
-	style.content_margin_left = UIMetrics.CURRENCY_PANEL_MARGIN_X
-	style.content_margin_top = UIMetrics.CURRENCY_PANEL_MARGIN_Y
-	style.content_margin_right = UIMetrics.CURRENCY_PANEL_MARGIN_X
-	style.content_margin_bottom = UIMetrics.CURRENCY_PANEL_MARGIN_Y
-	panel.add_theme_stylebox_override("panel", style)
-
-func _apply_currency_labels() -> void:
-	level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	orbs_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	dust_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-
-func _apply_menu_text_style() -> void:
-	main_menu_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	upgrades_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	elements_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	era_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	era_status.add_theme_font_size_override("font_size", UIMetrics.ERA_STATUS_FONT_SIZE)
-	era_requirement_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_LARGE)
-	stats_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	shop_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	planets_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	settings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
-	main_menu_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	upgrades_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	elements_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	era_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	stats_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	upgrades_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	elements_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	era_status.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	era_requirement_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	planetary_stats_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	shop_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	shop_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	planets_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	planets_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	settings_title.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	settings_info.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	click_boxes_toggle.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	add_dust_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	add_orbs_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-
-func _apply_dust_action_text_style() -> void:
-	make_dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	make_dust_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-	dust_close_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	dust_close_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-
-func _apply_menu_button_style(button: Button, is_enabled: bool) -> void:
-	button.focus_mode = Control.FOCUS_NONE
-	button.disabled = not is_enabled
-	if is_enabled:
-		button.modulate = ENABLED_BUTTON_MODULATE
-	else:
-		button.modulate = DISABLED_BUTTON_MODULATE
-
-func _configure_placeholder_slot(slot: ColorRect) -> void:
-	slot.color = Color8(25, 25, 25, 180)
 
 func _apply_debug_hitbox_style(panel: Panel) -> void:
 	if panel == null:
@@ -666,16 +442,7 @@ func _set_menu_mode(new_mode: int) -> void:
 	if new_mode != MENU_ELEMENTS:
 		dust_mode_active = false
 	menu_mode = new_mode
-	menu_overlay.visible = menu_mode != MENU_CLOSED
-	main_menu_panel.visible = menu_mode == MENU_MAIN
-	upgrades_panel.visible = menu_mode == MENU_UPGRADES
-	elements_panel.visible = menu_mode == MENU_ELEMENTS
-	era_panel.visible = menu_mode == MENU_ERA
-	stats_panel.visible = menu_mode == MENU_STATS
-	shop_panel.visible = menu_mode == MENU_SHOP
-	planets_panel.visible = menu_mode == MENU_PLANETS
-	settings_panel.visible = menu_mode == MENU_SETTINGS
-	_update_menu_button_texture()
+	menu_controller.set_menu_mode(menu_mode)
 
 func _set_view_mode(new_mode: int) -> void:
 	if view_mode == new_mode:
@@ -872,9 +639,7 @@ func _flush_dirty_ui() -> void:
 			_refresh_debug_hitboxes()
 
 func _refresh_top_bar() -> void:
-	level_label.text = "Lv. %d" % game_state.player_level
-	orbs_label.text = "ORBS %s" % str(game_state.orbs)
-	dust_label.text = "DUST %s" % game_state.dust.big_to_short_string()
+	hud_controller.refresh_top_bar(game_state)
 
 func _refresh_selection_ui() -> void:
 	var current_element: Dictionary = game_state.get_current_element()
@@ -888,28 +653,22 @@ func _refresh_selection_ui() -> void:
 func _refresh_navigation() -> void:
 	fuse_button.visible = view_mode == VIEW_ATOM
 	effects_layer.visible = view_mode == VIEW_ATOM
-	counter_margin.visible = view_mode == VIEW_ATOM
 	world_view_controller.set_navigation_state(view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
-
-	if view_mode == VIEW_WORLD:
-		_set_button_enabled_state(prev_button, false)
-		_set_button_enabled_state(next_button, false)
-		_set_button_enabled_state(zin_button, true)
-		_set_button_enabled_state(zout_button, false)
-	else:
-		_set_button_enabled_state(prev_button, game_state.has_adjacent_unlocked_element(-1))
-		_set_button_enabled_state(next_button, game_state.has_next_selectable_element_in_visible_sections())
-		_set_button_enabled_state(zin_button, false)
-		_set_button_enabled_state(zout_button, game_state.has_unlocked_era(1))
+	hud_controller.refresh_navigation(
+		view_mode == VIEW_ATOM,
+		false if view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
+		false if view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
+		view_mode == VIEW_WORLD,
+		view_mode == VIEW_ATOM and game_state.has_unlocked_era(1)
+	)
 
 func _refresh_menu_buttons() -> void:
 	var era_menu_enabled := game_state.is_era_menu_unlocked()
-	_apply_menu_button_style(era_menu_button, era_menu_enabled)
 	var planets_enabled := game_state.has_unlocked_era(1)
-	_apply_menu_button_style(planets_menu_button, planets_enabled)
 	var shop_enabled := game_state.is_element_unlocked("ele_H")
-	_apply_menu_button_style(shop_menu_button, shop_enabled)
-	shop_button.visible = shop_enabled and menu_mode == MENU_CLOSED
+	menu_controller.refresh_main_menu_buttons(era_menu_enabled, planets_enabled, shop_enabled)
+	hud_controller.refresh_menu_button(menu_mode != MENU_CLOSED)
+	hud_controller.refresh_shop_button(shop_enabled, shop_enabled and menu_mode == MENU_CLOSED)
 
 func _refresh_upgrades_panel() -> void:
 	if not upgrades_panel.visible:
@@ -1131,13 +890,6 @@ func _update_era_requirement_card_position() -> void:
 	era_requirement_card.offset_left = UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
 	era_requirement_card.offset_right = -UIMetrics.ERA_REQUIREMENT_CARD_SIDE_MARGIN
 	era_requirement_card.offset_top = top_offset
-
-func _set_button_enabled_state(button: TextureButton, is_enabled: bool) -> void:
-	button.disabled = not is_enabled
-	if is_enabled:
-		button.modulate = ENABLED_BUTTON_MODULATE
-	else:
-		button.modulate = DISABLED_BUTTON_MODULATE
 
 func _get_visible_element_section_count() -> int:
 	return clampi(game_state.prestige_count + 1, 1, ELEMENT_MENU_SECTIONS.size())
