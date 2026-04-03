@@ -96,8 +96,10 @@ func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2) -> void
 	if not _game_state.is_element_id(resource_id):
 		return
 
-	var element: Dictionary = _game_state.get_element(resource_id)
-	var element_index := int(element.get("index", 0))
+	var element := _game_state.get_element_state(resource_id)
+	if element == null:
+		return
+	var element_index := element.index
 	var target := _random_offscreen_point()
 	var direction := (target - spawn_center).normalized()
 	if direction == Vector2.ZERO:

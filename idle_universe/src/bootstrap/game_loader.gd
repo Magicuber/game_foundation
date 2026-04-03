@@ -580,8 +580,8 @@ func _refresh_top_bar() -> void:
 	hud_controller.refresh_top_bar(game_state)
 
 func _refresh_selection_ui() -> void:
-	var current_element: Dictionary = game_state.get_current_element()
-	var current_index := int(current_element.get("index", 0))
+	var current_element := game_state.get_current_element_state()
+	var current_index := 0 if current_element == null else current_element.index
 	var current_icon := icon_cache.get_element_icon(current_index)
 	fuse_button.texture_normal = current_icon
 	fuse_button.texture_pressed = current_icon
@@ -615,9 +615,9 @@ func _refresh_stats_panel() -> void:
 	if not stats_panel.visible:
 		return
 
-	var current_element: Dictionary = game_state.get_current_element()
-	var current_name := str(current_element.get("name", ""))
-	var produced_name := game_state.get_resource_name(str(current_element.get("produces", "")))
+	var current_element := game_state.get_current_element_state()
+	var current_name := "" if current_element == null else current_element.name
+	var produced_name := "" if current_element == null else game_state.get_resource_name(current_element.produces)
 	stats_info.text = "Current Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d" % [
 		current_name,
 		produced_name,

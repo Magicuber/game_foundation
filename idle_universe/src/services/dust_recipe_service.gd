@@ -138,8 +138,10 @@ func _ensure_cache(game_state: GameState, upgrades_system: UpgradesSystem) -> vo
 func _get_highest_unlocked_atomic_number(game_state: GameState) -> int:
 	var highest_index := 1
 	for element_id in game_state.get_unlocked_real_element_ids():
-		var element: Dictionary = game_state.get_element(element_id)
-		highest_index = maxi(highest_index, int(element.get("index", 1)))
+		var element := game_state.get_element_state(element_id)
+		if element == null:
+			continue
+		highest_index = maxi(highest_index, element.index)
 	return highest_index
 
 func _get_stability_score(element_index: int) -> float:
@@ -149,8 +151,10 @@ func _get_stability_score(element_index: int) -> float:
 	return clampf(0.45 + (0.45 * tier_ratio), 0.0, 1.0)
 
 func _get_hybrid_quality(game_state: GameState, element_id: String, highest_unlocked_atomic_number: int) -> float:
-	var element: Dictionary = game_state.get_element(element_id)
-	var atomic_number := int(element.get("index", 1))
+	var element := game_state.get_element_state(element_id)
+	var atomic_number := 1
+	if element != null:
+		atomic_number = element.index
 	var tier_score := sqrt(clampf(float(atomic_number) / float(maxi(1, highest_unlocked_atomic_number)), 0.0, 1.0))
 	var stability_score := _get_stability_score(atomic_number)
 	return clampf(

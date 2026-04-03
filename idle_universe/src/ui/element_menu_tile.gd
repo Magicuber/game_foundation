@@ -139,11 +139,15 @@ func refresh(current_selected_id: String, new_dust_selection_fraction: float = 0
 		return
 
 	visible = true
-	var element: Dictionary = game_state.get_element(element_id)
-	var element_index := int(element.get("index", 0))
-	background_rect.texture = _get_background_texture(element_index)
+	var element := game_state.get_element_state(element_id)
+	if element == null:
+		visible = false
+		symbol_label.text = ""
+		amount_label.text = ""
+		return
+	background_rect.texture = _get_background_texture(element.index)
 
-	is_unlocked = bool(element.get("unlocked", false))
+	is_unlocked = element.unlocked
 	dust_selection_fraction = clampf(new_dust_selection_fraction, 0.0, 1.0)
 	selected_border.visible = current_selected_id == element_id and is_unlocked
 	if is_unlocked:
@@ -151,7 +155,7 @@ func refresh(current_selected_id: String, new_dust_selection_fraction: float = 0
 	else:
 		background_rect.modulate = LOCKED_MODULATE
 
-	symbol_label.text = str(element.get("name", element_id))
+	symbol_label.text = element.name
 	amount_label.text = game_state.get_resource_amount(element_id).big_to_short_string()
 	_update_dust_fill()
 

@@ -50,8 +50,11 @@ func refresh() -> void:
 		value_label.text = resource_id
 		return
 
-	var element: Dictionary = game_state.get_element(resource_id)
+	var element := game_state.get_element_state(resource_id)
+	if element == null:
+		value_label.text = resource_id
+		return
 	value_label.text = "%s: %s" % [
-		str(element.get("name", resource_id)),
+		element.name,
 		game_state.get_resource_amount(resource_id).big_to_short_string()
 	]

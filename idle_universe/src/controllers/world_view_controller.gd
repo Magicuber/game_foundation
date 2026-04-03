@@ -152,8 +152,8 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 	if not is_world_view:
 		return
 
-	var planet: Dictionary = game_state.get_current_planet()
-	if planet.is_empty():
+	var planet := game_state.get_current_planet_state()
+	if planet == null:
 		_title.text = "World"
 		_info.text = "No planets available."
 		_planet_sprite.texture = null
@@ -163,9 +163,9 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		_sync_worker_particles(0)
 		return
 
-	var planet_level := int(planet.get("level", 1))
-	var max_level := int(planet.get("max_level", 1))
-	var workers: DigitMaster = planet["workers"]
+	var planet_level := planet.level
+	var max_level := planet.max_level
+	var workers := planet.workers
 	var worker_cost := game_state.get_current_planet_worker_cost()
 	var can_buy_worker := game_state.can_buy_current_planet_worker()
 	var level_ratio := 1.0 if planet_level >= max_level else game_state.get_current_planet_level_progress_ratio()
@@ -178,7 +178,7 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 
 	_title.text = "World"
 	_info.text = "%s\nLv. %d/%d\nWorkers: %s\nRP: %s" % [
-		str(planet.get("name", "Planet")),
+		planet.name,
 		planet_level,
 		max_level,
 		workers.big_to_short_string(),
@@ -193,7 +193,7 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 	_worker_slider.step = slider_step
 	_worker_slider.value = allocation_ratio * 100.0
 	_worker_slider.set_block_signals(false)
-	_worker_slider.editable = bool(planet.get("unlocked", false))
+	_worker_slider.editable = planet.unlocked
 	_worker_button.disabled = not can_buy_worker
 	_worker_button.modulate = _enabled_button_modulate if can_buy_worker else _disabled_button_modulate
 	_worker_button_label.text = "BUY WORKER\n%s Dust" % worker_cost.big_to_short_string()

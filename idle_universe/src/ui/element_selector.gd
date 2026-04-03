@@ -23,8 +23,8 @@ func refresh() -> void:
 
 	for element_id in _button_ids:
 		var button: Button = _buttons[element_id]
-		var element := game_state.get_element(element_id)
-		button.text = str(element.get("name", element_id))
+		var element := game_state.get_element_state(element_id)
+		button.text = element_id if element == null else element.name
 		button.button_pressed = element_id == game_state.current_element_id
 
 func _rebuild_buttons(unlocked_ids: Array[String]) -> void:

@@ -68,17 +68,17 @@ func refresh(
 
 	_sync_tiles(game_state, dust_recipe_service, dust_mode_active, debug_show_element_hitboxes)
 
-	var current_element: Dictionary = game_state.get_current_element()
-	var current_name := str(current_element.get("name", ""))
-	var produced_name := game_state.get_resource_name(str(current_element.get("produces", "")))
-	var next_unlock: Dictionary = game_state.get_next_unlock_element()
+	var current_element := game_state.get_current_element_state()
+	var current_name := "" if current_element == null else current_element.name
+	var produced_name := "" if current_element == null else game_state.get_resource_name(current_element.produces)
+	var next_unlock := game_state.get_next_unlock_element_state()
 	var dust_preview := DigitMaster.zero()
 	var selected_batch_count := 0
 	if dust_mode_active:
 		dust_preview = dust_recipe_service.get_preview(game_state, upgrades_system)
 		selected_batch_count = dust_recipe_service.get_selected_element_ids(game_state, upgrades_system).size()
 
-	if next_unlock.is_empty():
+	if next_unlock == null:
 		if dust_mode_active:
 			_info_label.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
 				selected_batch_count,
@@ -89,12 +89,12 @@ func refresh(
 		_unlock_button.text = "All elements unlocked"
 		_unlock_button.disabled = true
 		_unlock_button.visible = false
-	else:
-		var unlock_id := str(next_unlock.get("id", ""))
-		var unlock_cost: DigitMaster = next_unlock["cost"]
-		if not game_state.is_next_unlock_within_visible_sections():
-			if dust_mode_active:
-				_info_label.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
+		else:
+			var unlock_id := next_unlock.id
+			var unlock_cost := next_unlock.cost
+			if not game_state.is_next_unlock_within_visible_sections():
+				if dust_mode_active:
+					_info_label.text = "Dust Mode\nSelected Elements: %d\nPredicted Dust: %s" % [
 					selected_batch_count,
 					dust_preview.big_to_short_string()
 				]
@@ -116,11 +116,11 @@ func refresh(
 				_info_label.text = "Selected: %s\nProduces: %s\nNext: %s\nRequires: %s %s" % [
 					current_name,
 					produced_name,
-					str(next_unlock.get("name", unlock_id)),
+					next_unlock.name,
 					unlock_cost.big_to_short_string(),
 					game_state.get_resource_name(unlock_id)
 				]
-			_unlock_button.text = "Unlock %s" % str(next_unlock.get("name", unlock_id))
+			_unlock_button.text = "Unlock %s" % next_unlock.name
 			_unlock_button.disabled = not game_state.can_unlock_next()
 			_unlock_button.visible = true
 		if dust_mode_active:
@@ -183,10 +183,10 @@ func _sync_tiles(
 			var section_start := int(section_data.get("start", 1))
 			var section_end := int(section_data.get("end", 1))
 			for atomic_index in range(section_start, section_end + 1):
-				var element: Dictionary = game_state.get_element_by_index(atomic_index)
-				if element.is_empty():
+				var element := game_state.get_element_state_by_index(atomic_index)
+				if element == null:
 					continue
-				var element_id := str(element.get("id", ""))
+				var element_id := element.id
 				var tile := ElementMenuTile.new()
 				tile.configure(game_state, element_id)
 				tile.element_pressed.connect(_on_tile_pressed)

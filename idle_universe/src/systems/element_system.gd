@@ -34,11 +34,11 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 	if game_state == null or upgrades_system == null or element_id.is_empty():
 		return {}
 
-	var source_element: Dictionary = game_state.get_element(element_id)
-	if source_element.is_empty():
+	var source_element := game_state.get_element_state(element_id)
+	if source_element == null:
 		return {}
 
-	var produced_resource := str(source_element.get("produces", ""))
+	var produced_resource := source_element.produces
 	if produced_resource.is_empty():
 		return {}
 
@@ -87,8 +87,10 @@ func _roll_fission_split(game_state: GameState, produced_resource_id: String) ->
 	if not game_state.is_element_id(produced_resource_id):
 		return []
 
-	var produced_element: Dictionary = game_state.get_element(produced_resource_id)
-	var target_weight := int(produced_element.get("index", 0))
+	var produced_element := game_state.get_element_state(produced_resource_id)
+	if produced_element == null:
+		return []
+	var target_weight := produced_element.index
 	if target_weight <= 1:
 		return []
 
@@ -119,8 +121,10 @@ func _build_partitions(game_state: GameState, unlocked_ids: Array[String], remai
 
 	for i in range(start_index, unlocked_ids.size()):
 		var element_id := unlocked_ids[i]
-		var element: Dictionary = game_state.get_element(element_id)
-		var element_weight := int(element.get("index", 0))
+		var element := game_state.get_element_state(element_id)
+		if element == null:
+			continue
+		var element_weight := element.index
 		if element_weight <= 0 or element_weight > remaining_weight:
 			continue
 

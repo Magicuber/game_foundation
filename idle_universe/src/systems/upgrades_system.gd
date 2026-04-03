@@ -35,15 +35,14 @@ func can_purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if game_state == null:
 		return false
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return false
-	if int(upgrade.get("current_level", 0)) >= int(upgrade.get("max_level", 0)):
+	if upgrade.current_level >= upgrade.max_level:
 		return false
 
-	if _is_element_sequence_upgrade(upgrade):
-		if not _can_purchase_sequence_upgrade(game_state, upgrade):
-			return false
+	if _is_element_sequence_upgrade(upgrade) and not _can_purchase_sequence_upgrade(game_state, upgrade):
+		return false
 
 	var resource_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
 	var current_cost := get_upgrade_purchase_cost(game_state, upgrade_id)
@@ -53,27 +52,30 @@ func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if not can_purchase_upgrade(game_state, upgrade_id):
 		return false
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
+		return false
+
 	var resource_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
 	var current_cost := get_upgrade_purchase_cost(game_state, upgrade_id)
 	if not game_state.spend_resource(resource_id, current_cost):
 		return false
 
-	upgrade["current_level"] = int(upgrade.get("current_level", 0)) + 1
+	game_state.set_upgrade_level(upgrade_id, upgrade.current_level + 1)
 	if _is_element_sequence_upgrade(upgrade):
-		upgrade["current_cost"] = get_upgrade_purchase_cost(game_state, upgrade_id)
+		game_state.set_upgrade_current_cost(upgrade_id, get_upgrade_purchase_cost(game_state, upgrade_id))
 	else:
-		upgrade["current_cost"] = _calculate_next_cost(upgrade)
+		game_state.set_upgrade_current_cost(upgrade_id, _calculate_next_cost(upgrade))
 	mark_cache_dirty()
 	return true
 
 func get_upgrade_level(game_state: GameState, upgrade_id: String) -> int:
 	if game_state == null:
 		return 0
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return 0
-	return int(upgrade.get("current_level", 0))
+	return upgrade.current_level
 
 func get_auto_smash_interval_seconds(game_state: GameState) -> float:
 	var level := get_upgrade_level(game_state, PARTICLE_SMASHER_ID)
@@ -164,64 +166,58 @@ func should_show_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 		return false
 	if resource_id.to_lower() == GameState.DUST_RESOURCE_ID:
 		return true
-	if not game_state.has_element(resource_id):
-		return false
-	return game_state.is_element_unlocked(resource_id)
+	return game_state.has_element(resource_id) and game_state.is_element_unlocked(resource_id)
 
 func get_upgrade_purchase_currency_id(game_state: GameState, upgrade_id: String) -> String:
 	if game_state == null:
 		return ""
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return ""
 
 	if _is_element_sequence_upgrade(upgrade):
 		var target_element := _get_next_sequence_target_element(game_state, upgrade)
-		return str(target_element.get("id", ""))
+		return "" if target_element == null else target_element.id
 
-	return str(upgrade.get("currency_id", ""))
+	return upgrade.currency_id
 
 func get_upgrade_purchase_cost(game_state: GameState, upgrade_id: String) -> DigitMaster:
 	if game_state == null:
 		return DigitMaster.zero()
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return DigitMaster.zero()
 
 	if _is_element_sequence_upgrade(upgrade):
 		return _calculate_sequence_cost(upgrade)
 
-	var current_cost: DigitMaster = upgrade["current_cost"]
-	return current_cost.clone()
+	return upgrade.current_cost.clone()
 
 func get_upgrade_lock_reason(game_state: GameState, upgrade_id: String) -> String:
 	if game_state == null:
 		return ""
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return ""
 
-	var level := int(upgrade.get("current_level", 0))
-	var max_level := int(upgrade.get("max_level", 0))
-	if level >= max_level:
+	if upgrade.current_level >= upgrade.max_level:
 		return "Max level reached."
 
 	if not _is_element_sequence_upgrade(upgrade):
 		return ""
 
 	var next_target := _get_next_sequence_target_element(game_state, upgrade)
-	if next_target.is_empty():
+	if next_target == null:
 		return "No further resonance targets."
 
-	var next_target_index := int(next_target.get("index", 0))
-	if next_target_index > game_state.get_max_unlockable_element_index():
+	if next_target.index > game_state.get_max_unlockable_element_index():
 		return "Next resonance is in a locked element section."
 
-	if bool(upgrade.get("sequence_requires_unlock", false)) and not bool(next_target.get("unlocked", false)):
-		return "Unlock %s to buy the next level." % str(next_target.get("name", ""))
+	if upgrade.sequence_requires_unlock and not next_target.unlocked:
+		return "Unlock %s to buy the next level." % next_target.name
 
 	return ""
 
@@ -231,24 +227,24 @@ func get_dust_recipe_bonus_multiplier(game_state: GameState, selected_element_id
 
 	var bonus_multiplier := 1.0
 	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		if str(upgrade.get("effect_type", "")) != EFFECT_DUST_RESONANCE_SEQUENCE:
+		var upgrade := game_state.get_upgrade_state(upgrade_id)
+		if upgrade == null or upgrade.effect_type != EFFECT_DUST_RESONANCE_SEQUENCE:
 			continue
 
 		var matched_count := _count_matched_resonance_elements(game_state, upgrade, selected_element_ids)
 		if matched_count <= 0:
 			continue
 
-		bonus_multiplier += float(matched_count) * float(upgrade.get("effect_amount", 0.0))
+		bonus_multiplier += float(matched_count) * upgrade.effect_amount
 
 	return bonus_multiplier
 
 func get_upgrade_effect_summary(game_state: GameState, upgrade_id: String) -> String:
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		return ""
 
-	match str(upgrade.get("effect_type", "")):
+	match upgrade.effect_type:
 		EFFECT_AUTO_SMASH:
 			var level := get_upgrade_level(game_state, upgrade_id)
 			if level <= 0:
@@ -272,72 +268,62 @@ func get_upgrade_effect_summary(game_state: GameState, upgrade_id: String) -> St
 		EFFECT_DUST_RESONANCE_SEQUENCE:
 			return _get_dust_resonance_summary(game_state, upgrade)
 		_:
-			return str(upgrade.get("description", ""))
+			return upgrade.description
 
-func _is_element_sequence_upgrade(upgrade: Dictionary) -> bool:
-	return str(upgrade.get("cost_mode", "")) == COST_MODE_ELEMENT_SEQUENCE_LINEAR
+func _is_element_sequence_upgrade(upgrade: UpgradeState) -> bool:
+	return upgrade.cost_mode == COST_MODE_ELEMENT_SEQUENCE_LINEAR
 
-func _calculate_sequence_cost(upgrade: Dictionary) -> DigitMaster:
-	var base_cost: DigitMaster = upgrade["base_cost"]
-	var level := int(upgrade.get("current_level", 0))
-	var cost_step := float(upgrade.get("cost_step", 0.0))
-	return base_cost.add(DigitMaster.new(cost_step * float(level)))
+func _calculate_sequence_cost(upgrade: UpgradeState) -> DigitMaster:
+	return upgrade.base_cost.add(DigitMaster.new(upgrade.cost_step * float(upgrade.current_level)))
 
-func _get_next_sequence_target_index(upgrade: Dictionary) -> int:
-	var start_index := int(upgrade.get("sequence_start_index", 0))
-	var level := int(upgrade.get("current_level", 0))
-	return start_index + level
+func _get_next_sequence_target_index(upgrade: UpgradeState) -> int:
+	return upgrade.sequence_start_index + upgrade.current_level
 
-func _get_next_sequence_target_element(game_state: GameState, upgrade: Dictionary) -> Dictionary:
+func _get_next_sequence_target_element(game_state: GameState, upgrade: UpgradeState) -> ElementState:
 	if game_state == null:
-		return {}
-	return game_state.get_element_by_index(_get_next_sequence_target_index(upgrade))
+		return null
+	return game_state.get_element_state_by_index(_get_next_sequence_target_index(upgrade))
 
-func _can_purchase_sequence_upgrade(game_state: GameState, upgrade: Dictionary) -> bool:
+func _can_purchase_sequence_upgrade(game_state: GameState, upgrade: UpgradeState) -> bool:
 	var next_target := _get_next_sequence_target_element(game_state, upgrade)
-	if next_target.is_empty():
+	if next_target == null:
 		return false
 
-	var next_target_index := int(next_target.get("index", 0))
-	if next_target_index > game_state.get_max_unlockable_element_index():
+	if next_target.index > game_state.get_max_unlockable_element_index():
 		return false
 
-	if bool(upgrade.get("sequence_requires_unlock", false)) and not bool(next_target.get("unlocked", false)):
+	if upgrade.sequence_requires_unlock and not next_target.unlocked:
 		return false
 
 	return true
 
-func _count_matched_resonance_elements(game_state: GameState, upgrade: Dictionary, selected_element_ids: Array[String]) -> int:
+func _count_matched_resonance_elements(game_state: GameState, upgrade: UpgradeState, selected_element_ids: Array[String]) -> int:
 	if game_state == null:
 		return 0
 
-	var matched_count := 0
-	var current_level := int(upgrade.get("current_level", 0))
-	var start_index := int(upgrade.get("sequence_start_index", 0))
-	if current_level <= 0 or start_index <= 0:
+	if upgrade.current_level <= 0 or upgrade.sequence_start_index <= 0:
 		return 0
 
-	var max_resonant_index := start_index + current_level - 1
+	var matched_count := 0
+	var max_resonant_index := upgrade.sequence_start_index + upgrade.current_level - 1
 	for element_id in selected_element_ids:
-		var element: Dictionary = game_state.get_element(element_id)
-		if element.is_empty():
+		var element := game_state.get_element_state(element_id)
+		if element == null:
 			continue
-		var element_index := int(element.get("index", 0))
-		if element_index >= start_index and element_index <= max_resonant_index:
+		if element.index >= upgrade.sequence_start_index and element.index <= max_resonant_index:
 			matched_count += 1
 
 	return matched_count
 
-func _get_dust_resonance_summary(game_state: GameState, upgrade: Dictionary) -> String:
-	var level := int(upgrade.get("current_level", 0))
-	var effect_amount_percent := float(upgrade.get("effect_amount", 0.0)) * 100.0
+func _get_dust_resonance_summary(game_state: GameState, upgrade: UpgradeState) -> String:
+	var effect_amount_percent := upgrade.effect_amount * 100.0
 	var next_target := _get_next_sequence_target_element(game_state, upgrade)
-	var next_target_name := str(next_target.get("name", ""))
-	var next_currency_id := str(next_target.get("id", ""))
+	var next_target_name := "" if next_target == null else next_target.name
+	var next_currency_id := "" if next_target == null else next_target.id
 	var next_cost := _calculate_sequence_cost(upgrade)
-	var lock_reason := get_upgrade_lock_reason(game_state, str(upgrade.get("id", "")))
+	var lock_reason := get_upgrade_lock_reason(game_state, upgrade.id)
 
-	if level <= 0:
+	if upgrade.current_level <= 0:
 		var inactive_summary := "Inactive. Dust recipes gain +%.0f%% per resonant element used." % effect_amount_percent
 		if not next_target_name.is_empty():
 			inactive_summary += " Next resonance: %s (%s %s)." % [
@@ -349,21 +335,27 @@ func _get_dust_resonance_summary(game_state: GameState, upgrade: Dictionary) -> 
 			inactive_summary += " %s" % lock_reason
 		return inactive_summary
 
-	var start_index := int(upgrade.get("sequence_start_index", 0))
-	var last_index := start_index + level - 1
-	var first_name := str(game_state.get_element_by_index(start_index).get("name", ""))
-	var last_name := str(game_state.get_element_by_index(last_index).get("name", ""))
+	var last_index := upgrade.sequence_start_index + upgrade.current_level - 1
+	var first_name := ""
+	var first_element := game_state.get_element_state_by_index(upgrade.sequence_start_index)
+	if first_element != null:
+		first_name = first_element.name
+	var last_name := ""
+	var last_element := game_state.get_element_state_by_index(last_index)
+	if last_element != null:
+		last_name = last_element.name
+
 	var resonance_label := first_name
-	if level > 1 and not last_name.is_empty():
+	if upgrade.current_level > 1 and not last_name.is_empty():
 		resonance_label = "%s-%s" % [first_name, last_name]
 
-	var current_max_bonus_percent := effect_amount_percent * float(level)
+	var current_max_bonus_percent := effect_amount_percent * float(upgrade.current_level)
 	var summary := "Resonance: %s. Dust recipes gain +%.0f%% per resonant element used. Current max bonus: +%.0f%%." % [
 		resonance_label,
 		effect_amount_percent,
 		current_max_bonus_percent
 	]
-	if level < int(upgrade.get("max_level", 0)) and not next_target_name.is_empty():
+	if upgrade.current_level < upgrade.max_level and not next_target_name.is_empty():
 		summary += " Next level: %s %s." % [
 			next_cost.big_to_short_string(),
 			game_state.get_resource_name(next_currency_id)
@@ -372,21 +364,18 @@ func _get_dust_resonance_summary(game_state: GameState, upgrade: Dictionary) -> 
 		summary += " %s" % lock_reason
 	return summary
 
-func _get_upgrade_scaled_effect(upgrade: Dictionary) -> float:
-	return float(upgrade.get("effect_amount", 0.0)) * float(int(upgrade.get("current_level", 0)))
+func _get_upgrade_scaled_effect(upgrade: UpgradeState) -> float:
+	return upgrade.effect_amount * float(upgrade.current_level)
 
-func _calculate_next_cost(upgrade: Dictionary) -> DigitMaster:
-	var current_cost: DigitMaster = upgrade["current_cost"]
-	match str(upgrade.get("cost_mode", "additive_power")):
+func _calculate_next_cost(upgrade: UpgradeState) -> DigitMaster:
+	match upgrade.cost_mode:
 		"additive_power":
-			var level := int(upgrade.get("current_level", 0))
-			var scaling := float(upgrade.get("cost_scaling", 1.0))
-			var increment := DigitMaster.new(pow(scaling, float(level)))
-			return current_cost.add(increment)
+			var increment := DigitMaster.new(pow(upgrade.cost_scaling, float(upgrade.current_level)))
+			return upgrade.current_cost.add(increment)
 		"multiplicative":
-			return current_cost.multiply_scalar(float(upgrade.get("cost_scaling", 1.0)))
+			return upgrade.current_cost.multiply_scalar(upgrade.cost_scaling)
 		_:
-			return current_cost.clone()
+			return upgrade.current_cost.clone()
 
 func _ensure_aggregate_cache(game_state: GameState) -> void:
 	if game_state == null or not _aggregate_cache_dirty:
@@ -400,12 +389,14 @@ func _ensure_aggregate_cache(game_state: GameState) -> void:
 	_cached_resonant_yield_chance = 0.0
 
 	for upgrade_id in game_state.get_upgrade_ids():
-		var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-		match str(upgrade.get("effect_type", "")):
+		var upgrade := game_state.get_upgrade_state(upgrade_id)
+		if upgrade == null:
+			continue
+
+		match upgrade.effect_type:
 			EFFECT_AUTO_SMASH_SPEED_BONUS:
-				var level := int(upgrade.get("current_level", 0))
-				var reduction := clampf(1.0 - float(upgrade.get("effect_amount", 0.0)), 0.01, 1.0)
-				_cached_auto_smash_interval_multiplier *= pow(reduction, float(level))
+				var reduction := clampf(1.0 - upgrade.effect_amount, 0.01, 1.0)
+				_cached_auto_smash_interval_multiplier *= pow(reduction, float(upgrade.current_level))
 			EFFECT_CRITICAL_AUTO_SMASH:
 				_cached_global_critical_smash_chance_percent += _get_upgrade_scaled_effect(upgrade)
 			EFFECT_FISSION_SPLIT:

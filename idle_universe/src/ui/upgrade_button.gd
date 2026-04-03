@@ -107,21 +107,21 @@ func refresh() -> void:
 		_set_empty_state()
 		return
 
-	var upgrade: Dictionary = game_state.get_upgrade(upgrade_id)
-	if upgrade.is_empty():
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
 		_set_empty_state()
 		return
 
-	var level := int(upgrade.get("current_level", 0))
-	var max_level := int(upgrade.get("max_level", 0))
+	var level := upgrade.current_level
+	var max_level := upgrade.max_level
 	var current_cost: DigitMaster = upgrades_system.get_upgrade_purchase_cost(game_state, upgrade_id)
 	var purchase_currency_id := upgrades_system.get_upgrade_purchase_currency_id(game_state, upgrade_id)
 	var currency_name := game_state.get_resource_name(purchase_currency_id)
-	var description := str(upgrade.get("description", ""))
+	var description := upgrade.description
 	var effect_summary := upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id)
 
 	title_label.text = "%s Lv.%d/%d" % [
-		str(upgrade.get("name", upgrade_id)),
+		upgrade.name,
 		level,
 		max_level
 	]
