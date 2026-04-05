@@ -114,6 +114,8 @@ func configure(
 	_configure_texture_button(_shop_button, shop_button_texture)
 
 	_profile_button.focus_mode = Control.FOCUS_NONE
+	_counter_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_counter_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func apply_style() -> void:
 	_apply_profile_button_style()

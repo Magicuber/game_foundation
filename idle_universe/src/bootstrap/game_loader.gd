@@ -76,6 +76,7 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var menu_content: MarginContainer = $MenuOverlay/MenuContent
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
 @onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
+@onready var upgrades_scroll: ScrollContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeScroll
 @onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
 @onready var era_panel: Control = $MenuOverlay/MenuContent/MenuPanels/EraPanel
 @onready var stats_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/StatsPanel
@@ -127,7 +128,7 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var shop_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ShopMenuButton
 @onready var settings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/SettingsMenuButton
 @onready var unlock_button: Button = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/UnlockButton
-@onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeList
+@onready var upgrade_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeScroll/UpgradeList
 @onready var counter_margin: MarginContainer = $CounterMargin
 @onready var counter_list: VBoxContainer = $CounterMargin/CounterList
 @onready var top_bar: ColorRect = $TopBar
@@ -275,6 +276,7 @@ func _ready() -> void:
 		menu_content,
 		main_menu_panel,
 		upgrades_panel,
+		upgrades_scroll,
 		elements_panel,
 		era_panel,
 		stats_panel,
@@ -628,11 +630,13 @@ func _refresh_stats_panel() -> void:
 	var current_element := game_state.get_current_element_state()
 	var current_name := "" if current_element == null else current_element.name
 	var produced_name := "" if current_element == null else game_state.get_resource_name(current_element.produces)
-	stats_info.text = "Current Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d" % [
+	stats_info.text = "Run Stats\nCurrent Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d\n\nUpgrade Stats\n%s\n\nUpgrade Effects\n%s" % [
 		current_name,
 		produced_name,
 		game_state.total_manual_smashes,
-		game_state.total_auto_smashes
+		game_state.total_auto_smashes,
+		_build_upgrade_stats_text(),
+		_build_upgrade_effects_text()
 	]
 	planetary_stats_info.visible = game_state.has_unlocked_era(1)
 	if planetary_stats_info.visible:
@@ -879,6 +883,35 @@ func _adjust_prestige_count(delta: int) -> void:
 	if not game_state.adjust_prestige_count(delta):
 		return
 	_refresh_ui(_get_selection_refresh_flags() | UI_DIRTY_SETTINGS)
+
+func _build_upgrade_stats_text() -> String:
+	return "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%" % [
+		upgrades_system.get_auto_smashes_per_second(game_state),
+		upgrades_system.get_global_critical_smash_chance_percent(game_state),
+		upgrades_system.get_critical_payload_chance_percent(game_state),
+		upgrades_system.get_fission_chance_percent(game_state),
+		upgrades_system.get_manual_double_hit_chance(game_state) * 100.0,
+		upgrades_system.get_resonant_yield_chance(game_state) * 100.0
+	]
+
+func _build_upgrade_effects_text() -> String:
+	var sections: Array[String] = []
+	for upgrade_id in game_state.get_upgrade_ids():
+		if not upgrades_system.should_show_upgrade(game_state, upgrade_id):
+			continue
+		var upgrade := game_state.get_upgrade_state(upgrade_id)
+		if upgrade == null:
+			continue
+		sections.append(upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id))
+	if sections.is_empty():
+		return "No upgrade effects unlocked yet."
+
+	var summary := ""
+	for index in range(sections.size()):
+		if index > 0:
+			summary += "\n"
+		summary += sections[index]
+	return summary
 
 func _pulse_fuse_element() -> void:
 	if not is_instance_valid(fuse_button):

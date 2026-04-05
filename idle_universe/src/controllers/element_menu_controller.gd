@@ -49,6 +49,8 @@ func configure(
 	_enabled_button_modulate = enabled_button_modulate
 	_disabled_button_modulate = disabled_button_modulate
 
+	_info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_section_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_unlock_button.focus_mode = Control.FOCUS_NONE
 	_make_dust_button.focus_mode = Control.FOCUS_NONE
 	_dust_close_button.focus_mode = Control.FOCUS_NONE
@@ -161,11 +163,15 @@ func _sync_tiles(
 			var section_data: Dictionary = ELEMENT_MENU_SECTIONS[section_index]
 			var section_box := VBoxContainer.new()
 			section_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			section_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			section_box.z_as_relative = false
+			section_box.z_index = 70
 			section_box.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_BOX_SEPARATION)
 			_section_list.add_child(section_box)
 
 			var header := Label.new()
 			header.text = str(section_data.get("title", ""))
+			header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			header.add_theme_font_size_override("font_size", UIMetrics.MENU_SECTION_HEADER_FONT_SIZE)
 			header.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 			var ui_font: FontFile = UIFont.load_ui_font()
@@ -173,24 +179,47 @@ func _sync_tiles(
 				header.add_theme_font_override("font", ui_font)
 			section_box.add_child(header)
 
-			var grid := GridContainer.new()
-			grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			grid.columns = int(section_data.get("columns", 5))
-			grid.add_theme_constant_override("h_separation", UIMetrics.MENU_GRID_SPACING)
-			grid.add_theme_constant_override("v_separation", UIMetrics.MENU_GRID_SPACING)
-			section_box.add_child(grid)
+			var grid_margin := MarginContainer.new()
+			grid_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			grid_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			grid_margin.z_as_relative = false
+			grid_margin.z_index = 80
+			grid_margin.add_theme_constant_override("margin_left", UIMetrics.MENU_GRID_SIDE_INSET)
+			grid_margin.add_theme_constant_override("margin_right", UIMetrics.MENU_GRID_SIDE_INSET)
+			section_box.add_child(grid_margin)
+
+			var row_list := VBoxContainer.new()
+			row_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row_list.z_as_relative = false
+			row_list.z_index = 90
+			row_list.add_theme_constant_override("separation", UIMetrics.MENU_GRID_SPACING)
+			grid_margin.add_child(row_list)
 
 			var section_start := int(section_data.get("start", 1))
 			var section_end := int(section_data.get("end", 1))
+			var column_count := int(section_data.get("columns", 5))
+			var row: HBoxContainer = null
 			for atomic_index in range(section_start, section_end + 1):
 				var element := game_state.get_element_state_by_index(atomic_index)
 				if element == null:
 					continue
+				var offset := atomic_index - section_start
+				if offset % column_count == 0:
+					row = HBoxContainer.new()
+					row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+					row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					row.z_as_relative = false
+					row.z_index = 95
+					row.add_theme_constant_override("separation", UIMetrics.MENU_GRID_SPACING)
+					row_list.add_child(row)
 				var element_id := element.id
 				var tile := ElementMenuTile.new()
+				tile.z_as_relative = false
+				tile.z_index = 100
 				tile.configure(game_state, element_id)
 				tile.element_pressed.connect(_on_tile_pressed)
-				grid.add_child(tile)
+				row.add_child(tile)
 				_element_menu_tiles[element_id] = tile
 
 	for element_id in _element_menu_tiles.keys():

@@ -20,6 +20,7 @@ var _menu_background: TextureRect
 var _menu_content: MarginContainer
 var _main_menu_panel: VBoxContainer
 var _upgrades_panel: VBoxContainer
+var _upgrades_scroll: ScrollContainer
 var _elements_panel: VBoxContainer
 var _era_panel: Control
 var _stats_panel: VBoxContainer
@@ -79,6 +80,7 @@ func configure(
 	menu_content: MarginContainer,
 	main_menu_panel: VBoxContainer,
 	upgrades_panel: VBoxContainer,
+	upgrades_scroll: ScrollContainer,
 	elements_panel: VBoxContainer,
 	era_panel: Control,
 	stats_panel: VBoxContainer,
@@ -139,6 +141,7 @@ func configure(
 	_menu_content = menu_content
 	_main_menu_panel = main_menu_panel
 	_upgrades_panel = upgrades_panel
+	_upgrades_scroll = upgrades_scroll
 	_elements_panel = elements_panel
 	_era_panel = era_panel
 	_stats_panel = stats_panel
@@ -339,7 +342,16 @@ func apply_shell_metrics() -> void:
 	]:
 		panel.add_theme_constant_override("separation", UIMetrics.MENU_PANEL_SEPARATION)
 
+	_upgrades_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_upgrades_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_upgrades_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_elements_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_elements_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_elements_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_elements_section_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_elements_section_list.z_as_relative = false
+	_elements_section_list.z_index = 60
+	_elements_section_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_elements_section_list.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_LIST_SEPARATION)
 	_dust_action_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
 	_prestige_debug_row.add_theme_constant_override("separation", UIMetrics.DUST_ACTION_ROW_SEPARATION)
@@ -387,6 +399,7 @@ func apply_reference_layout() -> void:
 		UIMetrics.MENU_CONTENT_MARGIN,
 		UIMetrics.MENU_CONTENT_MARGIN
 	)
+	_elements_section_list.custom_minimum_size.x = maxf(0.0, _elements_scroll.size.x)
 
 func set_menu_mode(menu_mode: int) -> void:
 	_menu_overlay.visible = menu_mode != MENU_CLOSED

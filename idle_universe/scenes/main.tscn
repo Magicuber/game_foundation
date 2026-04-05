@@ -298,8 +298,14 @@ layout_mode = 2
 text = "Upgrade info"
 autowrap_mode = 3
 
-[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel" unique_id=1155360097]
+[node name="UpgradeScroll" type="ScrollContainer" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel" unique_id=1602038204]
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+
+[node name="UpgradeList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeScroll" unique_id=1155360097]
+layout_mode = 2
+size_flags_horizontal = 0
 theme_override_constants/separation = 10
 
 [node name="ElementsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000301]
@@ -328,12 +334,14 @@ text = "Unlock Next Element"
 
 [node name="ElementsScroll" type="ScrollContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000304]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
 [node name="ElementsSectionList" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll" unique_id=2000305]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 0
 theme_override_constants/separation = 12
 
 [node name="DustActionRow" type="HBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels/ElementsPanel" unique_id=2000306]

@@ -14,19 +14,13 @@ func configure(panel: VBoxContainer, info_label: Label, upgrade_list: VBoxContai
 	_panel = panel
 	_info_label = info_label
 	_upgrade_list = upgrade_list
+	_upgrade_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_info_label.visible = false
+	_info_label.text = ""
 
 func refresh(game_state: GameState, upgrades_system: UpgradesSystem) -> void:
 	if not _panel.visible:
 		return
-
-	_info_label.text = "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%" % [
-		upgrades_system.get_auto_smashes_per_second(game_state),
-		upgrades_system.get_global_critical_smash_chance_percent(game_state),
-		upgrades_system.get_critical_payload_chance_percent(game_state),
-		upgrades_system.get_fission_chance_percent(game_state),
-		upgrades_system.get_manual_double_hit_chance(game_state) * 100.0,
-		upgrades_system.get_resonant_yield_chance(game_state) * 100.0
-	]
 
 	var upgrade_ids: Array[String] = []
 	for upgrade_id in game_state.get_upgrade_ids():

@@ -1,4 +1,4 @@
-extends Control
+extends Button
 
 class_name ElementMenuTile
 
@@ -33,10 +33,12 @@ var amount_label: Label
 func _init() -> void:
 	custom_minimum_size = Vector2(UIMetrics.ELEMENT_TILE_MIN_SIZE, UIMetrics.ELEMENT_TILE_MIN_SIZE)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_NONE
+	flat = true
+	pressed.connect(_on_pressed)
 
 	background_rect = TextureRect.new()
 	background_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -125,7 +127,6 @@ func _init() -> void:
 	content_box.add_child(amount_label)
 
 	_apply_font()
-	call_deferred("_update_square_size")
 
 func configure(new_game_state: GameState, new_element_id: String) -> void:
 	game_state = new_game_state
@@ -167,13 +168,6 @@ func _apply_font() -> void:
 	symbol_label.add_theme_font_override("font", ui_font)
 	amount_label.add_theme_font_override("font", ui_font)
 
-func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mouse_event: InputEventMouseButton = event
-		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			_on_pressed()
-			accept_event()
-
 func _on_pressed() -> void:
 	if is_unlocked and not element_id.is_empty():
 		emit_signal("element_pressed", element_id)
@@ -189,9 +183,10 @@ func _notification(what: int) -> void:
 func _update_square_size() -> void:
 	if size.x <= 0.0:
 		return
-	var target_height := round(size.x)
-	if absf(custom_minimum_size.x - target_height) > 0.5 or absf(custom_minimum_size.y - target_height) > 0.5:
-		custom_minimum_size = Vector2(target_height, target_height)
+	var target_height := maxf(UIMetrics.ELEMENT_TILE_MIN_SIZE, size.x)
+	if is_equal_approx(custom_minimum_size.y, target_height):
+		return
+	custom_minimum_size = Vector2(UIMetrics.ELEMENT_TILE_MIN_SIZE, target_height)
 
 func _update_dust_fill() -> void:
 	if dust_fill_rect == null:

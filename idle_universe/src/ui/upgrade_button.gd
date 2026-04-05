@@ -71,6 +71,7 @@ func _init() -> void:
 	info_box.add_child(title_label)
 	info_box.add_child(description_label)
 	info_box.add_child(effect_label)
+	effect_label.visible = false
 
 	cost_button = TextureButton.new()
 	cost_button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -118,15 +119,13 @@ func refresh() -> void:
 	var purchase_currency_id := upgrades_system.get_upgrade_purchase_currency_id(game_state, upgrade_id)
 	var currency_name := game_state.get_resource_name(purchase_currency_id)
 	var description := upgrade.description
-	var effect_summary := upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id)
-
 	title_label.text = "%s Lv.%d/%d" % [
 		upgrade.name,
 		level,
 		max_level
 	]
 	description_label.text = description
-	effect_label.text = effect_summary
+	effect_label.text = ""
 	if level >= max_level:
 		cost_label.text = "MAX\n-"
 	else:
