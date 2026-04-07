@@ -40,13 +40,21 @@ func can_purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 		return false
 	if upgrade.current_level >= upgrade.max_level:
 		return false
+	if not _is_upgrade_era_unlocked(game_state, upgrade):
+		return false
 
 	if _is_element_sequence_upgrade(upgrade) and not _can_purchase_sequence_upgrade(game_state, upgrade):
 		return false
 
-	var resource_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
-	var current_cost := get_upgrade_purchase_cost(game_state, upgrade_id)
-	return not resource_id.is_empty() and game_state.can_afford_resource(resource_id, current_cost)
+	var cost_entries := get_upgrade_purchase_cost_entries(game_state, upgrade_id)
+	if cost_entries.is_empty():
+		return false
+	for cost_entry in cost_entries:
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var current_cost: DigitMaster = cost_entry["cost"]
+		if resource_id.is_empty() or not game_state.can_afford_resource(resource_id, current_cost):
+			return false
+	return true
 
 func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if not can_purchase_upgrade(game_state, upgrade_id):
@@ -56,16 +64,19 @@ func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if upgrade == null:
 		return false
 
-	var resource_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
-	var current_cost := get_upgrade_purchase_cost(game_state, upgrade_id)
-	if not game_state.spend_resource(resource_id, current_cost):
-		return false
+	for cost_entry in get_upgrade_purchase_cost_entries(game_state, upgrade_id):
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var current_cost: DigitMaster = cost_entry["cost"]
+		if not game_state.spend_resource(resource_id, current_cost):
+			return false
 
 	game_state.set_upgrade_level(upgrade_id, upgrade.current_level + 1)
 	if _is_element_sequence_upgrade(upgrade):
 		game_state.set_upgrade_current_cost(upgrade_id, get_upgrade_purchase_cost(game_state, upgrade_id))
 	else:
-		game_state.set_upgrade_current_cost(upgrade_id, _calculate_next_cost(upgrade))
+		game_state.set_upgrade_current_cost(upgrade_id, _calculate_next_cost(upgrade.current_cost, upgrade))
+	if not upgrade.secondary_currency_id.is_empty():
+		game_state.set_upgrade_secondary_current_cost(upgrade_id, _calculate_next_cost(upgrade.secondary_current_cost, upgrade))
 	mark_cache_dirty()
 	return true
 
@@ -99,7 +110,7 @@ func get_global_critical_smash_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
 	_ensure_aggregate_cache(game_state)
-	return _cached_global_critical_smash_chance_percent
+	return _cached_global_critical_smash_chance_percent + game_state.get_blessing_critical_smasher_bonus_percent()
 
 func get_auto_smash_spawn_count(game_state: GameState) -> int:
 	var crit_chance := get_global_critical_smash_chance_percent(game_state)
@@ -113,7 +124,7 @@ func get_fission_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
 	_ensure_aggregate_cache(game_state)
-	return _cached_fission_chance_percent
+	return minf(FISSION_MAX_CHANCE_PERCENT, _cached_fission_chance_percent + game_state.get_blessing_fission_bonus_percent())
 
 func should_trigger_fission(game_state: GameState) -> bool:
 	var chance := get_fission_chance_percent(game_state)
@@ -161,6 +172,12 @@ func should_show_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if game_state == null:
 		return false
 
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
+		return false
+	if not _is_upgrade_era_unlocked(game_state, upgrade):
+		return false
+
 	var resource_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
 	if resource_id.is_empty():
 		return false
@@ -195,6 +212,31 @@ func get_upgrade_purchase_cost(game_state: GameState, upgrade_id: String) -> Dig
 
 	return upgrade.current_cost.clone()
 
+func get_upgrade_purchase_cost_entries(game_state: GameState, upgrade_id: String) -> Array[Dictionary]:
+	if game_state == null:
+		return []
+
+	var upgrade := game_state.get_upgrade_state(upgrade_id)
+	if upgrade == null:
+		return []
+
+	var cost_entries: Array[Dictionary] = []
+	var primary_cost := get_upgrade_purchase_cost(game_state, upgrade_id)
+	var primary_currency_id := get_upgrade_purchase_currency_id(game_state, upgrade_id)
+	if not primary_currency_id.is_empty() and not primary_cost.is_zero():
+		cost_entries.append({
+			"resource_id": primary_currency_id,
+			"cost": primary_cost
+		})
+
+	if not upgrade.secondary_currency_id.is_empty() and not upgrade.secondary_current_cost.is_zero():
+		cost_entries.append({
+			"resource_id": upgrade.secondary_currency_id,
+			"cost": upgrade.secondary_current_cost.clone()
+		})
+
+	return cost_entries
+
 func get_upgrade_lock_reason(game_state: GameState, upgrade_id: String) -> String:
 	if game_state == null:
 		return ""
@@ -202,6 +244,9 @@ func get_upgrade_lock_reason(game_state: GameState, upgrade_id: String) -> Strin
 	var upgrade := game_state.get_upgrade_state(upgrade_id)
 	if upgrade == null:
 		return ""
+
+	if not _is_upgrade_era_unlocked(game_state, upgrade):
+		return "Unlock %s to reveal this upgrade tier." % game_state.get_era_name(upgrade.required_era_index)
 
 	if upgrade.current_level >= upgrade.max_level:
 		return "Max level reached."
@@ -272,6 +317,11 @@ func get_upgrade_effect_summary(game_state: GameState, upgrade_id: String) -> St
 
 func _is_element_sequence_upgrade(upgrade: UpgradeState) -> bool:
 	return upgrade.cost_mode == COST_MODE_ELEMENT_SEQUENCE_LINEAR
+
+func _is_upgrade_era_unlocked(game_state: GameState, upgrade: UpgradeState) -> bool:
+	if game_state == null or upgrade == null:
+		return false
+	return game_state.has_unlocked_era(upgrade.required_era_index)
 
 func _calculate_sequence_cost(upgrade: UpgradeState) -> DigitMaster:
 	return upgrade.base_cost.add(DigitMaster.new(upgrade.cost_step * float(upgrade.current_level)))
@@ -367,15 +417,15 @@ func _get_dust_resonance_summary(game_state: GameState, upgrade: UpgradeState) -
 func _get_upgrade_scaled_effect(upgrade: UpgradeState) -> float:
 	return upgrade.effect_amount * float(upgrade.current_level)
 
-func _calculate_next_cost(upgrade: UpgradeState) -> DigitMaster:
+func _calculate_next_cost(current_cost: DigitMaster, upgrade: UpgradeState) -> DigitMaster:
 	match upgrade.cost_mode:
 		"additive_power":
 			var increment := DigitMaster.new(pow(upgrade.cost_scaling, float(upgrade.current_level)))
-			return upgrade.current_cost.add(increment)
+			return current_cost.add(increment)
 		"multiplicative":
-			return upgrade.current_cost.multiply_scalar(upgrade.cost_scaling)
+			return current_cost.multiply_scalar(upgrade.cost_scaling)
 		_:
-			return upgrade.current_cost.clone()
+			return current_cost.clone()
 
 func _ensure_aggregate_cache(game_state: GameState) -> void:
 	if game_state == null or not _aggregate_cache_dirty:

@@ -1,0 +1,320 @@
+{
+  "rarities": [
+	{
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "roll_weight": 40.0,
+	  "display_chance": "40%"
+	},
+	{
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "roll_weight": 30.0,
+	  "display_chance": "30%"
+	},
+	{
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "roll_weight": 14.0,
+	  "display_chance": "14%"
+	},
+	{
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "roll_weight": 5.0,
+	  "display_chance": "5%"
+	},
+	{
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "roll_weight": 1.0,
+	  "display_chance": "1%"
+	},
+	{
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "roll_weight": 0.0033333333,
+	  "display_chance": "1 in 30,000"
+	}
+  ],
+  "blessings": [
+	{
+	  "id": "uncommon_precision_of_sparks",
+	  "name": "Precision of Sparks",
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "slot_index": 1,
+	  "description": "Increase critical smasher chance by 0.25% per level.",
+	  "effect_type": "critical_smasher_chance",
+	  "effect_amount": 0.25
+	},
+	{
+	  "id": "uncommon_fracture_hymn",
+	  "name": "Fracture Hymn",
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "slot_index": 2,
+	  "description": "Increase fission chance by 0.25% per level.",
+	  "effect_type": "fission_chance",
+	  "effect_amount": 0.25
+	},
+	{
+	  "id": "uncommon_future_slot_1",
+	  "name": "Future Uncommon I",
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future uncommon blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "uncommon_future_slot_2",
+	  "name": "Future Uncommon II",
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future uncommon blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "uncommon_future_slot_3",
+	  "name": "Future Uncommon III",
+	  "rarity": "Uncommon",
+	  "color": "336b3e",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future uncommon blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "rare_future_slot_1",
+	  "name": "Future Rare I",
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "slot_index": 1,
+	  "description": "Placeholder slot for a future rare blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "rare_future_slot_2",
+	  "name": "Future Rare II",
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "slot_index": 2,
+	  "description": "Placeholder slot for a future rare blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "rare_future_slot_3",
+	  "name": "Future Rare III",
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future rare blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "rare_future_slot_4",
+	  "name": "Future Rare IV",
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future rare blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "rare_future_slot_5",
+	  "name": "Future Rare V",
+	  "rarity": "Rare",
+	  "color": "567e9d",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future rare blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "legendary_future_slot_1",
+	  "name": "Future Legendary I",
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "slot_index": 1,
+	  "description": "Placeholder slot for a future legendary blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "legendary_future_slot_2",
+	  "name": "Future Legendary II",
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "slot_index": 2,
+	  "description": "Placeholder slot for a future legendary blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "legendary_future_slot_3",
+	  "name": "Future Legendary III",
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future legendary blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "legendary_future_slot_4",
+	  "name": "Future Legendary IV",
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future legendary blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "legendary_future_slot_5",
+	  "name": "Future Legendary V",
+	  "rarity": "Legendary",
+	  "color": "4f3663",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future legendary blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exotic_foil_genesis",
+	  "name": "Foil Genesis",
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "slot_index": 1,
+	  "description": "Gain 1% chance per level for a smasher element to spawn as foil, capped at 100%. Foil smashes grant 2x base rewards and foil outputs.",
+	  "effect_type": "foil_spawn_chance",
+	  "effect_amount": 1.0,
+	  "effect_cap": 100.0
+	},
+	{
+	  "id": "exotic_future_slot_1",
+	  "name": "Future Exotic I",
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "slot_index": 2,
+	  "description": "Placeholder slot for a future exotic blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exotic_future_slot_2",
+	  "name": "Future Exotic II",
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future exotic blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exotic_future_slot_3",
+	  "name": "Future Exotic III",
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future exotic blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exotic_future_slot_4",
+	  "name": "Future Exotic IV",
+	  "rarity": "Exotic",
+	  "color": "88458f",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future exotic blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exalted_holo_convergence",
+	  "name": "Holo Convergence",
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "slot_index": 1,
+	  "description": "Gain 1% chance per level for a smasher element to spawn as holographic. Holographic smashes grant 5x base rewards and holographic outputs.",
+	  "effect_type": "holographic_spawn_chance",
+	  "effect_amount": 1.0,
+	  "effect_cap": 100.0
+	},
+	{
+	  "id": "exalted_future_slot_1",
+	  "name": "Future Exalted I",
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "slot_index": 2,
+	  "description": "Placeholder slot for a future exalted blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exalted_future_slot_2",
+	  "name": "Future Exalted II",
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future exalted blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exalted_future_slot_3",
+	  "name": "Future Exalted III",
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future exalted blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "exalted_future_slot_4",
+	  "name": "Future Exalted IV",
+	  "rarity": "Exalted",
+	  "color": "d97a1f",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future exalted blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "divine_polychrome",
+	  "name": "Polychrome",
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "slot_index": 1,
+	  "description": "Gain 1% chance per level for a smasher element to spawn as polychrome. Polychrome smashes grant 10x base rewards and polychrome outputs.",
+	  "effect_type": "polychrome_spawn_chance",
+	  "effect_amount": 1.0,
+	  "effect_cap": 100.0
+	},
+	{
+	  "id": "divine_future_slot_1",
+	  "name": "Future Divine I",
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "slot_index": 2,
+	  "description": "Placeholder slot for a future divine blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "divine_future_slot_2",
+	  "name": "Future Divine II",
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "slot_index": 3,
+	  "description": "Placeholder slot for a future divine blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "divine_future_slot_3",
+	  "name": "Future Divine III",
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "slot_index": 4,
+	  "description": "Placeholder slot for a future divine blessing.",
+	  "placeholder": true
+	},
+	{
+	  "id": "divine_future_slot_4",
+	  "name": "Future Divine IV",
+	  "rarity": "Divine",
+	  "color": "cdad36",
+	  "slot_index": 5,
+	  "description": "Placeholder slot for a future divine blessing.",
+	  "placeholder": true
+	}
+  ]
+}

@@ -6,6 +6,8 @@ signal element_pressed(element_id: String)
 signal unlock_requested
 signal make_dust_requested
 signal dust_close_requested
+signal dust_cycle_all_requested
+signal dust_clear_all_requested
 
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const ELEMENT_MENU_SECTIONS := [
@@ -20,6 +22,10 @@ var _panel: VBoxContainer
 var _info_label: Label
 var _section_list: VBoxContainer
 var _unlock_button: Button
+var _dust_cycle_all_button: TextureButton
+var _dust_cycle_all_label: Label
+var _dust_clear_all_button: TextureButton
+var _dust_clear_all_label: Label
 var _make_dust_button: TextureButton
 var _make_dust_label: Label
 var _dust_close_button: TextureButton
@@ -33,6 +39,10 @@ func configure(
 	info_label: Label,
 	section_list: VBoxContainer,
 	unlock_button: Button,
+	dust_cycle_all_button: TextureButton,
+	dust_cycle_all_label: Label,
+	dust_clear_all_button: TextureButton,
+	dust_clear_all_label: Label,
 	make_dust_button: TextureButton,
 	make_dust_label: Label,
 	dust_close_button: TextureButton,
@@ -43,6 +53,10 @@ func configure(
 	_info_label = info_label
 	_section_list = section_list
 	_unlock_button = unlock_button
+	_dust_cycle_all_button = dust_cycle_all_button
+	_dust_cycle_all_label = dust_cycle_all_label
+	_dust_clear_all_button = dust_clear_all_button
+	_dust_clear_all_label = dust_clear_all_label
 	_make_dust_button = make_dust_button
 	_make_dust_label = make_dust_label
 	_dust_close_button = dust_close_button
@@ -52,9 +66,13 @@ func configure(
 	_info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_section_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_unlock_button.focus_mode = Control.FOCUS_NONE
+	_dust_cycle_all_button.focus_mode = Control.FOCUS_NONE
+	_dust_clear_all_button.focus_mode = Control.FOCUS_NONE
 	_make_dust_button.focus_mode = Control.FOCUS_NONE
 	_dust_close_button.focus_mode = Control.FOCUS_NONE
 	_unlock_button.pressed.connect(_on_unlock_pressed)
+	_dust_cycle_all_button.pressed.connect(_on_dust_cycle_all_pressed)
+	_dust_clear_all_button.pressed.connect(_on_dust_clear_all_pressed)
 	_make_dust_button.pressed.connect(_on_make_dust_pressed)
 	_dust_close_button.pressed.connect(_on_dust_close_pressed)
 
@@ -129,7 +147,13 @@ func refresh(
 			_unlock_button.disabled = true
 
 	_make_dust_button.visible = true
+	_dust_cycle_all_button.visible = dust_mode_active
+	_dust_clear_all_button.visible = dust_mode_active
 	_dust_close_button.visible = dust_mode_active
+	_dust_cycle_all_button.disabled = false
+	_dust_clear_all_button.disabled = selected_batch_count == 0
+	_dust_cycle_all_button.modulate = _enabled_button_modulate
+	_dust_clear_all_button.modulate = _enabled_button_modulate if not _dust_clear_all_button.disabled else _disabled_button_modulate
 	_make_dust_label.text = "MAKE DUST"
 	if dust_mode_active:
 		_make_dust_label.text = "%s DUST" % dust_preview.big_to_short_string()
@@ -241,3 +265,9 @@ func _on_make_dust_pressed() -> void:
 
 func _on_dust_close_pressed() -> void:
 	dust_close_requested.emit()
+
+func _on_dust_cycle_all_pressed() -> void:
+	dust_cycle_all_requested.emit()
+
+func _on_dust_clear_all_pressed() -> void:
+	dust_clear_all_requested.emit()

@@ -142,6 +142,40 @@
 	  "current_level": 0,
 	  "effect_type": "fission_split",
 	  "effect_amount": 0.75
+	},
+	{
+	  "id": "critical_smasher_chance_2",
+	  "name": "Critical Smasher Chance II",
+	  "description": "Chance for Particle Smasher to spawn extra Protons.",
+	  "currency_id": "ele_Na",
+	  "secondary_currency_id": "dust",
+	  "tier": 2,
+	  "required_era_index": 1,
+	  "base_cost": 100,
+	  "secondary_base_cost": 1000,
+	  "cost_mode": "additive_power",
+	  "cost_scaling": 1.5,
+	  "max_level": 20,
+	  "current_level": 0,
+	  "effect_type": "critical_auto_smash",
+	  "effect_amount": 2.0
+	},
+	{
+	  "id": "fission_2",
+	  "name": "Fission II",
+	  "description": "Chance to split production into two unlocked atoms whose weights sum to the produced element.",
+	  "currency_id": "ele_Mg",
+	  "secondary_currency_id": "dust",
+	  "tier": 2,
+	  "required_era_index": 1,
+	  "base_cost": 100,
+	  "secondary_base_cost": 2000,
+	  "cost_mode": "additive_power",
+	  "cost_scaling": 1.5,
+	  "max_level": 25,
+	  "current_level": 0,
+	  "effect_type": "fission_split",
+	  "effect_amount": 1.0
 	}
   ]
 }

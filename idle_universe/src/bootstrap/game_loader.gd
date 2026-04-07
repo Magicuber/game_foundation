@@ -2,7 +2,9 @@ extends Control
 
 const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
 const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
+const BLESSINGS_DATA_PATH := "res://src/data/blessings.json"
 const PLANETS_DATA_PATH := "res://src/data/planets.json"
+const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const AUTO_SAVE_INTERVAL_TICKS := 50
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
@@ -103,6 +105,10 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var elements_scroll: ScrollContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll
 @onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
 @onready var dust_action_row: HBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow
+@onready var dust_cycle_all_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCycleAllButton
+@onready var dust_cycle_all_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCycleAllButton/DustCycleAllLabel
+@onready var dust_clear_all_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustClearAllButton
+@onready var dust_clear_all_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustClearAllButton/DustClearAllLabel
 @onready var make_dust_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton
 @onready var make_dust_label: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/MakeDustButton/MakeDustLabel
 @onready var dust_close_button: TextureButton = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow/DustCloseButton
@@ -191,6 +197,7 @@ var world_view_controller: WorldViewController = WorldViewController.new()
 var hud_controller: HudController = HudController.new()
 var menu_controller: MenuController = MenuController.new()
 var element_menu_controller: ElementMenuController = ElementMenuController.new()
+var blessings_panel_controller = BlessingsPanelControllerScript.new()
 var upgrades_panel_controller: UpgradesPanelController = UpgradesPanelController.new()
 var era_panel_controller: EraPanelController = EraPanelController.new()
 
@@ -224,6 +231,7 @@ func _ready() -> void:
 	click_boxes_toggle.toggled.connect(_on_click_boxes_toggled)
 	add_dust_button.pressed.connect(_on_add_dust_pressed)
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
+	blessings_menu_button.text = "Open Blessings"
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
@@ -355,6 +363,10 @@ func _ready() -> void:
 		elements_scroll,
 		elements_section_list,
 		dust_action_row,
+		dust_cycle_all_button,
+		dust_cycle_all_label,
+		dust_clear_all_button,
+		dust_clear_all_label,
 		make_dust_button,
 		make_dust_label,
 		dust_close_button,
@@ -371,6 +383,10 @@ func _ready() -> void:
 		elements_info,
 		elements_section_list,
 		unlock_button,
+		dust_cycle_all_button,
+		dust_cycle_all_label,
+		dust_clear_all_button,
+		dust_clear_all_label,
 		make_dust_button,
 		make_dust_label,
 		dust_close_button,
@@ -379,8 +395,12 @@ func _ready() -> void:
 	)
 	element_menu_controller.element_pressed.connect(_on_element_tile_pressed)
 	element_menu_controller.unlock_requested.connect(_on_unlock_pressed)
+	element_menu_controller.dust_cycle_all_requested.connect(_on_dust_cycle_all_pressed)
+	element_menu_controller.dust_clear_all_requested.connect(_on_dust_clear_all_pressed)
 	element_menu_controller.make_dust_requested.connect(_on_make_dust_pressed)
 	element_menu_controller.dust_close_requested.connect(_on_dust_close_pressed)
+	blessings_panel_controller.configure(blessings_panel, blessings_info)
+	blessings_panel_controller.open_requested.connect(_on_open_blessings_pressed)
 	upgrades_panel_controller.configure(upgrades_panel, upgrades_info, upgrade_list)
 	upgrades_panel_controller.purchase_requested.connect(_on_upgrade_purchase_requested)
 	era_panel_controller.configure(
@@ -432,8 +452,9 @@ func _exit_tree() -> void:
 func _build_default_state() -> GameState:
 	var elements_content: Dictionary = _load_json_dictionary(ELEMENTS_DATA_PATH)
 	var upgrades_content: Dictionary = _load_json_dictionary(UPGRADES_DATA_PATH)
+	var blessings_content: Dictionary = _load_json_dictionary(BLESSINGS_DATA_PATH)
 	var planets_content: Dictionary = _load_json_dictionary(PLANETS_DATA_PATH)
-	return GameState.from_content(elements_content, upgrades_content, planets_content)
+	return GameState.from_content(elements_content, upgrades_content, blessings_content, planets_content)
 
 func _load_json_dictionary(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -699,14 +720,7 @@ func _refresh_planets_panel() -> void:
 func _refresh_blessings_panel() -> void:
 	if not blessings_panel.visible:
 		return
-
-	var blessing_progress := game_state.get_blessing_progress_mass()
-	var next_blessing_cost := game_state.get_next_blessing_cost()
-	blessings_info.text = "Total Blessings: %d\nProgress to Next: %s / %s mass" % [
-		game_state.blessings_count,
-		blessing_progress.big_to_short_string(),
-		next_blessing_cost.big_to_short_string()
-	]
+	blessings_panel_controller.refresh(game_state)
 
 func _refresh_settings_panel() -> void:
 	if not settings_panel.visible:
@@ -850,6 +864,11 @@ func _on_blessings_menu_pressed() -> void:
 	_set_menu_mode(MENU_BLESSINGS)
 	_refresh_ui(_get_menu_mode_refresh_flags())
 
+func _on_open_blessings_pressed() -> void:
+	if game_state.open_earned_blessings() <= 0:
+		return
+	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
+
 func _on_era_menu_pressed() -> void:
 	if not game_state.is_era_menu_unlocked():
 		return
@@ -905,6 +924,14 @@ func _on_make_dust_pressed() -> void:
 
 func _on_dust_close_pressed() -> void:
 	dust_mode_active = false
+	_refresh_ui(UI_DIRTY_ELEMENTS)
+
+func _on_dust_cycle_all_pressed() -> void:
+	dust_recipe_service.cycle_all_unlocked_selections(game_state)
+	_refresh_ui(UI_DIRTY_ELEMENTS)
+
+func _on_dust_clear_all_pressed() -> void:
+	dust_recipe_service.clear_selection()
 	_refresh_ui(UI_DIRTY_ELEMENTS)
 
 func _on_click_boxes_toggled(toggled_on: bool) -> void:

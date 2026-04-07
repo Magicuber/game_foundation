@@ -4,8 +4,9 @@ class_name UpgradeButton
 
 signal purchase_requested(upgrade_id: String)
 
-const UPGRADE_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_t1_upgrd.png")
+const UPGRADE_T1_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_t1_upgrd.png")
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
+const UPGRADE_T2_BACKGROUND_PATH := "res://assests/sprites/spr_t2_upgrd.png"
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const ENABLED_MODULATE := Color(1, 1, 1, 1)
 const DISABLED_MODULATE := Color(0.55, 0.55, 0.55, 1)
@@ -23,14 +24,16 @@ var description_label: Label
 var effect_label: Label
 var cost_button: TextureButton
 var cost_label: Label
+var tier_2_background_texture: Texture2D
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	custom_minimum_size = Vector2(0, UIMetrics.UPGRADE_BUTTON_MIN_HEIGHT)
+	tier_2_background_texture = _load_png_texture(UPGRADE_T2_BACKGROUND_PATH, UPGRADE_T1_BACKGROUND_TEXTURE)
 
 	background_rect = TextureRect.new()
-	background_rect.texture = UPGRADE_BACKGROUND_TEXTURE
+	background_rect.texture = UPGRADE_T1_BACKGROUND_TEXTURE
 	background_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	background_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background_rect.stretch_mode = TextureRect.STRETCH_SCALE
@@ -115,10 +118,9 @@ func refresh() -> void:
 
 	var level := upgrade.current_level
 	var max_level := upgrade.max_level
-	var current_cost: DigitMaster = upgrades_system.get_upgrade_purchase_cost(game_state, upgrade_id)
-	var purchase_currency_id := upgrades_system.get_upgrade_purchase_currency_id(game_state, upgrade_id)
-	var currency_name := game_state.get_resource_name(purchase_currency_id)
+	var cost_entries := upgrades_system.get_upgrade_purchase_cost_entries(game_state, upgrade_id)
 	var description := upgrade.description
+	background_rect.texture = _get_background_texture_for_tier(upgrade.tier)
 	title_label.text = "%s Lv.%d/%d" % [
 		upgrade.name,
 		level,
@@ -129,10 +131,15 @@ func refresh() -> void:
 	if level >= max_level:
 		cost_label.text = "MAX\n-"
 	else:
-		cost_label.text = "%s\n%s" % [
-			current_cost.big_to_short_string(),
-			currency_name
-		]
+		var cost_lines: Array[String] = []
+		for cost_entry in cost_entries:
+			var resource_id := str(cost_entry.get("resource_id", ""))
+			var current_cost: DigitMaster = cost_entry["cost"]
+			cost_lines.append("%s %s" % [
+				current_cost.big_to_short_string(),
+				game_state.get_resource_name(resource_id)
+			])
+		cost_label.text = "\n".join(cost_lines)
 
 	var can_purchase := level < max_level and upgrades_system.can_purchase_upgrade(game_state, upgrade_id)
 	cost_button.disabled = not can_purchase
@@ -161,6 +168,7 @@ func _apply_font() -> void:
 	cost_label.add_theme_font_override("font", ui_font)
 
 func _set_empty_state() -> void:
+	background_rect.texture = UPGRADE_T1_BACKGROUND_TEXTURE
 	title_label.text = ""
 	description_label.text = ""
 	effect_label.text = ""
@@ -172,3 +180,15 @@ func _set_empty_state() -> void:
 func _on_cost_button_pressed() -> void:
 	if not upgrade_id.is_empty():
 		emit_signal("purchase_requested", upgrade_id)
+
+func _get_background_texture_for_tier(tier: int) -> Texture2D:
+	if tier >= 2:
+		return tier_2_background_texture
+	return UPGRADE_T1_BACKGROUND_TEXTURE
+
+func _load_png_texture(path: String, fallback: Texture2D) -> Texture2D:
+	var image := Image.new()
+	var error := image.load(path)
+	if error != OK or image.get_width() <= 0 or image.get_height() <= 0:
+		return fallback
+	return ImageTexture.create_from_image(image)

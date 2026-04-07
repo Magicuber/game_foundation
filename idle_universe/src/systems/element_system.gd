@@ -3,6 +3,16 @@ extends RefCounted
 class_name ElementSystem
 
 const FISSION_PART_COUNT := 2
+const VARIANT_NORMAL := "normal"
+const VARIANT_FOIL := "foil"
+const VARIANT_HOLOGRAPHIC := "holographic"
+const VARIANT_POLYCHROME := "polychrome"
+const VARIANT_BASE_REWARD_MULTIPLIERS := {
+	VARIANT_NORMAL: 1,
+	VARIANT_FOIL: 2,
+	VARIANT_HOLOGRAPHIC: 5,
+	VARIANT_POLYCHROME: 10
+}
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -50,11 +60,16 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 			produced_resource_ids = fission_results
 			was_fission = true
 
+	var smasher_variant := _roll_smasher_variant(game_state)
+	var base_reward_multiplier := _get_variant_base_reward_multiplier(smasher_variant)
+	var base_resource_ids: Array[String] = []
 	for resource_id in produced_resource_ids:
-		game_state.produce_resource(resource_id, DigitMaster.one())
+		for _copy_index in range(base_reward_multiplier):
+			base_resource_ids.append(resource_id)
+			game_state.produce_resource(resource_id, DigitMaster.one())
 
 	var bonus_resource_ids: Array[String] = []
-	for resource_id in produced_resource_ids:
+	for resource_id in base_resource_ids:
 		if is_auto and upgrades_system.should_trigger_critical_payload(game_state):
 			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 2)
 		if not is_auto and upgrades_system.should_trigger_manual_double_hit(game_state):
@@ -62,7 +77,7 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 		if upgrades_system.should_trigger_resonant_yield(game_state):
 			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 1)
 
-	var final_resource_ids := produced_resource_ids.duplicate()
+	var final_resource_ids := base_resource_ids.duplicate()
 	final_resource_ids.append_array(bonus_resource_ids)
 
 	if is_auto:
@@ -75,7 +90,9 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 		"produced_resource_ids": final_resource_ids,
 		"produced_resource_id": final_resource_ids[0],
 		"bonus_resource_ids": bonus_resource_ids,
-		"was_fission": was_fission
+		"was_fission": was_fission,
+		"variant": smasher_variant,
+		"base_reward_multiplier": base_reward_multiplier
 	}
 
 func _add_bonus_copies(game_state: GameState, bonus_resource_ids: Array[String], resource_id: String, copy_count: int) -> void:
@@ -139,3 +156,24 @@ func _build_partitions(game_state: GameState, unlocked_ids: Array[String], remai
 			next_ids,
 			results
 		)
+
+func _roll_smasher_variant(game_state: GameState) -> String:
+	if game_state == null:
+		return VARIANT_NORMAL
+
+	if _roll_percent_chance(game_state.get_polychrome_spawn_chance_percent()):
+		return VARIANT_POLYCHROME
+	if _roll_percent_chance(game_state.get_holographic_spawn_chance_percent()):
+		return VARIANT_HOLOGRAPHIC
+	if _roll_percent_chance(game_state.get_foil_spawn_chance_percent()):
+		return VARIANT_FOIL
+	return VARIANT_NORMAL
+
+func _roll_percent_chance(chance_percent: float) -> bool:
+	var clamped_chance := clampf(chance_percent, 0.0, 100.0)
+	if clamped_chance <= 0.0:
+		return false
+	return rng.randf() * 100.0 < clamped_chance
+
+func _get_variant_base_reward_multiplier(variant: String) -> int:
+	return int(VARIANT_BASE_REWARD_MULTIPLIERS.get(variant, 1))

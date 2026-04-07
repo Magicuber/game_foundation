@@ -2,13 +2,23 @@ extends RefCounted
 
 class_name GameState
 
-const SAVE_VERSION := 3
+const BlessingStateScript = preload("res://src/core/state/blessing_state.gd")
+
+const SAVE_VERSION := 4
 const DUST_RESOURCE_ID := "dust"
 const BLESSINGS_MENU_UNLOCK_ELEMENT_ID := "ele_C"
 # Centralize blessing cost tuning so playtest balance changes stay in one place.
 const BLESSING_COST_QUADRATIC_A := 10.0
 const BLESSING_COST_QUADRATIC_B := 400.0
 const BLESSING_COST_QUADRATIC_C := 1600.0
+const BLESSING_RARITY_ORDER := [
+	"Uncommon",
+	"Rare",
+	"Legendary",
+	"Exotic",
+	"Exalted",
+	"Divine"
+]
 const ERA_NAMES := [
 	"Atomic Era",
 	"Planetary Era",
@@ -37,6 +47,12 @@ var elements: Dictionary
 var element_ids_in_order: Array[String]
 var upgrades: Dictionary
 var upgrade_ids_in_order: Array[String]
+var blessings: Dictionary
+var blessing_ids_in_order: Array[String]
+var blessing_ids_by_rarity: Dictionary
+var blessing_rarity_roll_weights: Dictionary
+var blessing_rarity_roll_displays: Dictionary
+var blessing_rarity_colors: Dictionary
 var planet_ids_in_order: Array[String]
 var current_element_id: String
 var next_unlock_id: String
@@ -50,6 +66,7 @@ var last_save_tick: int
 var total_manual_smashes: int
 var total_auto_smashes: int
 var blessings_count: int
+var unopened_blessings_count: int
 var blessings_progress_mass: DigitMaster
 var blessings_menu_unlocked: bool
 var unlocked_era_index: int
@@ -59,11 +76,16 @@ var research_points: DigitMaster
 var research_progress: float
 
 var _element_ids_by_index: Dictionary
+var _blessing_rng: RandomNumberGenerator
 
-static func from_content(elements_content: Dictionary, upgrades_content: Dictionary, planets_content: Dictionary) -> GameState:
+static func from_content(elements_content: Dictionary, upgrades_content: Dictionary, blessings_content: Dictionary, planets_content: Dictionary) -> GameState:
 	var state := GameState.new()
 	state._load_elements(elements_content.get("elements", []))
 	state._load_upgrades(upgrades_content.get("upgrades", []))
+	state._load_blessings(
+		blessings_content.get("blessings", []),
+		blessings_content.get("rarities", [])
+	)
 	state._load_planets(planets_content.get("planets", []))
 	state.refresh_progression_state()
 	return state
@@ -75,6 +97,12 @@ func _init() -> void:
 	element_ids_in_order = []
 	upgrades = {}
 	upgrade_ids_in_order = []
+	blessings = {}
+	blessing_ids_in_order = []
+	blessing_ids_by_rarity = {}
+	blessing_rarity_roll_weights = {}
+	blessing_rarity_roll_displays = {}
+	blessing_rarity_colors = {}
 	planet_ids_in_order = []
 	current_element_id = ""
 	next_unlock_id = ""
@@ -88,6 +116,7 @@ func _init() -> void:
 	total_manual_smashes = 0
 	total_auto_smashes = 0
 	blessings_count = 0
+	unopened_blessings_count = 0
 	blessings_progress_mass = DigitMaster.zero()
 	blessings_menu_unlocked = false
 	unlocked_era_index = 0
@@ -96,6 +125,8 @@ func _init() -> void:
 	research_points = DigitMaster.zero()
 	research_progress = 0.0
 	_element_ids_by_index = {}
+	_blessing_rng = RandomNumberGenerator.new()
+	_blessing_rng.randomize()
 
 func _load_elements(elements_data: Array) -> void:
 	elements.clear()
@@ -130,6 +161,55 @@ func _load_upgrades(upgrades_data: Array) -> void:
 
 		upgrades[upgrade.id] = upgrade
 		upgrade_ids_in_order.append(upgrade.id)
+
+func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
+	blessings.clear()
+	blessing_ids_in_order.clear()
+	blessing_ids_by_rarity.clear()
+	blessing_rarity_roll_weights.clear()
+	blessing_rarity_roll_displays.clear()
+	blessing_rarity_colors.clear()
+
+	for rarity in BLESSING_RARITY_ORDER:
+		blessing_ids_by_rarity[rarity] = []
+
+	for raw_rarity_variant in rarity_data:
+		if typeof(raw_rarity_variant) != TYPE_DICTIONARY:
+			continue
+		var raw_rarity: Dictionary = raw_rarity_variant
+		var rarity := str(raw_rarity.get("rarity", ""))
+		if rarity.is_empty():
+			continue
+		blessing_rarity_roll_weights[rarity] = maxf(0.0, float(raw_rarity.get("roll_weight", 0.0)))
+		blessing_rarity_roll_displays[rarity] = str(raw_rarity.get("display_chance", ""))
+		blessing_rarity_colors[rarity] = str(raw_rarity.get("color", "ffffff"))
+
+	for raw_blessing_variant in blessings_data:
+		if typeof(raw_blessing_variant) != TYPE_DICTIONARY:
+			continue
+
+		var raw_blessing: Dictionary = raw_blessing_variant
+		var blessing = BlessingStateScript.new()
+		blessing.id = str(raw_blessing.get("id", ""))
+		blessing.name = str(raw_blessing.get("name", blessing.id))
+		blessing.description = str(raw_blessing.get("description", ""))
+		blessing.rarity = str(raw_blessing.get("rarity", ""))
+		blessing.color_hex = str(raw_blessing.get("color", blessing.color_hex))
+		blessing.slot_index = int(raw_blessing.get("slot_index", 0))
+		blessing.level = maxi(0, int(raw_blessing.get("level", 0)))
+		blessing.max_level = maxi(0, int(raw_blessing.get("max_level", 0)))
+		blessing.effect_type = str(raw_blessing.get("effect_type", ""))
+		blessing.effect_amount = float(raw_blessing.get("effect_amount", 0.0))
+		blessing.effect_cap = maxf(0.0, float(raw_blessing.get("effect_cap", 0.0)))
+		blessing.placeholder = bool(raw_blessing.get("placeholder", false))
+		if blessing.id.is_empty():
+			continue
+
+		blessings[blessing.id] = blessing
+		blessing_ids_in_order.append(blessing.id)
+		if not blessing_ids_by_rarity.has(blessing.rarity):
+			blessing_ids_by_rarity[blessing.rarity] = []
+		blessing_ids_by_rarity[blessing.rarity].append(blessing.id)
 
 func _load_planets(planets_data: Array) -> void:
 	planets.clear()
@@ -392,6 +472,55 @@ func get_upgrade_state(upgrade_id: String) -> UpgradeState:
 func get_upgrade_ids() -> Array[String]:
 	return upgrade_ids_in_order.duplicate()
 
+func has_blessing(blessing_id: String) -> bool:
+	return blessings.has(blessing_id)
+
+func get_blessing_state(blessing_id: String):
+	if not has_blessing(blessing_id):
+		return null
+	return blessings[blessing_id]
+
+func get_blessing_ids() -> Array[String]:
+	var blessing_ids: Array[String] = []
+	for blessing_id in blessing_ids_in_order:
+		blessing_ids.append(blessing_id)
+	return blessing_ids
+
+func get_blessing_ids_for_rarity(rarity: String) -> Array[String]:
+	if not blessing_ids_by_rarity.has(rarity):
+		return []
+	var blessing_ids: Array[String] = []
+	for blessing_id in blessing_ids_by_rarity[rarity]:
+		blessing_ids.append(str(blessing_id))
+	return blessing_ids
+
+func get_blessing_rarity_order() -> Array[String]:
+	var rarity_order: Array[String] = []
+	for rarity in BLESSING_RARITY_ORDER:
+		rarity_order.append(rarity)
+	return rarity_order
+
+func get_blessing_rarity_roll_display(rarity: String) -> String:
+	return str(blessing_rarity_roll_displays.get(rarity, ""))
+
+func get_blessing_rarity_color(rarity: String) -> Color:
+	var color_hex := str(blessing_rarity_colors.get(rarity, "ffffff"))
+	return Color.from_string("#%s" % color_hex, Color.WHITE)
+
+func get_discovered_blessing_count() -> int:
+	var discovered := 0
+	for blessing_id in blessing_ids_in_order:
+		var blessing = get_blessing_state(blessing_id)
+		if blessing != null and blessing.level > 0:
+			discovered += 1
+	return discovered
+
+func get_unopened_blessings_count() -> int:
+	return maxi(0, unopened_blessings_count)
+
+func can_open_blessings() -> bool:
+	return get_unopened_blessings_count() > 0
+
 func get_resource_name(resource_id: String) -> String:
 	if resource_id.to_lower() == DUST_RESOURCE_ID:
 		return "Dust"
@@ -453,6 +582,31 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 
 func is_blessings_menu_unlocked() -> bool:
 	return blessings_menu_unlocked
+
+func get_blessing_critical_smasher_bonus_percent() -> float:
+	return _get_blessing_effect_total(BlessingStateScript.EFFECT_CRITICAL_SMASHER_CHANCE)
+
+func get_blessing_fission_bonus_percent() -> float:
+	return _get_blessing_effect_total(BlessingStateScript.EFFECT_FISSION_CHANCE)
+
+func get_foil_spawn_chance_percent() -> float:
+	return _get_blessing_effect_total(BlessingStateScript.EFFECT_FOIL_SPAWN_CHANCE)
+
+func get_holographic_spawn_chance_percent() -> float:
+	return _get_blessing_effect_total(BlessingStateScript.EFFECT_HOLOGRAPHIC_SPAWN_CHANCE)
+
+func get_polychrome_spawn_chance_percent() -> float:
+	return _get_blessing_effect_total(BlessingStateScript.EFFECT_POLYCHROME_SPAWN_CHANCE)
+
+func open_earned_blessings() -> int:
+	var blessings_to_open := get_unopened_blessings_count()
+	if blessings_to_open <= 0:
+		return 0
+
+	for _i in range(blessings_to_open):
+		_award_random_blessing()
+	unopened_blessings_count = 0
+	return blessings_to_open
 
 func get_next_blessing_cost() -> DigitMaster:
 	var blessing_index := float(maxi(0, blessings_count))
@@ -659,6 +813,12 @@ func set_upgrade_current_cost(upgrade_id: String, cost: DigitMaster) -> void:
 		return
 	upgrade.current_cost = cost.clone()
 
+func set_upgrade_secondary_current_cost(upgrade_id: String, cost: DigitMaster) -> void:
+	var upgrade := get_upgrade_state(upgrade_id)
+	if upgrade == null:
+		return
+	upgrade.secondary_current_cost = cost.clone()
+
 func to_save_dict() -> Dictionary:
 	var serialized_elements := {}
 	for element_id in element_ids_in_order:
@@ -673,6 +833,13 @@ func to_save_dict() -> Dictionary:
 		if upgrade == null:
 			continue
 		serialized_upgrades[upgrade_id] = upgrade.to_save_dict()
+
+	var serialized_blessings := {}
+	for blessing_id in blessing_ids_in_order:
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null:
+			continue
+		serialized_blessings[blessing_id] = blessing.to_save_dict()
 
 	return {
 		"save_version": SAVE_VERSION,
@@ -690,8 +857,10 @@ func to_save_dict() -> Dictionary:
 		"total_manual_smashes": total_manual_smashes,
 		"total_auto_smashes": total_auto_smashes,
 		"blessings_count": blessings_count,
+		"unopened_blessings_count": unopened_blessings_count,
 		"blessings_progress_mass": blessings_progress_mass.to_save_data(),
 		"blessings_menu_unlocked": blessings_menu_unlocked,
+		"blessings": serialized_blessings,
 		"unlocked_era_index": unlocked_era_index,
 		"research_points": research_points.to_save_data(),
 		"research_progress": research_progress,
@@ -711,6 +880,7 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	total_manual_smashes = int(save_data.get("total_manual_smashes", 0))
 	total_auto_smashes = int(save_data.get("total_auto_smashes", 0))
 	blessings_count = maxi(0, int(save_data.get("blessings_count", 0)))
+	unopened_blessings_count = maxi(0, int(save_data.get("unopened_blessings_count", 0)))
 	blessings_progress_mass = DigitMaster.from_variant(save_data.get("blessings_progress_mass", 0))
 	blessings_menu_unlocked = bool(save_data.get("blessings_menu_unlocked", false))
 	unlocked_era_index = int(save_data.get("unlocked_era_index", unlocked_era_index))
@@ -734,6 +904,20 @@ func apply_save_dict(save_data: Dictionary) -> void:
 			continue
 		var upgrade_save: Dictionary = saved_upgrades[upgrade_id]
 		upgrade.apply_save_dict(upgrade_save)
+
+	var saved_blessings: Dictionary = save_data.get("blessings", {})
+	for blessing_id_variant in saved_blessings.keys():
+		var blessing_id := str(blessing_id_variant)
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null:
+			continue
+		var blessing_save: Dictionary = saved_blessings[blessing_id]
+		blessing.apply_save_dict(blessing_save)
+	if not save_data.has("unopened_blessings_count") and blessings_count > 0:
+		var opened_blessings := get_discovered_blessing_count()
+		unopened_blessings_count = maxi(0, blessings_count - opened_blessings)
+	if saved_blessings.is_empty() and blessings_count > 0 and unopened_blessings_count <= 0:
+		unopened_blessings_count = blessings_count
 
 	current_element_id = str(save_data.get("current_element_id", current_element_id))
 	var saved_planets: Dictionary = save_data.get("planets", {})
@@ -819,8 +1003,58 @@ func _apply_blessing_progress_for_generated_element(element: ElementState, amoun
 
 	blessings_progress_mass = blessings_progress_mass.add(generated_mass)
 	while blessings_progress_mass.compare(get_next_blessing_cost()) >= 0:
-		blessings_progress_mass = blessings_progress_mass.subtract(get_next_blessing_cost())
+		var next_cost := get_next_blessing_cost()
+		blessings_progress_mass = blessings_progress_mass.subtract(next_cost)
 		blessings_count += 1
+		unopened_blessings_count += 1
+
+func _award_random_blessing() -> void:
+	var blessing_id := _roll_random_blessing_id()
+	if blessing_id.is_empty():
+		return
+	var blessing = get_blessing_state(blessing_id)
+	if blessing == null:
+		return
+	blessing.level += 1
+
+func _roll_random_blessing_id() -> String:
+	var rarity := _roll_blessing_rarity()
+	if rarity.is_empty():
+		return ""
+
+	var rarity_ids := get_blessing_ids_for_rarity(rarity)
+	if rarity_ids.is_empty():
+		return ""
+
+	var chosen_index := _blessing_rng.randi_range(0, rarity_ids.size() - 1)
+	return str(rarity_ids[chosen_index])
+
+func _roll_blessing_rarity() -> String:
+	var total_weight := 0.0
+	for rarity in BLESSING_RARITY_ORDER:
+		total_weight += float(blessing_rarity_roll_weights.get(rarity, 0.0))
+	if total_weight <= 0.0:
+		return ""
+
+	var roll := _blessing_rng.randf() * total_weight
+	var cursor := 0.0
+	for rarity in BLESSING_RARITY_ORDER:
+		cursor += float(blessing_rarity_roll_weights.get(rarity, 0.0))
+		if roll <= cursor:
+			return rarity
+	return str(BLESSING_RARITY_ORDER.back())
+
+func _get_blessing_effect_total(effect_type: String) -> float:
+	if effect_type.is_empty():
+		return 0.0
+
+	var total := 0.0
+	for blessing_id in blessing_ids_in_order:
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null or blessing.effect_type != effect_type:
+			continue
+		total += blessing.get_effect_value()
+	return total
 
 func _get_digit_ratio(current: DigitMaster, maximum: DigitMaster) -> float:
 	var max_float := _digit_master_to_float(maximum)

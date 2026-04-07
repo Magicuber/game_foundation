@@ -54,6 +54,22 @@ func cycle_selection(element_id: String) -> void:
 		_selection_indices[element_id] = next_index
 	invalidate()
 
+func cycle_all_unlocked_selections(game_state: GameState) -> void:
+	if game_state == null:
+		return
+
+	var unlocked_ids := game_state.get_unlocked_real_element_ids()
+	if unlocked_ids.is_empty():
+		return
+
+	for element_id in unlocked_ids:
+		var next_index := (get_selection_index(element_id) + 1) % SELECTION_STEPS.size()
+		if next_index == 0:
+			_selection_indices.erase(element_id)
+		else:
+			_selection_indices[element_id] = next_index
+	invalidate()
+
 func get_selected_amounts(game_state: GameState, upgrades_system: UpgradesSystem) -> Dictionary:
 	_ensure_cache(game_state, upgrades_system)
 	return _cached_selected_amounts

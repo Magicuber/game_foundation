@@ -89,10 +89,11 @@ func update(delta: float) -> int:
 	return resolved_count
 
 func _spawn_result_particles(result: Dictionary, spawn_center: Vector2) -> void:
+	var variant := str(result.get("variant", GameIconCache.VARIANT_NORMAL))
 	for resource_id in _get_result_resource_ids(result):
-		_spawn_outgoing_element(resource_id, spawn_center)
+		_spawn_outgoing_element(resource_id, spawn_center, variant)
 
-func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2) -> void:
+func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2, variant: String) -> void:
 	if not _game_state.is_element_id(resource_id):
 		return
 
@@ -105,7 +106,14 @@ func _spawn_outgoing_element(resource_id: String, spawn_center: Vector2) -> void
 	if direction == Vector2.ZERO:
 		direction = Vector2.RIGHT
 	var speed := _rng.randf_range(PRODUCT_SPEED_MIN, PRODUCT_SPEED_MAX)
-	_spawn_particle(_icon_cache.get_element_icon(element_index), spawn_center, direction * speed, PRODUCT_PARTICLE_SIZE, "product", "")
+	_spawn_particle(
+		_icon_cache.get_element_icon_for_variant(element_index, variant),
+		spawn_center,
+		direction * speed,
+		PRODUCT_PARTICLE_SIZE,
+		"product",
+		""
+	)
 
 func _spawn_proton(target_element_id: String) -> void:
 	var proton_start := _random_offscreen_point()

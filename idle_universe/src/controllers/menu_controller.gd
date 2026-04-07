@@ -81,6 +81,10 @@ var _unlock_button: Button
 var _elements_scroll: ScrollContainer
 var _elements_section_list: VBoxContainer
 var _dust_action_row: HBoxContainer
+var _dust_cycle_all_button: TextureButton
+var _dust_cycle_all_label: Label
+var _dust_clear_all_button: TextureButton
+var _dust_clear_all_label: Label
 var _make_dust_button: TextureButton
 var _make_dust_label: Label
 var _dust_close_button: TextureButton
@@ -153,6 +157,10 @@ func configure(
 	elements_scroll: ScrollContainer,
 	elements_section_list: VBoxContainer,
 	dust_action_row: HBoxContainer,
+	dust_cycle_all_button: TextureButton,
+	dust_cycle_all_label: Label,
+	dust_clear_all_button: TextureButton,
+	dust_clear_all_label: Label,
 	make_dust_button: TextureButton,
 	make_dust_label: Label,
 	dust_close_button: TextureButton,
@@ -226,6 +234,10 @@ func configure(
 	_elements_scroll = elements_scroll
 	_elements_section_list = elements_section_list
 	_dust_action_row = dust_action_row
+	_dust_cycle_all_button = dust_cycle_all_button
+	_dust_cycle_all_label = dust_cycle_all_label
+	_dust_clear_all_button = dust_clear_all_button
+	_dust_clear_all_label = dust_clear_all_label
 	_make_dust_button = make_dust_button
 	_make_dust_label = make_dust_label
 	_dust_close_button = dust_close_button
@@ -233,6 +245,8 @@ func configure(
 	_enabled_button_modulate = enabled_button_modulate
 	_disabled_button_modulate = disabled_button_modulate
 
+	_configure_texture_button(_dust_cycle_all_button, upgrade_button_texture)
+	_configure_texture_button(_dust_clear_all_button, upgrade_button_texture)
 	_configure_texture_button(_make_dust_button, upgrade_button_texture)
 	_configure_texture_button(_dust_close_button, upgrade_button_texture)
 
@@ -305,6 +319,8 @@ func apply_style() -> void:
 			_shop_menu_button,
 			_settings_menu_button,
 			_unlock_button,
+			_dust_cycle_all_label,
+			_dust_clear_all_label,
 			_make_dust_label,
 			_dust_close_label
 		]:
@@ -391,6 +407,10 @@ func apply_style() -> void:
 	for button in [_prestige_decrement_button, _prestige_increment_button]:
 		button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 
+	_dust_cycle_all_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
+	_dust_cycle_all_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
+	_dust_clear_all_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
+	_dust_clear_all_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
 	_make_dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_make_dust_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
 	_dust_close_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
@@ -445,6 +465,8 @@ func apply_shell_metrics() -> void:
 	]:
 		button.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
 	_prestige_count_label.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
+	_dust_cycle_all_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
+	_dust_clear_all_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
 	_make_dust_button.custom_minimum_size = UIMetrics.DUST_ACTION_PRIMARY_BUTTON_SIZE
 	_dust_close_button.custom_minimum_size = UIMetrics.DUST_ACTION_SECONDARY_BUTTON_SIZE
 	_era_requirement_margin.add_theme_constant_override("margin_left", UIMetrics.ERA_REQUIREMENT_MARGIN)
@@ -456,20 +478,14 @@ func apply_shell_metrics() -> void:
 
 func apply_reference_layout() -> void:
 	_set_fill_rect(_overlay_dim, 0.0, 0.0, 0.0, 0.0)
-	_set_fill_rect(_menu_overlay, 0.0, UIMetrics.TOP_BAR_HEIGHT, 0.0, UIMetrics.BOTTOM_BAR_HEIGHT)
-	_set_fill_rect(
-		_menu_background,
-		UIMetrics.MENU_BACKGROUND_MARGIN,
-		UIMetrics.MENU_BACKGROUND_MARGIN,
-		UIMetrics.MENU_BACKGROUND_MARGIN,
-		UIMetrics.MENU_BACKGROUND_MARGIN
-	)
+	_set_fill_rect(_menu_overlay, 0.0, 0.0, 0.0, 0.0)
+	_set_fill_rect(_menu_background, 0.0, 0.0, 0.0, 0.0)
 	_set_fill_rect(
 		_menu_content,
 		UIMetrics.MENU_CONTENT_MARGIN,
+		UIMetrics.TOP_BAR_HEIGHT + UIMetrics.MENU_CONTENT_MARGIN,
 		UIMetrics.MENU_CONTENT_MARGIN,
-		UIMetrics.MENU_CONTENT_MARGIN,
-		UIMetrics.MENU_CONTENT_MARGIN
+		UIMetrics.BOTTOM_BAR_HEIGHT + UIMetrics.MENU_CONTENT_MARGIN
 	)
 	_elements_section_list.custom_minimum_size.x = maxf(0.0, _elements_scroll.size.x)
 
