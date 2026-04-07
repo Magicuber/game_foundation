@@ -2,8 +2,13 @@ extends RefCounted
 
 class_name GameState
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const DUST_RESOURCE_ID := "dust"
+const BLESSINGS_MENU_UNLOCK_ELEMENT_ID := "ele_C"
+# Centralize blessing cost tuning so playtest balance changes stay in one place.
+const BLESSING_COST_QUADRATIC_A := 10.0
+const BLESSING_COST_QUADRATIC_B := 400.0
+const BLESSING_COST_QUADRATIC_C := 1600.0
 const ERA_NAMES := [
 	"Atomic Era",
 	"Planetary Era",
@@ -44,6 +49,9 @@ var total_played_seconds: float
 var last_save_tick: int
 var total_manual_smashes: int
 var total_auto_smashes: int
+var blessings_count: int
+var blessings_progress_mass: DigitMaster
+var blessings_menu_unlocked: bool
 var unlocked_era_index: int
 var planets: Dictionary
 var current_planet_id: String
@@ -79,6 +87,9 @@ func _init() -> void:
 	last_save_tick = 0
 	total_manual_smashes = 0
 	total_auto_smashes = 0
+	blessings_count = 0
+	blessings_progress_mass = DigitMaster.zero()
+	blessings_menu_unlocked = false
 	unlocked_era_index = 0
 	planets = {}
 	current_planet_id = DEFAULT_PLANET_ID
@@ -182,6 +193,9 @@ func refresh_progression_state() -> void:
 				break
 		if current_planet_id.is_empty() and not planet_ids_in_order.is_empty():
 			current_planet_id = planet_ids_in_order[0]
+
+	if is_element_unlocked(BLESSINGS_MENU_UNLOCK_ELEMENT_ID):
+		blessings_menu_unlocked = true
 
 func has_element(element_id: String) -> bool:
 	return elements.has(element_id)
@@ -435,6 +449,26 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 
 	element.amount = element.amount.add(amount)
 	element.show_in_counter = true
+	_apply_blessing_progress_for_generated_element(element, amount)
+
+func is_blessings_menu_unlocked() -> bool:
+	return blessings_menu_unlocked
+
+func get_next_blessing_cost() -> DigitMaster:
+	var blessing_index := float(maxi(0, blessings_count))
+	var cost := (
+		BLESSING_COST_QUADRATIC_A * blessing_index * blessing_index
+		+ BLESSING_COST_QUADRATIC_B * blessing_index
+		+ BLESSING_COST_QUADRATIC_C
+	)
+	return DigitMaster.new(cost)
+
+func get_blessing_progress_mass() -> DigitMaster:
+	return blessings_progress_mass.clone()
+
+func get_remaining_blessing_mass() -> DigitMaster:
+	var remaining := get_next_blessing_cost().subtract(blessings_progress_mass)
+	return remaining
 
 func has_unlocked_element_count(required_count: int) -> bool:
 	if required_count <= 0:
@@ -655,6 +689,9 @@ func to_save_dict() -> Dictionary:
 		"last_save_tick": last_save_tick,
 		"total_manual_smashes": total_manual_smashes,
 		"total_auto_smashes": total_auto_smashes,
+		"blessings_count": blessings_count,
+		"blessings_progress_mass": blessings_progress_mass.to_save_data(),
+		"blessings_menu_unlocked": blessings_menu_unlocked,
 		"unlocked_era_index": unlocked_era_index,
 		"research_points": research_points.to_save_data(),
 		"research_progress": research_progress,
@@ -673,6 +710,9 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	last_save_tick = int(save_data.get("last_save_tick", 0))
 	total_manual_smashes = int(save_data.get("total_manual_smashes", 0))
 	total_auto_smashes = int(save_data.get("total_auto_smashes", 0))
+	blessings_count = maxi(0, int(save_data.get("blessings_count", 0)))
+	blessings_progress_mass = DigitMaster.from_variant(save_data.get("blessings_progress_mass", 0))
+	blessings_menu_unlocked = bool(save_data.get("blessings_menu_unlocked", false))
 	unlocked_era_index = int(save_data.get("unlocked_era_index", unlocked_era_index))
 	research_points = DigitMaster.from_variant(save_data.get("research_points", 0))
 	research_progress = clampf(float(save_data.get("research_progress", 0.0)), 0.0, 1.0)
@@ -766,6 +806,21 @@ func _apply_research_progress(rp_amount: DigitMaster) -> void:
 	if whole_rp >= 1.0:
 		research_points = research_points.add(DigitMaster.new(whole_rp))
 	research_progress = fmod(total_progress, 1.0)
+
+func _apply_blessing_progress_for_generated_element(element: ElementState, amount: DigitMaster) -> void:
+	if element == null or amount == null or amount.is_zero():
+		return
+	if element.index <= 0:
+		return
+
+	var generated_mass := amount.multiply_scalar(float(element.index))
+	if generated_mass.is_zero():
+		return
+
+	blessings_progress_mass = blessings_progress_mass.add(generated_mass)
+	while blessings_progress_mass.compare(get_next_blessing_cost()) >= 0:
+		blessings_progress_mass = blessings_progress_mass.subtract(get_next_blessing_cost())
+		blessings_count += 1
 
 func _get_digit_ratio(current: DigitMaster, maximum: DigitMaster) -> float:
 	var max_float := _digit_master_to_float(maximum)

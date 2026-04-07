@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bby3ucvr8fnjn" path="res://src/bootstrap/game_loader.gd" id="1_loader"]
 [ext_resource type="Script" uid="uid://do5uy6hpelkd6" path="res://src/core/tick_system.gd" id="2_tick"]
+[ext_resource type="Texture2D" uid="uid://djq1etq4vdokg" path="res://assests/generated/profile_icon.png" id="3_sugp2"]
 
 [node name="GameRoot" type="Control" unique_id=2086593814]
 custom_minimum_size = Vector2(1080, 1920)
@@ -239,6 +240,11 @@ layout_mode = 2
 text = "Main Menu"
 horizontal_alignment = 1
 
+[node name="ProfileMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=1437831513]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Profile"
+
 [node name="UpgradesMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000103]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -248,6 +254,11 @@ text = "Upgrades"
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Elements"
+
+[node name="BlessingsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=1139310983]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Blessings"
 
 [node name="EraMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000107]
 layout_mode = 2
@@ -260,6 +271,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 disabled = true
 text = "Planets"
+
+[node name="PrestigeMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=255530860]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Prestige"
 
 [node name="StatsMenuButton" type="Button" parent="MenuOverlay/MenuContent/MenuPanels/MainMenuPanel" unique_id=2000105]
 layout_mode = 2
@@ -277,6 +293,26 @@ layout_mode = 2
 size_flags_horizontal = 3
 disabled = true
 text = "Settings"
+
+[node name="ProfilePanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=809841083]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ProfileTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ProfilePanel" unique_id=1433639534]
+layout_mode = 2
+text = "Profile"
+horizontal_alignment = 1
+
+[node name="ProfileInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/ProfilePanel" unique_id=333379274]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="UpgradesPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000201]
 visible = false
@@ -384,6 +420,26 @@ grow_vertical = 2
 text = "CLOSE"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="BlessingsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=160554531]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="BlessingsTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/BlessingsPanel" unique_id=1995445920]
+layout_mode = 2
+text = "Blessings"
+horizontal_alignment = 1
+
+[node name="BlessingsInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/BlessingsPanel" unique_id=400345906]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="EraPanel" type="Control" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000351]
 layout_mode = 1
@@ -505,6 +561,26 @@ text = "Shop coming soon"
 horizontal_alignment = 1
 autowrap_mode = 3
 
+[node name="PrestigePanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=324351180]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="PrestigeTitle" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/PrestigePanel" unique_id=341928102]
+layout_mode = 2
+text = "Prestige"
+horizontal_alignment = 1
+
+[node name="PrestigeInfo" type="Label" parent="MenuOverlay/MenuContent/MenuPanels/PrestigePanel" unique_id=1358235672]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+
 [node name="PlanetsPanel" type="VBoxContainer" parent="MenuOverlay/MenuContent/MenuPanels" unique_id=2000551]
 visible = false
 layout_mode = 1
@@ -605,19 +681,34 @@ grow_horizontal = 2
 color = Color(0.678431, 0.772549, 0.835294, 1)
 
 [node name="ProfileButton" type="Button" parent="TopBar" unique_id=1737841203]
+clip_contents = true
 layout_mode = 1
 offset_left = 12.0
 offset_top = 12.0
 offset_right = 88.0
 offset_bottom = 72.0
 
-[node name="LevelLabel" type="Label" parent="TopBar" unique_id=128733764]
+[node name="ProfileImage" type="TextureRect" parent="TopBar/ProfileButton" unique_id=381215524]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_sugp2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LevelLabel" type="Label" parent="TopBar/ProfileButton" unique_id=128733764]
 layout_mode = 1
 offset_left = 22.0
 offset_top = 76.0
 offset_right = 94.0
 offset_bottom = 96.0
 text = "Lv. 1"
+horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="CurrencyBoxes" type="VBoxContainer" parent="TopBar" unique_id=2139992455]
 layout_mode = 1

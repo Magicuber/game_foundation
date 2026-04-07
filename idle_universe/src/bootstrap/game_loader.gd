@@ -14,13 +14,16 @@ const ENABLED_BUTTON_MODULATE := Color(1, 1, 1, 1)
 
 const MENU_CLOSED := 0
 const MENU_MAIN := 1
-const MENU_UPGRADES := 2
-const MENU_ELEMENTS := 3
-const MENU_ERA := 4
-const MENU_STATS := 5
-const MENU_SHOP := 6
-const MENU_PLANETS := 7
-const MENU_SETTINGS := 8
+const MENU_PROFILE := 2
+const MENU_UPGRADES := 3
+const MENU_ELEMENTS := 4
+const MENU_BLESSINGS := 5
+const MENU_ERA := 6
+const MENU_STATS := 7
+const MENU_SHOP := 8
+const MENU_PLANETS := 9
+const MENU_PRESTIGE := 10
+const MENU_SETTINGS := 11
 
 const VIEW_ATOM := 0
 const VIEW_WORLD := 1
@@ -36,9 +39,10 @@ const UI_DIRTY_STATS := 1 << 7
 const UI_DIRTY_SHOP := 1 << 8
 const UI_DIRTY_PLANETS := 1 << 9
 const UI_DIRTY_SETTINGS := 1 << 10
-const UI_DIRTY_WORLD := 1 << 11
-const UI_DIRTY_MENU_BUTTONS := 1 << 12
-const UI_DIRTY_DEBUG := 1 << 13
+const UI_DIRTY_BLESSINGS := 1 << 11
+const UI_DIRTY_WORLD := 1 << 12
+const UI_DIRTY_MENU_BUTTONS := 1 << 13
+const UI_DIRTY_DEBUG := 1 << 14
 const UI_DIRTY_ALL := (
 	UI_DIRTY_TOP_BAR
 	| UI_DIRTY_SELECTION
@@ -51,6 +55,7 @@ const UI_DIRTY_ALL := (
 	| UI_DIRTY_SHOP
 	| UI_DIRTY_PLANETS
 	| UI_DIRTY_SETTINGS
+	| UI_DIRTY_BLESSINGS
 	| UI_DIRTY_WORLD
 	| UI_DIRTY_MENU_BUTTONS
 	| UI_DIRTY_DEBUG
@@ -75,19 +80,26 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
 @onready var menu_content: MarginContainer = $MenuOverlay/MenuContent
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
+@onready var profile_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ProfilePanel
 @onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
 @onready var upgrades_scroll: ScrollContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradeScroll
 @onready var elements_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel
+@onready var blessings_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/BlessingsPanel
 @onready var era_panel: Control = $MenuOverlay/MenuContent/MenuPanels/EraPanel
 @onready var stats_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/StatsPanel
 @onready var shop_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ShopPanel
 @onready var planets_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel
+@onready var prestige_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/PrestigePanel
 @onready var settings_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel
 @onready var main_menu_title: Label = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/MainMenuTitle
+@onready var profile_title: Label = $MenuOverlay/MenuContent/MenuPanels/ProfilePanel/ProfileTitle
+@onready var profile_info: Label = $MenuOverlay/MenuContent/MenuPanels/ProfilePanel/ProfileInfo
 @onready var upgrades_title: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesTitle
 @onready var upgrades_info: Label = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel/UpgradesInfo
 @onready var elements_title: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsTitle
 @onready var elements_info: Label = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsInfo
+@onready var blessings_title: Label = $MenuOverlay/MenuContent/MenuPanels/BlessingsPanel/BlessingsTitle
+@onready var blessings_info: Label = $MenuOverlay/MenuContent/MenuPanels/BlessingsPanel/BlessingsInfo
 @onready var elements_scroll: ScrollContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll
 @onready var elements_section_list: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/ElementsScroll/ElementsSectionList
 @onready var dust_action_row: HBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ElementsPanel/DustActionRow
@@ -111,6 +123,8 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var shop_info: Label = $MenuOverlay/MenuContent/MenuPanels/ShopPanel/ShopInfo
 @onready var planets_title: Label = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel/PlanetsTitle
 @onready var planets_info: Label = $MenuOverlay/MenuContent/MenuPanels/PlanetsPanel/PlanetsInfo
+@onready var prestige_title: Label = $MenuOverlay/MenuContent/MenuPanels/PrestigePanel/PrestigeTitle
+@onready var prestige_info: Label = $MenuOverlay/MenuContent/MenuPanels/PrestigePanel/PrestigeInfo
 @onready var settings_title: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsTitle
 @onready var settings_info: Label = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/SettingsInfo
 @onready var prestige_debug_row: HBoxContainer = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/PrestigeDebugRow
@@ -120,10 +134,13 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var click_boxes_toggle: CheckButton = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/ClickBoxesToggle
 @onready var add_dust_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddDustButton
 @onready var add_orbs_button: Button = $MenuOverlay/MenuContent/MenuPanels/SettingsPanel/AddOrbsButton
+@onready var profile_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ProfileMenuButton
 @onready var upgrades_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/UpgradesMenuButton
 @onready var elements_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ElementsMenuButton
+@onready var blessings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/BlessingsMenuButton
 @onready var era_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/EraMenuButton
 @onready var planets_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/PlanetsMenuButton
+@onready var prestige_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/PrestigeMenuButton
 @onready var stats_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/StatsMenuButton
 @onready var shop_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/ShopMenuButton
 @onready var settings_menu_button: Button = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel/SettingsMenuButton
@@ -133,7 +150,7 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var counter_list: VBoxContainer = $CounterMargin/CounterList
 @onready var top_bar: ColorRect = $TopBar
 @onready var profile_button: Button = $TopBar/ProfileButton
-@onready var level_label: Label = $TopBar/LevelLabel
+@onready var level_label: Label = $TopBar/ProfileButton/LevelLabel
 @onready var currency_boxes: VBoxContainer = $TopBar/CurrencyBoxes
 @onready var orbs_panel: PanelContainer = $TopBar/CurrencyBoxes/OrbsPanel
 @onready var dust_panel: PanelContainer = $TopBar/CurrencyBoxes/DustPanel
@@ -191,10 +208,14 @@ func _ready() -> void:
 	menu_button.pressed.connect(_on_menu_pressed)
 	shop_button.pressed.connect(_on_shop_pressed)
 	fuse_button.pressed.connect(_on_smash_pressed)
+	profile_button.pressed.connect(_on_profile_menu_pressed)
+	profile_menu_button.pressed.connect(_on_profile_menu_pressed)
 	upgrades_menu_button.pressed.connect(_on_upgrades_menu_pressed)
 	elements_menu_button.pressed.connect(_on_elements_menu_pressed)
+	blessings_menu_button.pressed.connect(_on_blessings_menu_pressed)
 	era_menu_button.pressed.connect(_on_era_menu_pressed)
 	planets_menu_button.pressed.connect(_on_planets_menu_pressed)
+	prestige_menu_button.pressed.connect(_on_prestige_menu_pressed)
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
 	shop_menu_button.pressed.connect(_on_shop_pressed)
 	settings_menu_button.pressed.connect(_on_settings_menu_pressed)
@@ -275,19 +296,26 @@ func _ready() -> void:
 		menu_background,
 		menu_content,
 		main_menu_panel,
+		profile_panel,
 		upgrades_panel,
 		upgrades_scroll,
 		elements_panel,
+		blessings_panel,
 		era_panel,
 		stats_panel,
 		shop_panel,
 		planets_panel,
+		prestige_panel,
 		settings_panel,
 		main_menu_title,
+		profile_title,
+		profile_info,
 		upgrades_title,
 		upgrades_info,
 		elements_title,
 		elements_info,
+		blessings_title,
+		blessings_info,
 		era_title,
 		era_status,
 		era_requirement_margin,
@@ -302,6 +330,8 @@ func _ready() -> void:
 		shop_info,
 		planets_title,
 		planets_info,
+		prestige_title,
+		prestige_info,
 		settings_title,
 		settings_info,
 		prestige_debug_row,
@@ -311,10 +341,13 @@ func _ready() -> void:
 		click_boxes_toggle,
 		add_dust_button,
 		add_orbs_button,
+		profile_menu_button,
 		upgrades_menu_button,
 		elements_menu_button,
+		blessings_menu_button,
 		era_menu_button,
 		planets_menu_button,
+		prestige_menu_button,
 		stats_menu_button,
 		shop_menu_button,
 		settings_menu_button,
@@ -488,6 +521,7 @@ func _get_resource_refresh_flags() -> int:
 		| UI_DIRTY_ERA
 		| UI_DIRTY_STATS
 		| UI_DIRTY_PLANETS
+		| UI_DIRTY_BLESSINGS
 		| UI_DIRTY_WORLD
 	)
 
@@ -501,6 +535,8 @@ func _get_menu_mode_refresh_flags() -> int:
 			flags |= UI_DIRTY_UPGRADES
 		MENU_ELEMENTS:
 			flags |= UI_DIRTY_ELEMENTS
+		MENU_BLESSINGS:
+			flags |= UI_DIRTY_BLESSINGS
 		MENU_ERA:
 			flags |= UI_DIRTY_ERA
 		MENU_STATS:
@@ -583,6 +619,8 @@ func _flush_dirty_ui() -> void:
 			_refresh_planets_panel()
 		if flags & UI_DIRTY_SETTINGS:
 			_refresh_settings_panel()
+		if flags & UI_DIRTY_BLESSINGS:
+			_refresh_blessings_panel()
 		if flags & UI_DIRTY_WORLD:
 			_refresh_world_ui()
 		if flags & UI_DIRTY_DEBUG:
@@ -613,10 +651,11 @@ func _refresh_navigation() -> void:
 	)
 
 func _refresh_menu_buttons() -> void:
+	var blessings_enabled := game_state.is_blessings_menu_unlocked()
 	var era_menu_enabled := game_state.is_era_menu_unlocked()
 	var planets_enabled := game_state.has_unlocked_era(1)
 	var shop_enabled := game_state.is_element_unlocked("ele_H")
-	menu_controller.refresh_main_menu_buttons(era_menu_enabled, planets_enabled, shop_enabled)
+	menu_controller.refresh_main_menu_buttons(blessings_enabled, era_menu_enabled, planets_enabled, shop_enabled)
 	hud_controller.refresh_menu_button(menu_mode != MENU_CLOSED)
 	hud_controller.refresh_shop_button(shop_enabled, shop_enabled and menu_mode == MENU_CLOSED)
 
@@ -656,6 +695,18 @@ func _refresh_planets_panel() -> void:
 		return
 
 	planets_info.text = "Planets menu is not implemented yet.\nCurrent RP: %s" % game_state.get_research_points().big_to_short_string()
+
+func _refresh_blessings_panel() -> void:
+	if not blessings_panel.visible:
+		return
+
+	var blessing_progress := game_state.get_blessing_progress_mass()
+	var next_blessing_cost := game_state.get_next_blessing_cost()
+	blessings_info.text = "Total Blessings: %d\nProgress to Next: %s / %s mass" % [
+		game_state.blessings_count,
+		blessing_progress.big_to_short_string(),
+		next_blessing_cost.big_to_short_string()
+	]
 
 func _refresh_settings_panel() -> void:
 	if not settings_panel.visible:
@@ -785,8 +836,18 @@ func _on_upgrades_menu_pressed() -> void:
 	_set_menu_mode(MENU_UPGRADES)
 	_refresh_ui(_get_menu_mode_refresh_flags())
 
+func _on_profile_menu_pressed() -> void:
+	_set_menu_mode(MENU_PROFILE)
+	_refresh_ui(_get_menu_mode_refresh_flags())
+
 func _on_elements_menu_pressed() -> void:
 	_set_menu_mode(MENU_ELEMENTS)
+	_refresh_ui(_get_menu_mode_refresh_flags())
+
+func _on_blessings_menu_pressed() -> void:
+	if not game_state.is_blessings_menu_unlocked():
+		return
+	_set_menu_mode(MENU_BLESSINGS)
 	_refresh_ui(_get_menu_mode_refresh_flags())
 
 func _on_era_menu_pressed() -> void:
@@ -799,6 +860,10 @@ func _on_planets_menu_pressed() -> void:
 	if not game_state.has_unlocked_era(1):
 		return
 	_set_menu_mode(MENU_PLANETS)
+	_refresh_ui(_get_menu_mode_refresh_flags())
+
+func _on_prestige_menu_pressed() -> void:
+	_set_menu_mode(MENU_PRESTIGE)
 	_refresh_ui(_get_menu_mode_refresh_flags())
 
 func _on_stats_menu_pressed() -> void:

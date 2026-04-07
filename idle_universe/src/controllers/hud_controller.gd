@@ -132,12 +132,13 @@ func apply_style() -> void:
 		_profile_button.add_theme_font_override("font", ui_font)
 
 	_profile_button.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
-	_level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
+	_level_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_SMALL)
 	_level_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	_orbs_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_orbs_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
 	_dust_label.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_MEDIUM)
 	_dust_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	_apply_level_label_style()
 
 func apply_shell_metrics() -> void:
 	_counter_list.add_theme_constant_override("separation", UIMetrics.COUNTER_LIST_SEPARATION)
@@ -154,7 +155,7 @@ func apply_shell_metrics() -> void:
 func apply_reference_layout(shop_button: TextureButton) -> void:
 	_set_top_strip_rect(_top_bar, UIMetrics.TOP_BAR_HEIGHT)
 	_set_top_left_rect(_profile_button, UIMetrics.TOP_BAR_PROFILE_MARGIN, UIMetrics.TOP_BAR_PROFILE_SIZE)
-	_set_top_left_rect(_level_label, UIMetrics.TOP_BAR_LEVEL_MARGIN, UIMetrics.TOP_BAR_LEVEL_SIZE)
+	_set_bottom_right_in_parent_rect(_level_label, UIMetrics.TOP_BAR_LEVEL_INSET, UIMetrics.TOP_BAR_LEVEL_SIZE)
 	_set_center_anchor_rect(_currency_boxes, UIMetrics.CURRENCY_BOXES_SIZE)
 	_set_bottom_strip_rect(_bottom_bar, UIMetrics.BOTTOM_BAR_HEIGHT)
 	_set_center_anchor_rect(_nav_slots, UIMetrics.NAV_SLOTS_SIZE)
@@ -231,6 +232,19 @@ func _apply_profile_button_style() -> void:
 	_profile_button.add_theme_stylebox_override("pressed", pressed_style)
 	_profile_button.add_theme_stylebox_override("disabled", normal_style)
 
+func _apply_level_label_style() -> void:
+	var level_style := StyleBoxFlat.new()
+	level_style.bg_color = Color(0.05, 0.12, 0.09, 0.85)
+	level_style.corner_radius_top_left = 8
+	level_style.corner_radius_top_right = 8
+	level_style.corner_radius_bottom_left = 8
+	level_style.corner_radius_bottom_right = 8
+	level_style.content_margin_left = 6
+	level_style.content_margin_top = 2
+	level_style.content_margin_right = 6
+	level_style.content_margin_bottom = 2
+	_level_label.add_theme_stylebox_override("normal", level_style)
+
 func _apply_currency_box_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color8(45, 45, 45)
@@ -277,6 +291,16 @@ func _set_top_left_rect(control: Control, margin: Vector2, size_value: Vector2) 
 	control.offset_top = margin.y
 	control.offset_right = margin.x + size_value.x
 	control.offset_bottom = margin.y + size_value.y
+
+func _set_bottom_right_in_parent_rect(control: Control, inset: Vector2, size_value: Vector2) -> void:
+	control.anchor_left = 1.0
+	control.anchor_top = 1.0
+	control.anchor_right = 1.0
+	control.anchor_bottom = 1.0
+	control.offset_left = -inset.x - size_value.x
+	control.offset_top = -inset.y - size_value.y
+	control.offset_right = -inset.x
+	control.offset_bottom = -inset.y
 
 func _set_top_right_rect(control: Control, top: float, right: float, size_value: Vector2) -> void:
 	control.anchor_left = 1.0

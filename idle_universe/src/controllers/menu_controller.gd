@@ -6,32 +6,42 @@ const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 
 const MENU_CLOSED := 0
 const MENU_MAIN := 1
-const MENU_UPGRADES := 2
-const MENU_ELEMENTS := 3
-const MENU_ERA := 4
-const MENU_STATS := 5
-const MENU_SHOP := 6
-const MENU_PLANETS := 7
-const MENU_SETTINGS := 8
+const MENU_PROFILE := 2
+const MENU_UPGRADES := 3
+const MENU_ELEMENTS := 4
+const MENU_BLESSINGS := 5
+const MENU_ERA := 6
+const MENU_STATS := 7
+const MENU_SHOP := 8
+const MENU_PLANETS := 9
+const MENU_PRESTIGE := 10
+const MENU_SETTINGS := 11
 
 var _menu_overlay: Control
 var _overlay_dim: ColorRect
 var _menu_background: TextureRect
 var _menu_content: MarginContainer
 var _main_menu_panel: VBoxContainer
+var _profile_panel: VBoxContainer
 var _upgrades_panel: VBoxContainer
 var _upgrades_scroll: ScrollContainer
 var _elements_panel: VBoxContainer
+var _blessings_panel: VBoxContainer
 var _era_panel: Control
 var _stats_panel: VBoxContainer
 var _shop_panel: VBoxContainer
 var _planets_panel: VBoxContainer
+var _prestige_panel: VBoxContainer
 var _settings_panel: VBoxContainer
 var _main_menu_title: Label
+var _profile_title: Label
+var _profile_info: Label
 var _upgrades_title: Label
 var _upgrades_info: Label
 var _elements_title: Label
 var _elements_info: Label
+var _blessings_title: Label
+var _blessings_info: Label
 var _era_title: Label
 var _era_status: Label
 var _era_requirement_margin: MarginContainer
@@ -46,6 +56,8 @@ var _shop_title: Label
 var _shop_info: Label
 var _planets_title: Label
 var _planets_info: Label
+var _prestige_title: Label
+var _prestige_info: Label
 var _settings_title: Label
 var _settings_info: Label
 var _prestige_debug_row: HBoxContainer
@@ -55,10 +67,13 @@ var _prestige_increment_button: Button
 var _click_boxes_toggle: CheckButton
 var _add_dust_button: Button
 var _add_orbs_button: Button
+var _profile_menu_button: Button
 var _upgrades_menu_button: Button
 var _elements_menu_button: Button
+var _blessings_menu_button: Button
 var _era_menu_button: Button
 var _planets_menu_button: Button
+var _prestige_menu_button: Button
 var _stats_menu_button: Button
 var _shop_menu_button: Button
 var _settings_menu_button: Button
@@ -79,19 +94,26 @@ func configure(
 	menu_background: TextureRect,
 	menu_content: MarginContainer,
 	main_menu_panel: VBoxContainer,
+	profile_panel: VBoxContainer,
 	upgrades_panel: VBoxContainer,
 	upgrades_scroll: ScrollContainer,
 	elements_panel: VBoxContainer,
+	blessings_panel: VBoxContainer,
 	era_panel: Control,
 	stats_panel: VBoxContainer,
 	shop_panel: VBoxContainer,
 	planets_panel: VBoxContainer,
+	prestige_panel: VBoxContainer,
 	settings_panel: VBoxContainer,
 	main_menu_title: Label,
+	profile_title: Label,
+	profile_info: Label,
 	upgrades_title: Label,
 	upgrades_info: Label,
 	elements_title: Label,
 	elements_info: Label,
+	blessings_title: Label,
+	blessings_info: Label,
 	era_title: Label,
 	era_status: Label,
 	era_requirement_margin: MarginContainer,
@@ -106,6 +128,8 @@ func configure(
 	shop_info: Label,
 	planets_title: Label,
 	planets_info: Label,
+	prestige_title: Label,
+	prestige_info: Label,
 	settings_title: Label,
 	settings_info: Label,
 	prestige_debug_row: HBoxContainer,
@@ -115,10 +139,13 @@ func configure(
 	click_boxes_toggle: CheckButton,
 	add_dust_button: Button,
 	add_orbs_button: Button,
+	profile_menu_button: Button,
 	upgrades_menu_button: Button,
 	elements_menu_button: Button,
+	blessings_menu_button: Button,
 	era_menu_button: Button,
 	planets_menu_button: Button,
+	prestige_menu_button: Button,
 	stats_menu_button: Button,
 	shop_menu_button: Button,
 	settings_menu_button: Button,
@@ -140,19 +167,26 @@ func configure(
 	_menu_background = menu_background
 	_menu_content = menu_content
 	_main_menu_panel = main_menu_panel
+	_profile_panel = profile_panel
 	_upgrades_panel = upgrades_panel
 	_upgrades_scroll = upgrades_scroll
 	_elements_panel = elements_panel
+	_blessings_panel = blessings_panel
 	_era_panel = era_panel
 	_stats_panel = stats_panel
 	_shop_panel = shop_panel
 	_planets_panel = planets_panel
+	_prestige_panel = prestige_panel
 	_settings_panel = settings_panel
 	_main_menu_title = main_menu_title
+	_profile_title = profile_title
+	_profile_info = profile_info
 	_upgrades_title = upgrades_title
 	_upgrades_info = upgrades_info
 	_elements_title = elements_title
 	_elements_info = elements_info
+	_blessings_title = blessings_title
+	_blessings_info = blessings_info
 	_era_title = era_title
 	_era_status = era_status
 	_era_requirement_margin = era_requirement_margin
@@ -167,6 +201,8 @@ func configure(
 	_shop_info = shop_info
 	_planets_title = planets_title
 	_planets_info = planets_info
+	_prestige_title = prestige_title
+	_prestige_info = prestige_info
 	_settings_title = settings_title
 	_settings_info = settings_info
 	_prestige_debug_row = prestige_debug_row
@@ -176,10 +212,13 @@ func configure(
 	_click_boxes_toggle = click_boxes_toggle
 	_add_dust_button = add_dust_button
 	_add_orbs_button = add_orbs_button
+	_profile_menu_button = profile_menu_button
 	_upgrades_menu_button = upgrades_menu_button
 	_elements_menu_button = elements_menu_button
+	_blessings_menu_button = blessings_menu_button
 	_era_menu_button = era_menu_button
 	_planets_menu_button = planets_menu_button
+	_prestige_menu_button = prestige_menu_button
 	_stats_menu_button = stats_menu_button
 	_shop_menu_button = shop_menu_button
 	_settings_menu_button = settings_menu_button
@@ -208,10 +247,13 @@ func configure(
 		_era_unlock_button,
 		_make_dust_button,
 		_dust_close_button,
+		_profile_menu_button,
 		_upgrades_menu_button,
 		_elements_menu_button,
+		_blessings_menu_button,
 		_era_menu_button,
 		_planets_menu_button,
+		_prestige_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button
@@ -223,10 +265,14 @@ func apply_style() -> void:
 	if ui_font != null:
 		for control in [
 			_main_menu_title,
+			_profile_title,
+			_profile_info,
 			_upgrades_title,
 			_upgrades_info,
 			_elements_title,
 			_elements_info,
+			_blessings_title,
+			_blessings_info,
 			_era_title,
 			_era_status,
 			_era_requirement_title,
@@ -238,6 +284,8 @@ func apply_style() -> void:
 			_shop_info,
 			_planets_title,
 			_planets_info,
+			_prestige_title,
+			_prestige_info,
 			_settings_title,
 			_settings_info,
 			_prestige_decrement_button,
@@ -246,10 +294,13 @@ func apply_style() -> void:
 			_click_boxes_toggle,
 			_add_dust_button,
 			_add_orbs_button,
+			_profile_menu_button,
 			_upgrades_menu_button,
 			_elements_menu_button,
+			_blessings_menu_button,
 			_era_menu_button,
 			_planets_menu_button,
+			_prestige_menu_button,
 			_stats_menu_button,
 			_shop_menu_button,
 			_settings_menu_button,
@@ -260,18 +311,23 @@ func apply_style() -> void:
 			control.add_theme_font_override("font", ui_font)
 
 	_main_menu_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	_profile_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_upgrades_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_elements_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	_blessings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_era_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_era_status.add_theme_font_size_override("font_size", UIMetrics.ERA_STATUS_FONT_SIZE)
 	_era_requirement_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_LARGE)
 	_stats_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_shop_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_planets_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	_prestige_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_settings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	for control in [
+		_profile_info,
 		_upgrades_info,
 		_elements_info,
+		_blessings_info,
 		_era_status,
 		_era_requirement_title,
 		_era_unlock_button,
@@ -279,6 +335,7 @@ func apply_style() -> void:
 		_planetary_stats_info,
 		_shop_info,
 		_planets_info,
+		_prestige_info,
 		_settings_info,
 		_prestige_decrement_button,
 		_prestige_count_label,
@@ -286,10 +343,13 @@ func apply_style() -> void:
 		_click_boxes_toggle,
 		_add_dust_button,
 		_add_orbs_button,
+		_profile_menu_button,
 		_upgrades_menu_button,
 		_elements_menu_button,
+		_blessings_menu_button,
 		_era_menu_button,
 		_planets_menu_button,
+		_prestige_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button,
@@ -299,8 +359,12 @@ func apply_style() -> void:
 
 	for label in [
 		_main_menu_title,
+		_profile_title,
+		_profile_info,
 		_upgrades_title,
 		_elements_title,
+		_blessings_title,
+		_blessings_info,
 		_era_title,
 		_stats_title,
 		_upgrades_info,
@@ -313,6 +377,8 @@ func apply_style() -> void:
 		_shop_info,
 		_planets_title,
 		_planets_info,
+		_prestige_title,
+		_prestige_info,
 		_settings_title,
 		_settings_info,
 		_prestige_count_label,
@@ -333,11 +399,14 @@ func apply_style() -> void:
 func apply_shell_metrics() -> void:
 	for panel in [
 		_main_menu_panel,
+		_profile_panel,
 		_upgrades_panel,
 		_elements_panel,
+		_blessings_panel,
 		_stats_panel,
 		_shop_panel,
 		_planets_panel,
+		_prestige_panel,
 		_settings_panel
 	]:
 		panel.add_theme_constant_override("separation", UIMetrics.MENU_PANEL_SEPARATION)
@@ -358,10 +427,13 @@ func apply_shell_metrics() -> void:
 	for button in [
 		_prestige_decrement_button,
 		_prestige_increment_button,
+		_profile_menu_button,
 		_upgrades_menu_button,
 		_elements_menu_button,
+		_blessings_menu_button,
 		_era_menu_button,
 		_planets_menu_button,
+		_prestige_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button,
@@ -404,17 +476,23 @@ func apply_reference_layout() -> void:
 func set_menu_mode(menu_mode: int) -> void:
 	_menu_overlay.visible = menu_mode != MENU_CLOSED
 	_main_menu_panel.visible = menu_mode == MENU_MAIN
+	_profile_panel.visible = menu_mode == MENU_PROFILE
 	_upgrades_panel.visible = menu_mode == MENU_UPGRADES
 	_elements_panel.visible = menu_mode == MENU_ELEMENTS
+	_blessings_panel.visible = menu_mode == MENU_BLESSINGS
 	_era_panel.visible = menu_mode == MENU_ERA
 	_stats_panel.visible = menu_mode == MENU_STATS
 	_shop_panel.visible = menu_mode == MENU_SHOP
 	_planets_panel.visible = menu_mode == MENU_PLANETS
+	_prestige_panel.visible = menu_mode == MENU_PRESTIGE
 	_settings_panel.visible = menu_mode == MENU_SETTINGS
 
-func refresh_main_menu_buttons(era_enabled: bool, planets_enabled: bool, shop_enabled: bool) -> void:
+func refresh_main_menu_buttons(blessings_enabled: bool, era_enabled: bool, planets_enabled: bool, shop_enabled: bool) -> void:
+	_apply_menu_button_style(_profile_menu_button, true)
 	_apply_menu_button_style(_upgrades_menu_button, true)
 	_apply_menu_button_style(_elements_menu_button, true)
+	_apply_menu_button_style(_blessings_menu_button, blessings_enabled)
+	_apply_menu_button_style(_prestige_menu_button, true)
 	_apply_menu_button_style(_stats_menu_button, true)
 	_apply_menu_button_style(_settings_menu_button, true)
 	_apply_menu_button_style(_era_menu_button, era_enabled)
