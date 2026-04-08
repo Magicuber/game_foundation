@@ -13,6 +13,11 @@ const VARIANT_BASE_REWARD_MULTIPLIERS := {
 	VARIANT_HOLOGRAPHIC: 5,
 	VARIANT_POLYCHROME: 10
 }
+const VARIANT_PRIORITY_ORDER := [
+	VARIANT_POLYCHROME,
+	VARIANT_HOLOGRAPHIC,
+	VARIANT_FOIL
+]
 
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -60,8 +65,9 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 			produced_resource_ids = fission_results
 			was_fission = true
 
-	var smasher_variant := _roll_smasher_variant(game_state)
-	var base_reward_multiplier := _get_variant_base_reward_multiplier(smasher_variant)
+	var rolled_variants := _roll_smasher_variants(game_state)
+	var smasher_variant := _get_display_variant(rolled_variants)
+	var base_reward_multiplier := _get_combined_reward_multiplier(rolled_variants)
 	var base_resource_ids: Array[String] = []
 	for resource_id in produced_resource_ids:
 		for _copy_index in range(base_reward_multiplier):
@@ -92,6 +98,7 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 		"bonus_resource_ids": bonus_resource_ids,
 		"was_fission": was_fission,
 		"variant": smasher_variant,
+		"rolled_variants": rolled_variants,
 		"base_reward_multiplier": base_reward_multiplier
 	}
 
@@ -157,17 +164,18 @@ func _build_partitions(game_state: GameState, unlocked_ids: Array[String], remai
 			results
 		)
 
-func _roll_smasher_variant(game_state: GameState) -> String:
+func _roll_smasher_variants(game_state: GameState) -> Array[String]:
+	var rolled_variants: Array[String] = []
 	if game_state == null:
-		return VARIANT_NORMAL
+		return rolled_variants
 
-	if _roll_percent_chance(game_state.get_polychrome_spawn_chance_percent()):
-		return VARIANT_POLYCHROME
-	if _roll_percent_chance(game_state.get_holographic_spawn_chance_percent()):
-		return VARIANT_HOLOGRAPHIC
 	if _roll_percent_chance(game_state.get_foil_spawn_chance_percent()):
-		return VARIANT_FOIL
-	return VARIANT_NORMAL
+		rolled_variants.append(VARIANT_FOIL)
+	if _roll_percent_chance(game_state.get_holographic_spawn_chance_percent()):
+		rolled_variants.append(VARIANT_HOLOGRAPHIC)
+	if _roll_percent_chance(game_state.get_polychrome_spawn_chance_percent()):
+		rolled_variants.append(VARIANT_POLYCHROME)
+	return rolled_variants
 
 func _roll_percent_chance(chance_percent: float) -> bool:
 	var clamped_chance := clampf(chance_percent, 0.0, 100.0)
@@ -175,5 +183,14 @@ func _roll_percent_chance(chance_percent: float) -> bool:
 		return false
 	return rng.randf() * 100.0 < clamped_chance
 
-func _get_variant_base_reward_multiplier(variant: String) -> int:
-	return int(VARIANT_BASE_REWARD_MULTIPLIERS.get(variant, 1))
+func _get_combined_reward_multiplier(rolled_variants: Array[String]) -> int:
+	var reward_multiplier := 1
+	for variant in rolled_variants:
+		reward_multiplier *= int(VARIANT_BASE_REWARD_MULTIPLIERS.get(variant, 1))
+	return reward_multiplier
+
+func _get_display_variant(rolled_variants: Array[String]) -> String:
+	for variant in VARIANT_PRIORITY_ORDER:
+		if rolled_variants.has(variant):
+			return variant
+	return VARIANT_NORMAL

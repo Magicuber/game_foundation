@@ -156,18 +156,10 @@ func _sync_sections(game_state: GameState) -> void:
 func _refresh_info(game_state: GameState) -> void:
 	var blessing_progress := game_state.get_blessing_progress_mass()
 	var next_blessing_cost := game_state.get_next_blessing_cost()
-	_info_label.text = "Blessings Earned: %d\nUnopened: %d\nDiscovered: %d / %d\nNext Blessing: %s / %s mass\nCrit Bonus: +%.2f%%  |  Fission Bonus: +%.2f%%\nFoil: %.0f%%  |  Holographic: %.0f%%  |  Polychrome: %.0f%%" % [
+	_info_label.text = "Open earned blessings here, then review the full catalog below.\nBlessings Earned: %d\nNext Blessing: %s / %s mass" % [
 		game_state.blessings_count,
-		game_state.get_unopened_blessings_count(),
-		game_state.get_discovered_blessing_count(),
-		game_state.get_blessing_ids().size(),
 		blessing_progress.big_to_short_string(),
-		next_blessing_cost.big_to_short_string(),
-		game_state.get_blessing_critical_smasher_bonus_percent(),
-		game_state.get_blessing_fission_bonus_percent(),
-		game_state.get_foil_spawn_chance_percent(),
-		game_state.get_holographic_spawn_chance_percent(),
-		game_state.get_polychrome_spawn_chance_percent()
+		next_blessing_cost.big_to_short_string()
 	]
 
 func _refresh_open_button(game_state: GameState) -> void:
@@ -186,7 +178,7 @@ func _refresh_cards(game_state: GameState) -> void:
 		var card: PanelContainer = _section_cards[blessing_id]
 		var style := StyleBoxFlat.new()
 		style.bg_color = accent.darkened(0.7)
-		style.bg_color.a = 0.68 if blessing.level > 0 else 0.36
+		style.bg_color.a = 1.0
 		style.border_color = accent
 		style.border_width_left = 2
 		style.border_width_top = 2

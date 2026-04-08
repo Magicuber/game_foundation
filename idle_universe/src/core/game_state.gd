@@ -608,6 +608,18 @@ func open_earned_blessings() -> int:
 	unopened_blessings_count = 0
 	return blessings_to_open
 
+func reset_blessings() -> bool:
+	var changed := get_unopened_blessings_count() > 0
+	unopened_blessings_count = blessings_count
+	for blessing_id in blessing_ids_in_order:
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null:
+			continue
+		if blessing.level > 0:
+			changed = true
+		blessing.level = 0
+	return changed
+
 func get_next_blessing_cost() -> DigitMaster:
 	var blessing_index := float(maxi(0, blessings_count))
 	var cost := (
@@ -1022,7 +1034,7 @@ func _roll_random_blessing_id() -> String:
 	if rarity.is_empty():
 		return ""
 
-	var rarity_ids := get_blessing_ids_for_rarity(rarity)
+	var rarity_ids := _get_rollable_blessing_ids_for_rarity(rarity)
 	if rarity_ids.is_empty():
 		return ""
 
@@ -1031,18 +1043,36 @@ func _roll_random_blessing_id() -> String:
 
 func _roll_blessing_rarity() -> String:
 	var total_weight := 0.0
-	for rarity in BLESSING_RARITY_ORDER:
+	var rollable_rarities := _get_rollable_rarities()
+	for rarity in rollable_rarities:
 		total_weight += float(blessing_rarity_roll_weights.get(rarity, 0.0))
 	if total_weight <= 0.0:
 		return ""
 
 	var roll := _blessing_rng.randf() * total_weight
 	var cursor := 0.0
-	for rarity in BLESSING_RARITY_ORDER:
+	for rarity in rollable_rarities:
 		cursor += float(blessing_rarity_roll_weights.get(rarity, 0.0))
 		if roll <= cursor:
 			return rarity
-	return str(BLESSING_RARITY_ORDER.back())
+	return "" if rollable_rarities.is_empty() else str(rollable_rarities.back())
+
+func _get_rollable_rarities() -> Array[String]:
+	var rollable_rarities: Array[String] = []
+	for rarity in BLESSING_RARITY_ORDER:
+		if _get_rollable_blessing_ids_for_rarity(rarity).is_empty():
+			continue
+		rollable_rarities.append(rarity)
+	return rollable_rarities
+
+func _get_rollable_blessing_ids_for_rarity(rarity: String) -> Array[String]:
+	var rollable_ids: Array[String] = []
+	for blessing_id in get_blessing_ids_for_rarity(rarity):
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null or blessing.placeholder:
+			continue
+		rollable_ids.append(blessing_id)
+	return rollable_ids
 
 func _get_blessing_effect_total(effect_type: String) -> float:
 	if effect_type.is_empty():

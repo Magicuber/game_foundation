@@ -25,7 +25,9 @@ const MENU_STATS := 7
 const MENU_SHOP := 8
 const MENU_PLANETS := 9
 const MENU_PRESTIGE := 10
-const MENU_SETTINGS := 11
+const MENU_FACTORY := 11
+const MENU_COLLIDER := 12
+const MENU_SETTINGS := 13
 
 const VIEW_ATOM := 0
 const VIEW_WORLD := 1
@@ -71,6 +73,15 @@ const ZIN_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zin_btn.png")
 const ZOUT_BUTTON_TEXTURE = preload("res://assests/sprites/spr_zout_btn.png")
 const MENU_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_eleupgds_background.png")
 const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
+const NON_UNIQUE_UPGRADE_EFFECT_TYPES := {
+	"auto_smash": true,
+	"auto_smash_speed_bonus": true,
+	"critical_auto_smash": true,
+	"critical_spawn_bonus": true,
+	"fission_split": true,
+	"bonus_element_output": true,
+	"manual_bonus_output": true
+}
 
 @onready var tick_system: TickSystem = $TickSystem
 @onready var world_page: Control = $WorldPage
@@ -81,6 +92,7 @@ const SHOP_BUTTON_TEXTURE = preload("res://assests/sprites/spr_shop_btn.png")
 @onready var overlay_dim: ColorRect = $MenuOverlay/OverlayDim
 @onready var menu_background: TextureRect = $MenuOverlay/MenuBackground
 @onready var menu_content: MarginContainer = $MenuOverlay/MenuContent
+@onready var menu_panels: Control = $MenuOverlay/MenuContent/MenuPanels
 @onready var main_menu_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/MainMenuPanel
 @onready var profile_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/ProfilePanel
 @onready var upgrades_panel: VBoxContainer = $MenuOverlay/MenuContent/MenuPanels/UpgradesPanel
@@ -185,6 +197,15 @@ var element_system: ElementSystem = ElementSystem.new()
 var upgrades_system: UpgradesSystem = UpgradesSystem.new()
 var resource_displays: Dictionary = {}
 var resource_display_ids: Array[String] = []
+var reset_blessings_button: Button
+var factory_menu_button: Button
+var collider_menu_button: Button
+var factory_panel: VBoxContainer
+var factory_title: Label
+var factory_info: Label
+var collider_panel: VBoxContainer
+var collider_title: Label
+var collider_info: Label
 var menu_mode: int = MENU_CLOSED
 var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
@@ -207,6 +228,7 @@ func _ready() -> void:
 	game_state = _build_default_state()
 	SaveManager.load_into_state(game_state)
 	upgrades_system.mark_cache_dirty()
+	_ensure_factory_and_collider_menu_nodes()
 
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
@@ -223,6 +245,8 @@ func _ready() -> void:
 	era_menu_button.pressed.connect(_on_era_menu_pressed)
 	planets_menu_button.pressed.connect(_on_planets_menu_pressed)
 	prestige_menu_button.pressed.connect(_on_prestige_menu_pressed)
+	factory_menu_button.pressed.connect(_on_factory_menu_pressed)
+	collider_menu_button.pressed.connect(_on_collider_menu_pressed)
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
 	shop_menu_button.pressed.connect(_on_shop_pressed)
 	settings_menu_button.pressed.connect(_on_settings_menu_pressed)
@@ -231,7 +255,8 @@ func _ready() -> void:
 	click_boxes_toggle.toggled.connect(_on_click_boxes_toggled)
 	add_dust_button.pressed.connect(_on_add_dust_pressed)
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
-	blessings_menu_button.text = "Open Blessings"
+	_ensure_reset_blessings_button()
+	blessings_menu_button.text = "Blessings"
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
@@ -314,6 +339,8 @@ func _ready() -> void:
 		shop_panel,
 		planets_panel,
 		prestige_panel,
+		factory_panel,
+		collider_panel,
 		settings_panel,
 		main_menu_title,
 		profile_title,
@@ -340,6 +367,10 @@ func _ready() -> void:
 		planets_info,
 		prestige_title,
 		prestige_info,
+		factory_title,
+		factory_info,
+		collider_title,
+		collider_info,
 		settings_title,
 		settings_info,
 		prestige_debug_row,
@@ -356,6 +387,8 @@ func _ready() -> void:
 		era_menu_button,
 		planets_menu_button,
 		prestige_menu_button,
+		factory_menu_button,
+		collider_menu_button,
 		stats_menu_button,
 		shop_menu_button,
 		settings_menu_button,
@@ -378,6 +411,7 @@ func _ready() -> void:
 	)
 	menu_controller.apply_style()
 	menu_controller.apply_shell_metrics()
+	_style_reset_blessings_button()
 	element_menu_controller.configure(
 		elements_panel,
 		elements_info,
@@ -690,12 +724,17 @@ func _refresh_stats_panel() -> void:
 	var current_element := game_state.get_current_element_state()
 	var current_name := "" if current_element == null else current_element.name
 	var produced_name := "" if current_element == null else game_state.get_resource_name(current_element.produces)
-	stats_info.text = "Run Stats\nCurrent Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d\n\nUpgrade Stats\n%s\n\nUpgrade Effects\n%s" % [
+	var total_fission_chance := upgrades_system.get_fission_chance_percent(game_state)
+	stats_info.text = "Run Stats\nCurrent Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d\n\nSmash Stats\n%s\nFission Sources Combined: %.2f%% total\n\nBlessing Progress\nBlessings Earned: %d\nDiscovered: %d / %d\n\nUpgrade Effects\n%s" % [
 		current_name,
 		produced_name,
 		game_state.total_manual_smashes,
 		game_state.total_auto_smashes,
 		_build_upgrade_stats_text(),
+		total_fission_chance,
+		game_state.blessings_count,
+		game_state.get_discovered_blessing_count(),
+		game_state.get_blessing_ids().size(),
 		_build_upgrade_effects_text()
 	]
 	planetary_stats_info.visible = game_state.has_unlocked_era(1)
@@ -885,6 +924,14 @@ func _on_prestige_menu_pressed() -> void:
 	_set_menu_mode(MENU_PRESTIGE)
 	_refresh_ui(_get_menu_mode_refresh_flags())
 
+func _on_factory_menu_pressed() -> void:
+	_set_menu_mode(MENU_FACTORY)
+	_refresh_ui(_get_menu_mode_refresh_flags())
+
+func _on_collider_menu_pressed() -> void:
+	_set_menu_mode(MENU_COLLIDER)
+	_refresh_ui(_get_menu_mode_refresh_flags())
+
 func _on_stats_menu_pressed() -> void:
 	_set_menu_mode(MENU_STATS)
 	_refresh_ui(_get_menu_mode_refresh_flags())
@@ -947,6 +994,11 @@ func _on_add_orbs_pressed() -> void:
 	game_state.orbs += 1000
 	_refresh_ui(UI_DIRTY_TOP_BAR | UI_DIRTY_ERA)
 
+func _on_reset_blessings_pressed() -> void:
+	if not game_state.reset_blessings():
+		return
+	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
+
 func _on_prestige_decrement_pressed() -> void:
 	_adjust_prestige_count(-1)
 
@@ -977,13 +1029,16 @@ func _adjust_prestige_count(delta: int) -> void:
 	_refresh_ui(_get_selection_refresh_flags() | UI_DIRTY_SETTINGS)
 
 func _build_upgrade_stats_text() -> String:
-	return "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%" % [
+	return "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%\nFoil Chance: %.0f%% | Holographic: %.0f%% | Polychrome: %.0f%%" % [
 		upgrades_system.get_auto_smashes_per_second(game_state),
 		upgrades_system.get_global_critical_smash_chance_percent(game_state),
 		upgrades_system.get_critical_payload_chance_percent(game_state),
 		upgrades_system.get_fission_chance_percent(game_state),
 		upgrades_system.get_manual_double_hit_chance(game_state) * 100.0,
-		upgrades_system.get_resonant_yield_chance(game_state) * 100.0
+		upgrades_system.get_resonant_yield_chance(game_state) * 100.0,
+		game_state.get_foil_spawn_chance_percent(),
+		game_state.get_holographic_spawn_chance_percent(),
+		game_state.get_polychrome_spawn_chance_percent()
 	]
 
 func _build_upgrade_effects_text() -> String:
@@ -993,6 +1048,8 @@ func _build_upgrade_effects_text() -> String:
 			continue
 		var upgrade := game_state.get_upgrade_state(upgrade_id)
 		if upgrade == null:
+			continue
+		if NON_UNIQUE_UPGRADE_EFFECT_TYPES.has(upgrade.effect_type):
 			continue
 		sections.append(upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id))
 	if sections.is_empty():
@@ -1014,3 +1071,79 @@ func _pulse_fuse_element() -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.tween_property(fuse_button, "scale", Vector2(0.9, 0.9), 0.06)
 	tween.tween_property(fuse_button, "scale", Vector2.ONE, 0.08)
+
+func _ensure_reset_blessings_button() -> void:
+	if is_instance_valid(reset_blessings_button):
+		return
+
+	reset_blessings_button = Button.new()
+	reset_blessings_button.name = "ResetBlessingsButton"
+	reset_blessings_button.text = "Reset Blessings"
+	reset_blessings_button.focus_mode = Control.FOCUS_NONE
+	settings_panel.add_child(reset_blessings_button)
+	settings_panel.move_child(reset_blessings_button, settings_panel.get_child_count() - 1)
+	reset_blessings_button.pressed.connect(_on_reset_blessings_pressed)
+
+func _style_reset_blessings_button() -> void:
+	if not is_instance_valid(reset_blessings_button):
+		return
+
+	reset_blessings_button.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
+	var ui_font: FontFile = UIFont.load_ui_font()
+	if ui_font != null:
+		reset_blessings_button.add_theme_font_override("font", ui_font)
+	reset_blessings_button.add_theme_font_size_override("font_size", UIMetrics.FONT_SIZE_BODY)
+	reset_blessings_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+
+func _ensure_factory_and_collider_menu_nodes() -> void:
+	factory_menu_button = _ensure_main_menu_button("FactoryMenuButton", "Factory", prestige_menu_button.get_index() + 1)
+	collider_menu_button = _ensure_main_menu_button("ColliderMenuButton", "Collider", factory_menu_button.get_index() + 1)
+	factory_panel = _ensure_placeholder_menu_panel("FactoryPanel", "Factory", "Factory systems will live here.")
+	collider_panel = _ensure_placeholder_menu_panel("ColliderPanel", "Collider", "Collider systems will live here.")
+	factory_title = factory_panel.get_node("FactoryTitle")
+	factory_info = factory_panel.get_node("FactoryInfo")
+	collider_title = collider_panel.get_node("ColliderTitle")
+	collider_info = collider_panel.get_node("ColliderInfo")
+
+func _ensure_main_menu_button(button_name: String, button_text: String, child_index: int) -> Button:
+	var button := main_menu_panel.get_node_or_null(button_name) as Button
+	if button == null:
+		button = Button.new()
+		button.name = button_name
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.focus_mode = Control.FOCUS_NONE
+		main_menu_panel.add_child(button)
+	button.text = button_text
+	main_menu_panel.move_child(button, child_index)
+	return button
+
+func _ensure_placeholder_menu_panel(panel_name: String, panel_title: String, panel_text: String) -> VBoxContainer:
+	var panel := menu_panels.get_node_or_null(panel_name) as VBoxContainer
+	if panel == null:
+		panel = VBoxContainer.new()
+		panel.name = panel_name
+		panel.visible = false
+		panel.layout_mode = 1
+		panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+		menu_panels.add_child(panel)
+
+		var title := Label.new()
+		title.name = "%sTitle" % panel_title
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.text = panel_title
+		panel.add_child(title)
+
+		var info := Label.new()
+		info.name = "%sInfo" % panel_title
+		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		panel.add_child(info)
+
+	var title_label := panel.get_node("%sTitle" % panel_title) as Label
+	var info_label := panel.get_node("%sInfo" % panel_title) as Label
+	title_label.text = panel_title
+	info_label.text = panel_text
+	menu_panels.move_child(panel, min(menu_panels.get_child_count() - 1, settings_panel.get_index()))
+	return panel

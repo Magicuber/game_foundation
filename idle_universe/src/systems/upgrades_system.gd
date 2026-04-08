@@ -14,8 +14,6 @@ const EFFECT_FISSION_SPLIT := "fission_split"
 const EFFECT_BONUS_ELEMENT_OUTPUT := "bonus_element_output"
 const EFFECT_MANUAL_BONUS_OUTPUT := "manual_bonus_output"
 const EFFECT_DUST_RESONANCE_SEQUENCE := "dust_resonance_sequence"
-const FISSION_MAX_CHANCE_PERCENT := 25.0
-
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _aggregate_cache_dirty := true
 var _cached_auto_smash_interval_multiplier := 1.0
@@ -124,7 +122,7 @@ func get_fission_chance_percent(game_state: GameState) -> float:
 	if game_state == null:
 		return 0.0
 	_ensure_aggregate_cache(game_state)
-	return minf(FISSION_MAX_CHANCE_PERCENT, _cached_fission_chance_percent + game_state.get_blessing_fission_bonus_percent())
+	return maxf(0.0, _cached_fission_chance_percent + game_state.get_blessing_fission_bonus_percent())
 
 func should_trigger_fission(game_state: GameState) -> bool:
 	var chance := get_fission_chance_percent(game_state)
@@ -458,7 +456,7 @@ func _ensure_aggregate_cache(game_state: GameState) -> void:
 			EFFECT_BONUS_ELEMENT_OUTPUT:
 				_cached_resonant_yield_chance += _get_upgrade_scaled_effect(upgrade)
 
-	_cached_fission_chance_percent = minf(FISSION_MAX_CHANCE_PERCENT, _cached_fission_chance_percent)
+	_cached_fission_chance_percent = maxf(0.0, _cached_fission_chance_percent)
 	_cached_manual_double_hit_chance = maxf(0.0, _cached_manual_double_hit_chance)
 	_cached_critical_payload_chance_percent = maxf(0.0, _cached_critical_payload_chance_percent)
 	_cached_resonant_yield_chance = maxf(0.0, _cached_resonant_yield_chance)

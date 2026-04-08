@@ -15,7 +15,9 @@ const MENU_STATS := 7
 const MENU_SHOP := 8
 const MENU_PLANETS := 9
 const MENU_PRESTIGE := 10
-const MENU_SETTINGS := 11
+const MENU_FACTORY := 11
+const MENU_COLLIDER := 12
+const MENU_SETTINGS := 13
 
 var _menu_overlay: Control
 var _overlay_dim: ColorRect
@@ -32,6 +34,8 @@ var _stats_panel: VBoxContainer
 var _shop_panel: VBoxContainer
 var _planets_panel: VBoxContainer
 var _prestige_panel: VBoxContainer
+var _factory_panel: VBoxContainer
+var _collider_panel: VBoxContainer
 var _settings_panel: VBoxContainer
 var _main_menu_title: Label
 var _profile_title: Label
@@ -58,6 +62,10 @@ var _planets_title: Label
 var _planets_info: Label
 var _prestige_title: Label
 var _prestige_info: Label
+var _factory_title: Label
+var _factory_info: Label
+var _collider_title: Label
+var _collider_info: Label
 var _settings_title: Label
 var _settings_info: Label
 var _prestige_debug_row: HBoxContainer
@@ -74,6 +82,8 @@ var _blessings_menu_button: Button
 var _era_menu_button: Button
 var _planets_menu_button: Button
 var _prestige_menu_button: Button
+var _factory_menu_button: Button
+var _collider_menu_button: Button
 var _stats_menu_button: Button
 var _shop_menu_button: Button
 var _settings_menu_button: Button
@@ -108,6 +118,8 @@ func configure(
 	shop_panel: VBoxContainer,
 	planets_panel: VBoxContainer,
 	prestige_panel: VBoxContainer,
+	factory_panel: VBoxContainer,
+	collider_panel: VBoxContainer,
 	settings_panel: VBoxContainer,
 	main_menu_title: Label,
 	profile_title: Label,
@@ -134,6 +146,10 @@ func configure(
 	planets_info: Label,
 	prestige_title: Label,
 	prestige_info: Label,
+	factory_title: Label,
+	factory_info: Label,
+	collider_title: Label,
+	collider_info: Label,
 	settings_title: Label,
 	settings_info: Label,
 	prestige_debug_row: HBoxContainer,
@@ -150,6 +166,8 @@ func configure(
 	era_menu_button: Button,
 	planets_menu_button: Button,
 	prestige_menu_button: Button,
+	factory_menu_button: Button,
+	collider_menu_button: Button,
 	stats_menu_button: Button,
 	shop_menu_button: Button,
 	settings_menu_button: Button,
@@ -185,6 +203,8 @@ func configure(
 	_shop_panel = shop_panel
 	_planets_panel = planets_panel
 	_prestige_panel = prestige_panel
+	_factory_panel = factory_panel
+	_collider_panel = collider_panel
 	_settings_panel = settings_panel
 	_main_menu_title = main_menu_title
 	_profile_title = profile_title
@@ -211,6 +231,10 @@ func configure(
 	_planets_info = planets_info
 	_prestige_title = prestige_title
 	_prestige_info = prestige_info
+	_factory_title = factory_title
+	_factory_info = factory_info
+	_collider_title = collider_title
+	_collider_info = collider_info
 	_settings_title = settings_title
 	_settings_info = settings_info
 	_prestige_debug_row = prestige_debug_row
@@ -227,6 +251,8 @@ func configure(
 	_era_menu_button = era_menu_button
 	_planets_menu_button = planets_menu_button
 	_prestige_menu_button = prestige_menu_button
+	_factory_menu_button = factory_menu_button
+	_collider_menu_button = collider_menu_button
 	_stats_menu_button = stats_menu_button
 	_shop_menu_button = shop_menu_button
 	_settings_menu_button = settings_menu_button
@@ -268,6 +294,8 @@ func configure(
 		_era_menu_button,
 		_planets_menu_button,
 		_prestige_menu_button,
+		_factory_menu_button,
+		_collider_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button
@@ -300,6 +328,10 @@ func apply_style() -> void:
 			_planets_info,
 			_prestige_title,
 			_prestige_info,
+			_factory_title,
+			_factory_info,
+			_collider_title,
+			_collider_info,
 			_settings_title,
 			_settings_info,
 			_prestige_decrement_button,
@@ -315,6 +347,8 @@ func apply_style() -> void:
 			_era_menu_button,
 			_planets_menu_button,
 			_prestige_menu_button,
+			_factory_menu_button,
+			_collider_menu_button,
 			_stats_menu_button,
 			_shop_menu_button,
 			_settings_menu_button,
@@ -338,6 +372,8 @@ func apply_style() -> void:
 	_shop_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_planets_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_prestige_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	_factory_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
+	_collider_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	_settings_title.add_theme_font_size_override("font_size", UIMetrics.LABEL_FONT_SIZE_XL)
 	for control in [
 		_profile_info,
@@ -352,6 +388,8 @@ func apply_style() -> void:
 		_shop_info,
 		_planets_info,
 		_prestige_info,
+		_factory_info,
+		_collider_info,
 		_settings_info,
 		_prestige_decrement_button,
 		_prestige_count_label,
@@ -366,6 +404,8 @@ func apply_style() -> void:
 		_era_menu_button,
 		_planets_menu_button,
 		_prestige_menu_button,
+		_factory_menu_button,
+		_collider_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button,
@@ -395,6 +435,10 @@ func apply_style() -> void:
 		_planets_info,
 		_prestige_title,
 		_prestige_info,
+		_factory_title,
+		_factory_info,
+		_collider_title,
+		_collider_info,
 		_settings_title,
 		_settings_info,
 		_prestige_count_label,
@@ -427,6 +471,8 @@ func apply_shell_metrics() -> void:
 		_shop_panel,
 		_planets_panel,
 		_prestige_panel,
+		_factory_panel,
+		_collider_panel,
 		_settings_panel
 	]:
 		panel.add_theme_constant_override("separation", UIMetrics.MENU_PANEL_SEPARATION)
@@ -454,6 +500,8 @@ func apply_shell_metrics() -> void:
 		_era_menu_button,
 		_planets_menu_button,
 		_prestige_menu_button,
+		_factory_menu_button,
+		_collider_menu_button,
 		_stats_menu_button,
 		_shop_menu_button,
 		_settings_menu_button,
@@ -501,6 +549,8 @@ func set_menu_mode(menu_mode: int) -> void:
 	_shop_panel.visible = menu_mode == MENU_SHOP
 	_planets_panel.visible = menu_mode == MENU_PLANETS
 	_prestige_panel.visible = menu_mode == MENU_PRESTIGE
+	_factory_panel.visible = menu_mode == MENU_FACTORY
+	_collider_panel.visible = menu_mode == MENU_COLLIDER
 	_settings_panel.visible = menu_mode == MENU_SETTINGS
 
 func refresh_main_menu_buttons(blessings_enabled: bool, era_enabled: bool, planets_enabled: bool, shop_enabled: bool) -> void:
@@ -509,6 +559,8 @@ func refresh_main_menu_buttons(blessings_enabled: bool, era_enabled: bool, plane
 	_apply_menu_button_style(_elements_menu_button, true)
 	_apply_menu_button_style(_blessings_menu_button, blessings_enabled)
 	_apply_menu_button_style(_prestige_menu_button, true)
+	_apply_menu_button_style(_factory_menu_button, true)
+	_apply_menu_button_style(_collider_menu_button, true)
 	_apply_menu_button_style(_stats_menu_button, true)
 	_apply_menu_button_style(_settings_menu_button, true)
 	_apply_menu_button_style(_era_menu_button, era_enabled)
