@@ -4,6 +4,7 @@ const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
 const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
 const BLESSINGS_DATA_PATH := "res://src/data/blessings.json"
 const PLANETS_DATA_PATH := "res://src/data/planets.json"
+const PLANET_MENU_DATA_PATH := "res://src/data/planet_menu.json"
 const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
 const PlanetsPanelControllerScript = preload("res://src/controllers/planets_panel_controller.gd")
 const PrestigePanelControllerScript = preload("res://src/controllers/prestige_panel_controller.gd")
@@ -441,9 +442,9 @@ func _ready() -> void:
 	element_menu_controller.dust_close_requested.connect(_on_dust_close_pressed)
 	blessings_panel_controller.configure(blessings_panel, blessings_info)
 	blessings_panel_controller.open_requested.connect(_on_open_blessings_pressed)
-	planets_panel_controller.configure(planets_panel, planets_info)
-	planets_panel_controller.select_requested.connect(_on_planet_selected)
-	planets_panel_controller.purchase_requested.connect(_on_planet_purchase_requested)
+	planets_panel_controller.configure(planets_panel, planets_info, icon_cache)
+	planets_panel_controller.unlock_requested.connect(_on_planet_purchase_requested)
+	planets_panel_controller.moon_upgrade_requested.connect(_on_moon_upgrade_requested)
 	prestige_panel_controller.configure(prestige_panel, prestige_info)
 	prestige_panel_controller.prestige_requested.connect(_on_prestige_requested)
 	prestige_panel_controller.claim_node_requested.connect(_on_claim_prestige_node_requested)
@@ -500,7 +501,14 @@ func _build_default_state() -> GameState:
 	var upgrades_content: Dictionary = _load_json_dictionary(UPGRADES_DATA_PATH)
 	var blessings_content: Dictionary = _load_json_dictionary(BLESSINGS_DATA_PATH)
 	var planets_content: Dictionary = _load_json_dictionary(PLANETS_DATA_PATH)
-	return GameState.from_content(elements_content, upgrades_content, blessings_content, planets_content)
+	var planet_menu_content: Dictionary = _load_json_dictionary(PLANET_MENU_DATA_PATH)
+	return GameState.from_content(
+		elements_content,
+		upgrades_content,
+		blessings_content,
+		planets_content,
+		planet_menu_content
+	)
 
 func _load_json_dictionary(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
@@ -716,8 +724,8 @@ func _refresh_navigation() -> void:
 	world_view_controller.set_navigation_state(view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
 	hud_controller.refresh_navigation(
 		view_mode == VIEW_ATOM,
-		false if view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
-		false if view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
+		game_state.has_adjacent_owned_planet(-1) if view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
+		game_state.has_adjacent_owned_planet(1) if view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
 		view_mode == VIEW_WORLD,
 		view_mode == VIEW_ATOM and game_state.has_unlocked_era(1)
 	)
@@ -881,9 +889,19 @@ func _on_auto_smash_requested(request: Dictionary) -> void:
 	atom_effects_controller.spawn_auto_smashes(target_element_id, spawn_count)
 
 func _on_prev_pressed() -> void:
+	if view_mode == VIEW_WORLD:
+		if not game_state.select_adjacent_owned_planet(-1):
+			return
+		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
+		return
 	tick_system.enqueue_action("select_adjacent", {"direction": -1})
 
 func _on_next_pressed() -> void:
+	if view_mode == VIEW_WORLD:
+		if not game_state.select_adjacent_owned_planet(1):
+			return
+		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
+		return
 	tick_system.enqueue_action("select_adjacent", {"direction": 1})
 
 func _on_zin_pressed() -> void:
@@ -1027,15 +1045,17 @@ func _on_reset_blessings_pressed() -> void:
 		return
 	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
 
-func _on_planet_selected(planet_id: String) -> void:
-	if not game_state.select_planet(planet_id):
-		return
-	_refresh_ui(UI_DIRTY_PLANETS | UI_DIRTY_WORLD)
-
 func _on_planet_purchase_requested(planet_id: String) -> void:
 	if not game_state.purchase_planet(planet_id):
 		return
-	_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_PLANETS | UI_DIRTY_WORLD)
+	_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_PLANETS | UI_DIRTY_WORLD | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
+	planets_panel_controller.play_planet_unlock_animation(planet_id)
+
+func _on_moon_upgrade_requested(moon_id: String, upgrade_id: String) -> void:
+	if not game_state.purchase_moon_upgrade(moon_id, upgrade_id):
+		return
+	_refresh_ui(UI_DIRTY_PLANETS | UI_DIRTY_WORLD | UI_DIRTY_STATS | UI_DIRTY_TOP_BAR)
+	planets_panel_controller.play_moon_upgrade_purchase_animation(moon_id, upgrade_id)
 
 func _on_prestige_requested() -> void:
 	if not game_state.perform_prestige():

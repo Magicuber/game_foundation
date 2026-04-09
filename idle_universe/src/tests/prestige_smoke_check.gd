@@ -7,7 +7,8 @@ func _initialize() -> void:
 		_load_json("res://src/data/elements.json"),
 		_load_json("res://src/data/upgrades.json"),
 		_load_json("res://src/data/blessings.json"),
-		_load_json("res://src/data/planets.json")
+		_load_json("res://src/data/planets.json"),
+		_load_json("res://src/data/planet_menu.json")
 	)
 	state.unlocked_era_index = 1
 	state.orbs = 5000
@@ -26,8 +27,14 @@ func _initialize() -> void:
 	if not state.perform_prestige():
 		_fail("First prestige did not complete.")
 		return
+	if not state.is_era_menu_unlocked():
+		_fail("Era menu should remain unlocked after prestige.")
+		return
 	if state.prestige_points_total != 1 or state.prestige_points_unspent != 1:
 		_fail("First prestige should grant exactly one point.")
+		return
+	if state.get_planet_menu_stage() != 2:
+		_fail("First prestige should move the planets menu to stage 2.")
 		return
 	if not state.is_planet_purchase_unlocked("planet_b"):
 		_fail("First prestige should unlock Planet B purchase.")
@@ -40,8 +47,22 @@ func _initialize() -> void:
 		return
 
 	state.dust = DigitMaster.new(25000.0)
+	var original_current_planet_id := state.current_planet_id
 	if not state.purchase_planet("planet_b"):
 		_fail("Planet B should be purchasable after the first prestige.")
+		return
+	if state.current_planet_id != original_current_planet_id:
+		_fail("Buying Planet B should not switch the active world.")
+		return
+	state.research_points = DigitMaster.new(4.0)
+	if not state.purchase_moon_upgrade("moon_b_1", "slot_1"):
+		_fail("Moon upgrade slot_1 should be purchasable with RP.")
+		return
+	if not state.purchase_moon_upgrade("moon_b_1", "slot_2"):
+		_fail("Moon upgrade slot_2 should be purchasable with RP.")
+		return
+	if state.can_purchase_moon_upgrade("moon_b_1", "slot_1"):
+		_fail("Purchased moon upgrades should not remain purchaseable.")
 		return
 
 	state.best_planet_levels_this_run["planet_b"] = 5
@@ -59,9 +80,17 @@ func _initialize() -> void:
 	if state.prestige_points_total != 2 or state.prestige_points_unspent != 1:
 		_fail("Second prestige should be the source of the second point.")
 		return
+	if state.get_planet_menu_stage() != 3:
+		_fail("Second prestige should move the planets menu to stage 3.")
+		return
 	if str(state.get_next_prestige_milestone().get("id", "")) != "planet_c_5":
 		_fail("Planet C should be the next placeholder milestone after Planet B.")
 		return
+	if not state.get_moon_upgrade_entries("moon_b_1").is_empty():
+		var slot_1 := state.get_moon_upgrade_entries("moon_b_1")[0]
+		if bool(slot_1.get("purchased", false)):
+			_fail("Prestige should reset purchased moon upgrades.")
+			return
 	if not state.claim_next_prestige_node():
 		_fail("Second prestige point should claim the dust node.")
 		return

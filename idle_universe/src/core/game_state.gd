@@ -4,7 +4,7 @@ class_name GameState
 
 const BlessingStateScript = preload("res://src/core/state/blessing_state.gd")
 
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const DUST_RESOURCE_ID := "dust"
 const BLESSINGS_MENU_UNLOCK_ELEMENT_ID := "ele_C"
 # Centralize blessing cost tuning so playtest balance changes stay in one place.
@@ -278,11 +278,23 @@ var prestige_nodes_claimed: Array[String]
 var best_planet_levels_this_run: Dictionary
 var planet_purchase_unlocks: Dictionary
 var planet_owned_flags: Dictionary
+var moon_upgrade_purchases: Dictionary
+var _planet_menu_root: Dictionary
+var _planet_menu_stages: Array[Dictionary]
+var _planet_menu_stage_by_index: Dictionary
+var _planet_menu_planets: Dictionary
+var _planet_menu_moons: Dictionary
 
 var _element_ids_by_index: Dictionary
 var _blessing_rng: RandomNumberGenerator
 
-static func from_content(elements_content: Dictionary, upgrades_content: Dictionary, blessings_content: Dictionary, planets_content: Dictionary) -> GameState:
+static func from_content(
+	elements_content: Dictionary,
+	upgrades_content: Dictionary,
+	blessings_content: Dictionary,
+	planets_content: Dictionary,
+	planet_menu_content: Dictionary = {}
+) -> GameState:
 	var state := GameState.new()
 	state._load_elements(elements_content.get("elements", []))
 	state._load_upgrades(upgrades_content.get("upgrades", []))
@@ -291,6 +303,7 @@ static func from_content(elements_content: Dictionary, upgrades_content: Diction
 		blessings_content.get("rarities", [])
 	)
 	state._load_planets(planets_content.get("planets", []))
+	state._load_planet_menu_config(planet_menu_content)
 	state.refresh_progression_state()
 	return state
 
@@ -338,6 +351,12 @@ func _init() -> void:
 	best_planet_levels_this_run = {}
 	planet_purchase_unlocks = {}
 	planet_owned_flags = {}
+	moon_upgrade_purchases = {}
+	_planet_menu_root = {}
+	_planet_menu_stages = []
+	_planet_menu_stage_by_index = {}
+	_planet_menu_planets = {}
+	_planet_menu_moons = {}
 	_element_ids_by_index = {}
 	_blessing_rng = RandomNumberGenerator.new()
 	_blessing_rng.randomize()
@@ -446,6 +465,43 @@ func _load_planets(planets_data: Array) -> void:
 	_ensure_planet_meta_defaults()
 	if current_planet_id.is_empty() and not planet_ids_in_order.is_empty():
 		current_planet_id = planet_ids_in_order[0]
+
+func _load_planet_menu_config(planet_menu_content: Dictionary) -> void:
+	_planet_menu_root = {}
+	_planet_menu_stages.clear()
+	_planet_menu_stage_by_index.clear()
+	_planet_menu_planets.clear()
+	_planet_menu_moons.clear()
+
+	if typeof(planet_menu_content.get("root", {})) == TYPE_DICTIONARY:
+		_planet_menu_root = planet_menu_content.get("root", {}).duplicate(true)
+
+	for stage_variant in planet_menu_content.get("stages", []):
+		if typeof(stage_variant) != TYPE_DICTIONARY:
+			continue
+		var stage_entry: Dictionary = stage_variant.duplicate(true)
+		var stage_index := int(stage_entry.get("stage_index", _planet_menu_stages.size() + 1))
+		stage_entry["stage_index"] = stage_index
+		_planet_menu_stages.append(stage_entry)
+		_planet_menu_stage_by_index[stage_index] = stage_entry
+
+	var raw_planets: Dictionary = planet_menu_content.get("planets", {})
+	for planet_id_variant in raw_planets.keys():
+		var planet_id := str(planet_id_variant)
+		if typeof(raw_planets[planet_id_variant]) != TYPE_DICTIONARY:
+			continue
+		var planet_entry: Dictionary = raw_planets[planet_id_variant].duplicate(true)
+		planet_entry["id"] = planet_id
+		_planet_menu_planets[planet_id] = planet_entry
+
+	var raw_moons: Dictionary = planet_menu_content.get("moons", {})
+	for moon_id_variant in raw_moons.keys():
+		var moon_id := str(moon_id_variant)
+		if typeof(raw_moons[moon_id_variant]) != TYPE_DICTIONARY:
+			continue
+		var moon_entry: Dictionary = raw_moons[moon_id_variant].duplicate(true)
+		moon_entry["id"] = moon_id
+		_planet_menu_moons[moon_id] = moon_entry
 
 func refresh_progression_state() -> void:
 	_ensure_planet_meta_defaults()
@@ -872,7 +928,6 @@ func purchase_planet(planet_id: String) -> bool:
 
 	planet_owned_flags[planet_id] = true
 	refresh_progression_state()
-	select_planet(planet_id)
 	return true
 
 func select_planet(planet_id: String) -> bool:
@@ -899,6 +954,229 @@ func get_planet_entries() -> Array[Dictionary]:
 			"purchase_costs": get_planet_purchase_cost_entries(planet_id)
 		})
 	return planet_entries
+
+func get_planet_menu_stage() -> int:
+	var highest_completed_planet_rank := 0
+	for milestone_id in completed_milestones:
+		highest_completed_planet_rank = maxi(highest_completed_planet_rank, _get_planet_menu_progress_rank(milestone_id))
+	var stage_index := clampi(highest_completed_planet_rank + 1, 1, maxi(1, _planet_menu_stages.size()))
+	return stage_index
+
+func get_planet_menu_view_model() -> Dictionary:
+	var stage_index := get_planet_menu_stage()
+	var stage_entry := _get_planet_menu_stage_entry(stage_index)
+	var node_positions: Dictionary = stage_entry.get("node_positions", {})
+	var visible_planets: Array[String] = []
+	for planet_id_variant in stage_entry.get("visible_planets", []):
+		visible_planets.append(str(planet_id_variant))
+	var visible_moons: Array[String] = []
+	for moon_id_variant in stage_entry.get("visible_moons", []):
+		visible_moons.append(str(moon_id_variant))
+
+	var planet_entries: Array[Dictionary] = []
+	for planet_id in visible_planets:
+		var planet_entry := get_planet_menu_planet_entry(planet_id)
+		if node_positions.has(planet_id):
+			planet_entry["position"] = (node_positions[planet_id] as Dictionary).duplicate(true)
+		planet_entries.append(planet_entry)
+
+	var moon_entries: Array[Dictionary] = []
+	for moon_id in visible_moons:
+		var moon_entry := get_planet_menu_moon_entry(moon_id)
+		if node_positions.has(moon_id):
+			moon_entry["position"] = (node_positions[moon_id] as Dictionary).duplicate(true)
+		moon_entries.append(moon_entry)
+
+	var line_entries: Array[Dictionary] = []
+	for line_variant in stage_entry.get("lines", []):
+		if typeof(line_variant) != TYPE_DICTIONARY:
+			continue
+		var line_entry: Dictionary = line_variant.duplicate(true)
+		var from_id := str(line_entry.get("from_id", ""))
+		var to_id := str(line_entry.get("to_id", ""))
+		if node_positions.has(from_id):
+			line_entry["from_position"] = (node_positions[from_id] as Dictionary).duplicate(true)
+		if node_positions.has(to_id):
+			line_entry["to_position"] = (node_positions[to_id] as Dictionary).duplicate(true)
+		line_entries.append(line_entry)
+
+	return {
+		"stage_id": str(stage_entry.get("id", "")),
+		"stage_index": stage_index,
+		"root": _planet_menu_root.duplicate(true),
+		"root_position": (node_positions.get("root", {}) as Dictionary).duplicate(true),
+		"planets": planet_entries,
+		"moons": moon_entries,
+		"lines": line_entries
+	}
+
+func get_planet_menu_planet_entry(planet_id: String) -> Dictionary:
+	var config_entry: Dictionary = _planet_menu_planets.get(planet_id, {})
+	var runtime_planet := get_planet_state(planet_id)
+	var owned := is_planet_owned(planet_id) if runtime_planet != null else false
+	var visible := _is_planet_visible_in_stage(planet_id, get_planet_menu_stage())
+	var purchase_unlocked := is_planet_purchase_unlocked(planet_id) if runtime_planet != null else false
+	var can_purchase := can_purchase_planet(planet_id) if runtime_planet != null else false
+	var is_placeholder := runtime_planet == null
+	return {
+		"id": planet_id,
+		"label": str(config_entry.get("label", planet_id)),
+		"tier": int(config_entry.get("tier", 1)),
+		"panel_accent_color": str(config_entry.get("panel_accent_color", "#4A7F78")),
+		"preview_title": str(config_entry.get("preview_title", config_entry.get("label", planet_id))),
+		"preview_subtitle": str(config_entry.get("preview_subtitle", "")),
+		"moon_ids": Array(config_entry.get("moon_ids", [])).duplicate(),
+		"visible": visible,
+		"owned": owned,
+		"purchase_unlocked": purchase_unlocked,
+		"can_purchase": can_purchase,
+		"is_placeholder": is_placeholder,
+		"is_current_active_planet": current_planet_id == planet_id,
+		"level": runtime_planet.level if runtime_planet != null else 0,
+		"max_level": runtime_planet.max_level if runtime_planet != null else 0,
+		"workers": runtime_planet.workers.clone() if runtime_planet != null else DigitMaster.zero(),
+		"research_points": get_research_points(),
+		"purchase_costs": get_planet_purchase_cost_entries(planet_id) if runtime_planet != null else [],
+		"action_label": _get_planet_menu_action_label(planet_id),
+		"action_enabled": can_purchase
+	}
+
+func get_planet_menu_moon_entry(moon_id: String) -> Dictionary:
+	var config_entry: Dictionary = _planet_menu_moons.get(moon_id, {})
+	var parent_planet_id := str(config_entry.get("parent_planet_id", ""))
+	return {
+		"id": moon_id,
+		"label": str(config_entry.get("label", moon_id)),
+		"color": str(config_entry.get("color", "#4A7F78")),
+		"parent_planet_id": parent_planet_id,
+		"parent_owned": is_planet_owned(parent_planet_id),
+		"visible": _is_moon_visible_in_stage(moon_id, get_planet_menu_stage())
+	}
+
+func get_moon_upgrade_entries(moon_id: String) -> Array[Dictionary]:
+	var moon_entry: Dictionary = _planet_menu_moons.get(moon_id, {})
+	if moon_entry.is_empty():
+		return []
+
+	var parent_planet_id := str(moon_entry.get("parent_planet_id", ""))
+	var parent_owned := is_planet_owned(parent_planet_id)
+	var purchased_ids := _get_purchased_moon_upgrade_ids(moon_id)
+	var upgrade_entries: Array[Dictionary] = []
+	for upgrade_variant in moon_entry.get("upgrades", []):
+		if typeof(upgrade_variant) != TYPE_DICTIONARY:
+			continue
+		var upgrade_entry: Dictionary = upgrade_variant.duplicate(true)
+		var upgrade_id := str(upgrade_entry.get("id", ""))
+		var rp_cost := DigitMaster.from_variant(upgrade_entry.get("rp_cost", 0))
+		var purchased := purchased_ids.has(upgrade_id)
+		var can_purchase := parent_owned and not purchased and research_points.compare(rp_cost) >= 0
+		upgrade_entry["rp_cost"] = rp_cost
+		upgrade_entry["moon_id"] = moon_id
+		upgrade_entry["parent_planet_id"] = parent_planet_id
+		upgrade_entry["locked"] = not parent_owned
+		upgrade_entry["purchased"] = purchased
+		upgrade_entry["can_purchase"] = can_purchase
+		upgrade_entries.append(upgrade_entry)
+	return upgrade_entries
+
+func can_purchase_moon_upgrade(moon_id: String, upgrade_id: String) -> bool:
+	if upgrade_id.is_empty():
+		return false
+	for upgrade_entry in get_moon_upgrade_entries(moon_id):
+		if str(upgrade_entry.get("id", "")) != upgrade_id:
+			continue
+		return bool(upgrade_entry.get("can_purchase", false))
+	return false
+
+func purchase_moon_upgrade(moon_id: String, upgrade_id: String) -> bool:
+	if not can_purchase_moon_upgrade(moon_id, upgrade_id):
+		return false
+
+	for upgrade_entry in get_moon_upgrade_entries(moon_id):
+		if str(upgrade_entry.get("id", "")) != upgrade_id:
+			continue
+		var cost: DigitMaster = upgrade_entry["rp_cost"]
+		research_points = research_points.subtract(cost)
+		var purchased_ids := _get_purchased_moon_upgrade_ids(moon_id)
+		purchased_ids.append(upgrade_id)
+		moon_upgrade_purchases[moon_id] = purchased_ids
+		return true
+	return false
+
+func has_adjacent_owned_planet(direction: int) -> bool:
+	return not _find_adjacent_owned_planet_id(direction).is_empty()
+
+func select_adjacent_owned_planet(direction: int) -> bool:
+	var target_planet_id := _find_adjacent_owned_planet_id(direction)
+	if target_planet_id.is_empty():
+		return false
+	current_planet_id = target_planet_id
+	return true
+
+func _get_planet_menu_action_label(planet_id: String) -> String:
+	if is_planet_owned(planet_id):
+		return "Unlocked"
+	if can_purchase_planet(planet_id):
+		return "Unlock"
+	return "Locked"
+
+func _get_planet_menu_stage_entry(stage_index: int) -> Dictionary:
+	if _planet_menu_stage_by_index.has(stage_index):
+		return (_planet_menu_stage_by_index[stage_index] as Dictionary).duplicate(true)
+	return {}
+
+func _is_planet_visible_in_stage(planet_id: String, stage_index: int) -> bool:
+	var stage_entry := _get_planet_menu_stage_entry(stage_index)
+	for stage_planet_id_variant in stage_entry.get("visible_planets", []):
+		if str(stage_planet_id_variant) == planet_id:
+			return true
+	return false
+
+func _is_moon_visible_in_stage(moon_id: String, stage_index: int) -> bool:
+	var stage_entry := _get_planet_menu_stage_entry(stage_index)
+	for stage_moon_id_variant in stage_entry.get("visible_moons", []):
+		if str(stage_moon_id_variant) == moon_id:
+			return true
+	return false
+
+func _get_planet_menu_progress_rank(milestone_id: String) -> int:
+	match milestone_id:
+		"planet_a_5":
+			return 1
+		"planet_b_5":
+			return 2
+		"planet_c_5":
+			return 3
+		"planet_d_5":
+			return 4
+		_:
+			return 0
+
+func _get_purchased_moon_upgrade_ids(moon_id: String) -> Array[String]:
+	var purchased_ids: Array[String] = []
+	for upgrade_id_variant in moon_upgrade_purchases.get(moon_id, []):
+		purchased_ids.append(str(upgrade_id_variant))
+	return purchased_ids
+
+func _find_adjacent_owned_planet_id(direction: int) -> String:
+	if direction == 0:
+		return ""
+
+	var owned_planet_ids: Array[String] = []
+	for planet_id in planet_ids_in_order:
+		if is_planet_owned(planet_id):
+			owned_planet_ids.append(planet_id)
+	if owned_planet_ids.is_empty():
+		return ""
+
+	var current_index := owned_planet_ids.find(current_planet_id)
+	if current_index < 0:
+		return ""
+
+	var target_index := current_index + direction
+	if target_index < 0 or target_index >= owned_planet_ids.size():
+		return ""
+	return owned_planet_ids[target_index]
 
 func get_current_planet_workers() -> DigitMaster:
 	var planet := get_current_planet_state()
@@ -1170,7 +1448,7 @@ func has_unlocked_element_count(required_count: int) -> bool:
 	return get_unlocked_element_ids().size() >= required_count
 
 func is_era_menu_unlocked() -> bool:
-	return is_element_unlocked(ERA_MENU_UNLOCK_ELEMENT_ID)
+	return is_element_unlocked(ERA_MENU_UNLOCK_ELEMENT_ID) or has_unlocked_era(1)
 
 func get_unlocked_era_index() -> int:
 	return clampi(unlocked_era_index, 0, ERA_NAMES.size() - 1)
@@ -1414,7 +1692,8 @@ func to_save_dict() -> Dictionary:
 		"prestige_nodes_claimed": prestige_nodes_claimed.duplicate(),
 		"best_planet_levels_this_run": best_planet_levels_this_run.duplicate(true),
 		"planet_purchase_unlocks": planet_purchase_unlocks.duplicate(true),
-		"planet_owned_flags": planet_owned_flags.duplicate(true)
+		"planet_owned_flags": planet_owned_flags.duplicate(true),
+		"moon_upgrade_purchases": moon_upgrade_purchases.duplicate(true)
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
@@ -1456,6 +1735,14 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	var saved_owned_flags: Dictionary = save_data.get("planet_owned_flags", {})
 	for planet_id_variant in saved_owned_flags.keys():
 		planet_owned_flags[str(planet_id_variant)] = bool(saved_owned_flags[planet_id_variant])
+	moon_upgrade_purchases.clear()
+	var saved_moon_upgrades: Dictionary = save_data.get("moon_upgrade_purchases", {})
+	for moon_id_variant in saved_moon_upgrades.keys():
+		var moon_id := str(moon_id_variant)
+		var saved_upgrade_ids: Array[String] = []
+		for upgrade_id_variant in saved_moon_upgrades[moon_id_variant]:
+			saved_upgrade_ids.append(str(upgrade_id_variant))
+		moon_upgrade_purchases[moon_id] = saved_upgrade_ids
 	_ensure_planet_meta_defaults()
 
 	var saved_elements: Dictionary = save_data.get("elements", {})
@@ -1522,6 +1809,7 @@ func _reset_run_state() -> void:
 	research_points = DigitMaster.zero()
 	research_progress = 0.0
 	best_planet_levels_this_run.clear()
+	moon_upgrade_purchases.clear()
 	_reset_elements_to_defaults()
 	_reset_upgrades_to_defaults()
 	_reset_planets_to_owned_defaults()
