@@ -53,6 +53,8 @@ var blessing_ids_by_rarity: Dictionary
 var blessing_rarity_roll_weights: Dictionary
 var blessing_rarity_roll_displays: Dictionary
 var blessing_rarity_colors: Dictionary
+var _cached_blessing_effect_totals: Dictionary
+var _blessing_effect_cache_dirty: bool
 var planet_ids_in_order: Array[String]
 var current_element_id: String
 var next_unlock_id: String
@@ -103,6 +105,8 @@ func _init() -> void:
 	blessing_rarity_roll_weights = {}
 	blessing_rarity_roll_displays = {}
 	blessing_rarity_colors = {}
+	_cached_blessing_effect_totals = {}
+	_blessing_effect_cache_dirty = true
 	planet_ids_in_order = []
 	current_element_id = ""
 	next_unlock_id = ""
@@ -169,6 +173,7 @@ func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
 	blessing_rarity_roll_weights.clear()
 	blessing_rarity_roll_displays.clear()
 	blessing_rarity_colors.clear()
+	_invalidate_blessing_effect_cache()
 
 	for rarity in BLESSING_RARITY_ORDER:
 		blessing_ids_by_rarity[rarity] = []
@@ -606,6 +611,7 @@ func open_earned_blessings() -> int:
 	for _i in range(blessings_to_open):
 		_award_random_blessing()
 	unopened_blessings_count = 0
+	_invalidate_blessing_effect_cache()
 	return blessings_to_open
 
 func reset_blessings() -> bool:
@@ -618,6 +624,8 @@ func reset_blessings() -> bool:
 		if blessing.level > 0:
 			changed = true
 		blessing.level = 0
+	if changed:
+		_invalidate_blessing_effect_cache()
 	return changed
 
 func get_next_blessing_cost() -> DigitMaster:
@@ -930,6 +938,7 @@ func apply_save_dict(save_data: Dictionary) -> void:
 		unopened_blessings_count = maxi(0, blessings_count - opened_blessings)
 	if saved_blessings.is_empty() and blessings_count > 0 and unopened_blessings_count <= 0:
 		unopened_blessings_count = blessings_count
+	_invalidate_blessing_effect_cache()
 
 	current_element_id = str(save_data.get("current_element_id", current_element_id))
 	var saved_planets: Dictionary = save_data.get("planets", {})
@@ -1078,13 +1087,25 @@ func _get_blessing_effect_total(effect_type: String) -> float:
 	if effect_type.is_empty():
 		return 0.0
 
-	var total := 0.0
+	_ensure_blessing_effect_cache()
+	return float(_cached_blessing_effect_totals.get(effect_type, 0.0))
+
+func _invalidate_blessing_effect_cache() -> void:
+	_cached_blessing_effect_totals.clear()
+	_blessing_effect_cache_dirty = true
+
+func _ensure_blessing_effect_cache() -> void:
+	if not _blessing_effect_cache_dirty:
+		return
+
+	_cached_blessing_effect_totals.clear()
 	for blessing_id in blessing_ids_in_order:
 		var blessing = get_blessing_state(blessing_id)
-		if blessing == null or blessing.effect_type != effect_type:
+		if blessing == null or blessing.effect_type.is_empty():
 			continue
-		total += blessing.get_effect_value()
-	return total
+		var current_total := float(_cached_blessing_effect_totals.get(blessing.effect_type, 0.0))
+		_cached_blessing_effect_totals[blessing.effect_type] = current_total + blessing.get_effect_value()
+	_blessing_effect_cache_dirty = false
 
 func _get_digit_ratio(current: DigitMaster, maximum: DigitMaster) -> float:
 	var max_float := _digit_master_to_float(maximum)
