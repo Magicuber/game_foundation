@@ -18,6 +18,7 @@ var cost_scaling := 1.0
 var cost_step := 0.0
 var max_level := 1
 var current_level := 0
+var default_current_level := 0
 var effect_type: String = ""
 var effect_amount := 0.0
 var sequence_start_index := 0
@@ -43,6 +44,7 @@ static func from_content(raw_upgrade: Dictionary) -> UpgradeState:
 	state.cost_step = float(raw_upgrade.get("cost_step", 0.0))
 	state.max_level = int(raw_upgrade.get("max_level", 1))
 	state.current_level = int(raw_upgrade.get("current_level", 0))
+	state.default_current_level = state.current_level
 	state.effect_type = str(raw_upgrade.get("effect_type", ""))
 	state.effect_amount = float(raw_upgrade.get("effect_amount", 0.0))
 	state.sequence_start_index = int(raw_upgrade.get("sequence_start_index", 0))
@@ -84,3 +86,8 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	current_level = int(save_data.get("current_level", current_level))
 	current_cost = DigitMaster.from_variant(save_data.get("current_cost", base_cost))
 	secondary_current_cost = DigitMaster.from_variant(save_data.get("secondary_current_cost", secondary_base_cost))
+
+func reset_to_default() -> void:
+	current_level = default_current_level
+	current_cost = base_cost.clone()
+	secondary_current_cost = secondary_base_cost.clone()

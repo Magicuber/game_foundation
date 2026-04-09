@@ -167,7 +167,7 @@ func refresh_debug_hitboxes(is_visible: bool) -> void:
 		tile.set_debug_hitbox_visible(is_visible)
 
 func _get_visible_section_count(game_state: GameState) -> int:
-	return clampi(game_state.prestige_count + 1, 1, ELEMENT_MENU_SECTIONS.size())
+	return clampi(game_state.get_visible_element_section_count(), 1, ELEMENT_MENU_SECTIONS.size())
 
 func _sync_tiles(
 	game_state: GameState,

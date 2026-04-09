@@ -9,6 +9,18 @@
       "workers": 0,
       "xp": 0,
       "worker_allocation_to_xp": 1.0
+    },
+    {
+      "id": "planet_b",
+      "name": "Planet B",
+      "unlocked": false,
+      "level": 1,
+      "max_level": 25,
+      "workers": 0,
+      "xp": 0,
+      "worker_allocation_to_xp": 1.0,
+      "purchase_cost_dust": 25000,
+      "purchase_cost_orbs": 2000
     }
   ]
 }

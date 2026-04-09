@@ -6,10 +6,13 @@ var id: String = ""
 var name: String = ""
 var index: int = 0
 var unlocked := false
+var default_unlocked := false
 var cost: DigitMaster = DigitMaster.zero()
 var amount: DigitMaster = DigitMaster.zero()
+var default_amount: DigitMaster = DigitMaster.zero()
 var produces: String = ""
 var show_in_counter := false
+var default_show_in_counter := false
 
 static func from_content(raw_element: Dictionary, fallback_index: int) -> ElementState:
 	var state := ElementState.new()
@@ -17,10 +20,13 @@ static func from_content(raw_element: Dictionary, fallback_index: int) -> Elemen
 	state.name = str(raw_element.get("name", state.id))
 	state.index = int(raw_element.get("index", fallback_index))
 	state.unlocked = bool(raw_element.get("unlocked", false))
+	state.default_unlocked = state.unlocked
 	state.cost = DigitMaster.from_variant(raw_element.get("cost", 0))
 	state.amount = DigitMaster.from_variant(raw_element.get("amt", 0))
+	state.default_amount = state.amount.clone()
 	state.produces = str(raw_element.get("produces", ""))
 	state.show_in_counter = bool(raw_element.get("show_in_counter", false))
+	state.default_show_in_counter = state.show_in_counter
 	return state
 
 func to_view_dict() -> Dictionary:
@@ -46,3 +52,8 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	unlocked = bool(save_data.get("unlocked", unlocked))
 	show_in_counter = bool(save_data.get("show_in_counter", show_in_counter))
 	amount = DigitMaster.from_variant(save_data.get("amount", amount))
+
+func reset_to_default() -> void:
+	unlocked = default_unlocked
+	show_in_counter = default_show_in_counter
+	amount = default_amount.clone()

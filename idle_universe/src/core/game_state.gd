@@ -4,7 +4,7 @@ class_name GameState
 
 const BlessingStateScript = preload("res://src/core/state/blessing_state.gd")
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 const DUST_RESOURCE_ID := "dust"
 const BLESSINGS_MENU_UNLOCK_ELEMENT_ID := "ele_C"
 # Centralize blessing cost tuning so playtest balance changes stay in one place.
@@ -33,6 +33,7 @@ const PLANETARY_ERA_RESOURCE_COST := 10000.0
 const PLANETARY_ERA_ORB_COST := 1000
 const UNLOCK_SECTION_ENDS := [10, 30, 54, 86, 118]
 const DEFAULT_PLANET_ID := "planet_a"
+const PLANET_B_ID := "planet_b"
 const PLANET_WORKER_BASE_COST := 1000.0
 const PLANET_WORKER_COST_RATIO := 1.25
 const PLANET_WORKER_COST_ROUND_TO := 25.0
@@ -40,6 +41,199 @@ const PLANET_XP_LEVEL_TWO_REQUIREMENT := 1500.0
 const PLANET_XP_LEVEL_TWENTY_FIVE_REQUIREMENT := 10000000.0
 const PLANET_A_MAX_LEVEL := 25
 const RESEARCH_POINTS_PER_PRODUCTION := 0.001
+const PRESTIGE_MILESTONES := [
+	{
+		"id": "planet_a_5",
+		"title": "Planet A Lv. 5",
+		"description": "Reach Planet A level 5.",
+		"kind": "planet_level",
+		"planet_id": DEFAULT_PLANET_ID,
+		"planet_name": "Planet A",
+		"required_level": 5,
+		"reward_points": 1,
+		"placeholder": false,
+		"unlock_planet_id": PLANET_B_ID
+	},
+	{
+		"id": "planet_b_5",
+		"title": "Planet B Lv. 5",
+		"description": "Reach Planet B level 5.",
+		"kind": "planet_level",
+		"planet_id": PLANET_B_ID,
+		"planet_name": "Planet B",
+		"required_level": 5,
+		"reward_points": 1,
+		"placeholder": false
+	},
+	{
+		"id": "planet_c_5",
+		"title": "Planet C Lv. 5",
+		"description": "Reach Planet C level 5.",
+		"kind": "planet_level",
+		"planet_id": "planet_c",
+		"planet_name": "Planet C",
+		"required_level": 5,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "planet_d_5",
+		"title": "Planet D Lv. 5",
+		"description": "Reach Planet D level 5.",
+		"kind": "planet_level",
+		"planet_id": "planet_d",
+		"planet_name": "Planet D",
+		"required_level": 5,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "planet_e_5",
+		"title": "Planet E Lv. 5",
+		"description": "Reach Planet E level 5.",
+		"kind": "planet_level",
+		"planet_id": "planet_e",
+		"planet_name": "Planet E",
+		"required_level": 5,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "solar_1",
+		"title": "Solar 1",
+		"description": "Complete Solar milestone I.",
+		"kind": "solar_rank",
+		"required_rank": 1,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "solar_2",
+		"title": "Solar 2",
+		"description": "Complete Solar milestone II.",
+		"kind": "solar_rank",
+		"required_rank": 2,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "solar_3",
+		"title": "Solar 3",
+		"description": "Complete Solar milestone III.",
+		"kind": "solar_rank",
+		"required_rank": 3,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "solar_4",
+		"title": "Solar 4",
+		"description": "Complete Solar milestone IV.",
+		"kind": "solar_rank",
+		"required_rank": 4,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "solar_5",
+		"title": "Solar 5",
+		"description": "Complete Solar milestone V.",
+		"kind": "solar_rank",
+		"required_rank": 5,
+		"reward_points": 1,
+		"placeholder": true
+	},
+	{
+		"id": "break_prestige",
+		"title": "Break Prestige",
+		"description": "Unlock repeatable multi-point prestige runs.",
+		"kind": "break_prestige",
+		"reward_points": 0,
+		"placeholder": true
+	}
+]
+const PRESTIGE_NODES := [
+	{
+		"id": "unlock_section_2",
+		"title": "Node 1: Atomic Section II",
+		"description": "Unlock element section 11-30.",
+		"effect_type": "unlock_section",
+		"effect_value": 1,
+		"future_locked": false
+	},
+	{
+		"id": "dust_gain_1",
+		"title": "Node 2: Dust Yield",
+		"description": "Increase all dust gains by 50%.",
+		"effect_type": "dust_multiplier",
+		"effect_value": 0.5,
+		"future_locked": false
+	},
+	{
+		"id": "future_node_3",
+		"title": "Node 3: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_4",
+		"title": "Node 4: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_5",
+		"title": "Node 5: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_6",
+		"title": "Node 6: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_7",
+		"title": "Node 7: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_8",
+		"title": "Node 8: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_9",
+		"title": "Node 9: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	},
+	{
+		"id": "future_node_10",
+		"title": "Node 10: Future Unlock",
+		"description": "Reserved for later milestone content.",
+		"effect_type": "",
+		"effect_value": 0,
+		"future_locked": true
+	}
+]
 
 var orbs: int
 var dust: DigitMaster
@@ -76,6 +270,14 @@ var planets: Dictionary
 var current_planet_id: String
 var research_points: DigitMaster
 var research_progress: float
+var completed_milestones: Array[String]
+var next_milestone_id: String
+var prestige_points_total: int
+var prestige_points_unspent: int
+var prestige_nodes_claimed: Array[String]
+var best_planet_levels_this_run: Dictionary
+var planet_purchase_unlocks: Dictionary
+var planet_owned_flags: Dictionary
 
 var _element_ids_by_index: Dictionary
 var _blessing_rng: RandomNumberGenerator
@@ -128,6 +330,14 @@ func _init() -> void:
 	current_planet_id = DEFAULT_PLANET_ID
 	research_points = DigitMaster.zero()
 	research_progress = 0.0
+	completed_milestones = []
+	next_milestone_id = _get_first_milestone_id()
+	prestige_points_total = 0
+	prestige_points_unspent = 0
+	prestige_nodes_claimed = []
+	best_planet_levels_this_run = {}
+	planet_purchase_unlocks = {}
+	planet_owned_flags = {}
 	_element_ids_by_index = {}
 	_blessing_rng = RandomNumberGenerator.new()
 	_blessing_rng.randomize()
@@ -233,10 +443,19 @@ func _load_planets(planets_data: Array) -> void:
 		planets[planet.id] = planet
 		planet_ids_in_order.append(planet.id)
 
+	_ensure_planet_meta_defaults()
 	if current_planet_id.is_empty() and not planet_ids_in_order.is_empty():
 		current_planet_id = planet_ids_in_order[0]
 
 func refresh_progression_state() -> void:
+	_ensure_planet_meta_defaults()
+	if next_milestone_id.is_empty() or completed_milestones.has(next_milestone_id):
+		next_milestone_id = _get_next_pending_milestone_id()
+	if has_unlocked_era(1):
+		planet_owned_flags[DEFAULT_PLANET_ID] = true
+	_apply_planet_unlock_states()
+	_sync_legacy_prestige_count_from_nodes()
+
 	var highest_unlocked_id := ""
 	for element_id in element_ids_in_order:
 		var element := get_element_state(element_id)
@@ -249,6 +468,13 @@ func refresh_progression_state() -> void:
 			starting_planet.unlocked = true
 			starting_planet.level = maxi(1, starting_planet.level)
 			starting_planet.xp_to_next_level = _calculate_planet_xp_requirement(starting_planet.level)
+			_update_best_planet_level(starting_planet.id, starting_planet.level)
+
+	for planet_id in planet_ids_in_order:
+		var planet := get_planet_state(planet_id)
+		if planet == null or not planet.unlocked:
+			continue
+		_update_best_planet_level(planet_id, planet.level)
 
 	max_unlocked_element_id = highest_unlocked_id
 	next_unlock_id = ""
@@ -282,6 +508,47 @@ func refresh_progression_state() -> void:
 	if is_element_unlocked(BLESSINGS_MENU_UNLOCK_ELEMENT_ID):
 		blessings_menu_unlocked = true
 
+func _ensure_planet_meta_defaults() -> void:
+	for planet_id in planet_ids_in_order:
+		if not planet_purchase_unlocks.has(planet_id):
+			planet_purchase_unlocks[planet_id] = false
+		if not planet_owned_flags.has(planet_id):
+			planet_owned_flags[planet_id] = false
+
+	planet_purchase_unlocks[DEFAULT_PLANET_ID] = true
+	if not planet_owned_flags.has(DEFAULT_PLANET_ID):
+		planet_owned_flags[DEFAULT_PLANET_ID] = false
+
+func _apply_planet_unlock_states() -> void:
+	for planet_id in planet_ids_in_order:
+		var planet := get_planet_state(planet_id)
+		if planet == null:
+			continue
+		planet.unlocked = bool(planet_owned_flags.get(planet_id, false))
+		if planet.unlocked:
+			planet.level = maxi(1, planet.level)
+			planet.xp_to_next_level = _calculate_planet_xp_requirement(planet.level)
+
+func _get_first_milestone_id() -> String:
+	return "" if PRESTIGE_MILESTONES.is_empty() else str(PRESTIGE_MILESTONES[0].get("id", ""))
+
+func _get_next_pending_milestone_id() -> String:
+	for milestone in PRESTIGE_MILESTONES:
+		var milestone_id := str(milestone.get("id", ""))
+		if milestone_id.is_empty() or completed_milestones.has(milestone_id):
+			continue
+		return milestone_id
+	return ""
+
+func _sync_legacy_prestige_count_from_nodes() -> void:
+	prestige_count = maxi(0, get_visible_element_section_count() - 1)
+
+func _update_best_planet_level(planet_id: String, level: int) -> void:
+	if planet_id.is_empty():
+		return
+	var best_level := maxi(level, int(best_planet_levels_this_run.get(planet_id, 0)))
+	best_planet_levels_this_run[planet_id] = best_level
+
 func has_element(element_id: String) -> bool:
 	return elements.has(element_id)
 
@@ -310,8 +577,19 @@ func get_next_unlock_element_state() -> ElementState:
 		return null
 	return get_element_state(next_unlock_id)
 
+func get_visible_element_section_count() -> int:
+	var visible_sections := 1
+	for node_definition in PRESTIGE_NODES:
+		var node_id := str(node_definition.get("id", ""))
+		if node_id.is_empty() or not prestige_nodes_claimed.has(node_id):
+			continue
+		if str(node_definition.get("effect_type", "")) != "unlock_section":
+			continue
+		visible_sections += int(node_definition.get("effect_value", 0))
+	return clampi(visible_sections, 1, UNLOCK_SECTION_ENDS.size())
+
 func get_max_unlockable_element_index() -> int:
-	var section_index := clampi(prestige_count, 0, UNLOCK_SECTION_ENDS.size() - 1)
+	var section_index := clampi(get_visible_element_section_count() - 1, 0, UNLOCK_SECTION_ENDS.size() - 1)
 	return int(UNLOCK_SECTION_ENDS[section_index])
 
 func get_max_prestige_count() -> int:
@@ -323,14 +601,161 @@ func set_prestige_count(value: int) -> bool:
 		return false
 
 	prestige_count = clamped_value
-	refresh_progression_state()
-	_clamp_current_element_to_visible_sections()
 	return true
 
 func adjust_prestige_count(delta: int) -> bool:
 	if delta == 0:
 		return false
 	return set_prestige_count(prestige_count + delta)
+
+func get_milestone_by_id(milestone_id: String) -> Dictionary:
+	for milestone in PRESTIGE_MILESTONES:
+		if str(milestone.get("id", "")) == milestone_id:
+			return milestone.duplicate(true)
+	return {}
+
+func get_next_prestige_milestone() -> Dictionary:
+	if next_milestone_id.is_empty():
+		return {}
+	return get_milestone_by_id(next_milestone_id)
+
+func get_prestige_milestone_entries() -> Array[Dictionary]:
+	var milestone_entries: Array[Dictionary] = []
+	for milestone in PRESTIGE_MILESTONES:
+		var entry: Dictionary = milestone.duplicate(true)
+		var milestone_id := str(entry.get("id", ""))
+		entry["completed"] = completed_milestones.has(milestone_id)
+		entry["current"] = next_milestone_id == milestone_id
+		entry["available"] = next_milestone_id == milestone_id and can_prestige()
+		entry["progress_text"] = _get_milestone_progress_text(entry)
+		milestone_entries.append(entry)
+	return milestone_entries
+
+func get_next_prestige_node_definition() -> Dictionary:
+	for node_definition in PRESTIGE_NODES:
+		var node_id := str(node_definition.get("id", ""))
+		if node_id.is_empty() or prestige_nodes_claimed.has(node_id):
+			continue
+		return node_definition.duplicate(true)
+	return {}
+
+func get_prestige_node_entries() -> Array[Dictionary]:
+	var next_node := get_next_prestige_node_definition()
+	var next_node_id := str(next_node.get("id", ""))
+	var node_entries: Array[Dictionary] = []
+	for node_definition in PRESTIGE_NODES:
+		var entry: Dictionary = node_definition.duplicate(true)
+		var node_id := str(entry.get("id", ""))
+		entry["claimed"] = prestige_nodes_claimed.has(node_id)
+		entry["current"] = node_id == next_node_id and not entry["claimed"]
+		entry["can_claim"] = node_id == next_node_id and can_claim_next_prestige_node()
+		node_entries.append(entry)
+	return node_entries
+
+func get_prestige_dust_multiplier() -> float:
+	var dust_multiplier := 1.0
+	for node_definition in PRESTIGE_NODES:
+		var node_id := str(node_definition.get("id", ""))
+		if node_id.is_empty() or not prestige_nodes_claimed.has(node_id):
+			continue
+		if str(node_definition.get("effect_type", "")) != "dust_multiplier":
+			continue
+		dust_multiplier += float(node_definition.get("effect_value", 0.0))
+	return dust_multiplier
+
+func can_prestige() -> bool:
+	var milestone := get_next_prestige_milestone()
+	if milestone.is_empty():
+		return false
+	if bool(milestone.get("placeholder", false)):
+		return false
+
+	match str(milestone.get("kind", "")):
+		"planet_level":
+			var planet_id := str(milestone.get("planet_id", ""))
+			var required_level := int(milestone.get("required_level", 0))
+			return int(best_planet_levels_this_run.get(planet_id, 0)) >= required_level
+		_:
+			return false
+
+func can_claim_next_prestige_node() -> bool:
+	if prestige_points_unspent <= 0:
+		return false
+	var next_node := get_next_prestige_node_definition()
+	if next_node.is_empty():
+		return false
+	return not bool(next_node.get("future_locked", false))
+
+func get_prestige_preview() -> Dictionary:
+	var milestone := get_next_prestige_milestone()
+	var next_node := get_next_prestige_node_definition()
+	return {
+		"can_prestige": can_prestige(),
+		"milestone": milestone,
+		"reward_points": int(milestone.get("reward_points", 0)),
+		"next_node": next_node,
+		"can_claim_node": can_claim_next_prestige_node(),
+		"reset_summary": [
+			"Resets atomic resources, upgrades, dust, RP, and temporary planet progress.",
+			"Keeps blessings, orbs, Planetary Era, prestige progress, and owned planets."
+		]
+	}
+
+func perform_prestige() -> bool:
+	if not can_prestige():
+		return false
+
+	var milestone := get_next_prestige_milestone()
+	var milestone_id := str(milestone.get("id", ""))
+	if milestone_id.is_empty():
+		return false
+	if not completed_milestones.has(milestone_id):
+		completed_milestones.append(milestone_id)
+
+	var reward_points := maxi(0, int(milestone.get("reward_points", 0)))
+	prestige_points_total += reward_points
+	prestige_points_unspent += reward_points
+
+	var unlocked_planet_id := str(milestone.get("unlock_planet_id", ""))
+	if not unlocked_planet_id.is_empty():
+		planet_purchase_unlocks[unlocked_planet_id] = true
+
+	next_milestone_id = _get_next_pending_milestone_id()
+	_reset_run_state()
+	refresh_progression_state()
+	return true
+
+func claim_next_prestige_node() -> bool:
+	if not can_claim_next_prestige_node():
+		return false
+
+	var next_node := get_next_prestige_node_definition()
+	var node_id := str(next_node.get("id", ""))
+	if node_id.is_empty():
+		return false
+
+	prestige_nodes_claimed.append(node_id)
+	prestige_points_unspent = maxi(0, prestige_points_unspent - 1)
+	refresh_progression_state()
+	return true
+
+func _get_milestone_progress_text(milestone: Dictionary) -> String:
+	if milestone.is_empty():
+		return ""
+	if bool(milestone.get("completed", false)):
+		return "Completed"
+	if bool(milestone.get("placeholder", false)):
+		return "Future content"
+
+	match str(milestone.get("kind", "")):
+		"planet_level":
+			var planet_id := str(milestone.get("planet_id", ""))
+			var planet_name := str(milestone.get("planet_name", planet_id))
+			var required_level := int(milestone.get("required_level", 0))
+			var current_level := int(best_planet_levels_this_run.get(planet_id, 0))
+			return "%s %d / %d" % [planet_name, current_level, required_level]
+		_:
+			return "Unavailable"
 
 func is_next_unlock_within_visible_sections() -> bool:
 	var next_element := get_next_unlock_element_state()
@@ -379,6 +804,101 @@ func get_current_planet_state() -> PlanetState:
 func is_planet_unlocked(planet_id: String) -> bool:
 	var planet := get_planet_state(planet_id)
 	return planet != null and planet.unlocked
+
+func is_planet_owned(planet_id: String) -> bool:
+	return bool(planet_owned_flags.get(planet_id, false))
+
+func is_planet_purchase_unlocked(planet_id: String) -> bool:
+	if planet_id == DEFAULT_PLANET_ID:
+		return has_unlocked_era(1)
+	return bool(planet_purchase_unlocks.get(planet_id, false))
+
+func get_planet_purchase_cost_entries(planet_id: String) -> Array[Dictionary]:
+	var planet := get_planet_state(planet_id)
+	if planet == null:
+		return []
+
+	var cost_entries: Array[Dictionary] = []
+	if not planet.purchase_cost_dust.is_zero():
+		cost_entries.append({
+			"resource_id": DUST_RESOURCE_ID,
+			"resource_name": "Dust",
+			"is_orb_requirement": false,
+			"required_amount": planet.purchase_cost_dust.clone()
+		})
+	if planet.purchase_cost_orbs > 0:
+		cost_entries.append({
+			"resource_id": "orbs",
+			"resource_name": "Orbs",
+			"is_orb_requirement": true,
+			"required_amount": planet.purchase_cost_orbs
+		})
+	return cost_entries
+
+func can_purchase_planet(planet_id: String) -> bool:
+	var planet := get_planet_state(planet_id)
+	if planet == null:
+		return false
+	if is_planet_owned(planet_id):
+		return false
+	if not is_planet_purchase_unlocked(planet_id):
+		return false
+
+	for cost_entry in get_planet_purchase_cost_entries(planet_id):
+		if bool(cost_entry.get("is_orb_requirement", false)):
+			if orbs < int(cost_entry.get("required_amount", 0)):
+				return false
+			continue
+
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var required_amount: DigitMaster = cost_entry["required_amount"]
+		if not can_afford_resource(resource_id, required_amount):
+			return false
+	return true
+
+func purchase_planet(planet_id: String) -> bool:
+	if not can_purchase_planet(planet_id):
+		return false
+
+	for cost_entry in get_planet_purchase_cost_entries(planet_id):
+		if bool(cost_entry.get("is_orb_requirement", false)):
+			orbs -= int(cost_entry.get("required_amount", 0))
+			continue
+
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var required_amount: DigitMaster = cost_entry["required_amount"]
+		if not spend_resource(resource_id, required_amount):
+			return false
+
+	planet_owned_flags[planet_id] = true
+	refresh_progression_state()
+	select_planet(planet_id)
+	return true
+
+func select_planet(planet_id: String) -> bool:
+	if not is_planet_unlocked(planet_id):
+		return false
+	current_planet_id = planet_id
+	return true
+
+func get_planet_entries() -> Array[Dictionary]:
+	var planet_entries: Array[Dictionary] = []
+	for planet_id in planet_ids_in_order:
+		var planet := get_planet_state(planet_id)
+		if planet == null:
+			continue
+		planet_entries.append({
+			"id": planet.id,
+			"name": planet.name,
+			"owned": is_planet_owned(planet_id),
+			"unlocked": is_planet_unlocked(planet_id),
+			"purchase_unlocked": is_planet_purchase_unlocked(planet_id),
+			"can_purchase": can_purchase_planet(planet_id),
+			"selected": current_planet_id == planet_id,
+			"level": planet.level,
+			"purchase_costs": get_planet_purchase_cost_entries(planet_id)
+		})
+	return planet_entries
 
 func get_current_planet_workers() -> DigitMaster:
 	var planet := get_current_planet_state()
@@ -574,7 +1094,7 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 
 	var normalized_id := resource_id.to_lower()
 	if normalized_id == DUST_RESOURCE_ID:
-		dust = dust.add(amount)
+		dust = dust.add(amount.multiply_scalar(get_prestige_dust_multiplier()))
 		return
 
 	var element := get_element_state(resource_id)
@@ -744,6 +1264,7 @@ func unlock_next_era() -> bool:
 
 	unlocked_era_index = max(unlocked_era_index, next_era_index)
 	if next_era_index == 1:
+		planet_owned_flags[DEFAULT_PLANET_ID] = true
 		var starting_planet := get_planet_state(DEFAULT_PLANET_ID)
 		if starting_planet != null:
 			starting_planet.unlocked = true
@@ -885,7 +1406,15 @@ func to_save_dict() -> Dictionary:
 		"research_points": research_points.to_save_data(),
 		"research_progress": research_progress,
 		"current_planet_id": current_planet_id,
-		"planets": _serialize_planets()
+		"planets": _serialize_planets(),
+		"completed_milestones": completed_milestones.duplicate(),
+		"next_milestone_id": next_milestone_id,
+		"prestige_points_total": prestige_points_total,
+		"prestige_points_unspent": prestige_points_unspent,
+		"prestige_nodes_claimed": prestige_nodes_claimed.duplicate(),
+		"best_planet_levels_this_run": best_planet_levels_this_run.duplicate(true),
+		"planet_purchase_unlocks": planet_purchase_unlocks.duplicate(true),
+		"planet_owned_flags": planet_owned_flags.duplicate(true)
 	}
 
 func apply_save_dict(save_data: Dictionary) -> void:
@@ -906,6 +1435,28 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	unlocked_era_index = int(save_data.get("unlocked_era_index", unlocked_era_index))
 	research_points = DigitMaster.from_variant(save_data.get("research_points", 0))
 	research_progress = clampf(float(save_data.get("research_progress", 0.0)), 0.0, 1.0)
+	completed_milestones.clear()
+	for milestone_id_variant in save_data.get("completed_milestones", []):
+		completed_milestones.append(str(milestone_id_variant))
+	next_milestone_id = str(save_data.get("next_milestone_id", next_milestone_id))
+	prestige_points_total = maxi(0, int(save_data.get("prestige_points_total", 0)))
+	prestige_points_unspent = maxi(0, int(save_data.get("prestige_points_unspent", 0)))
+	prestige_nodes_claimed.clear()
+	for node_id_variant in save_data.get("prestige_nodes_claimed", []):
+		prestige_nodes_claimed.append(str(node_id_variant))
+	best_planet_levels_this_run.clear()
+	var saved_best_levels: Dictionary = save_data.get("best_planet_levels_this_run", {})
+	for planet_id_variant in saved_best_levels.keys():
+		best_planet_levels_this_run[str(planet_id_variant)] = maxi(0, int(saved_best_levels[planet_id_variant]))
+	planet_purchase_unlocks.clear()
+	var saved_purchase_unlocks: Dictionary = save_data.get("planet_purchase_unlocks", {})
+	for planet_id_variant in saved_purchase_unlocks.keys():
+		planet_purchase_unlocks[str(planet_id_variant)] = bool(saved_purchase_unlocks[planet_id_variant])
+	planet_owned_flags.clear()
+	var saved_owned_flags: Dictionary = save_data.get("planet_owned_flags", {})
+	for planet_id_variant in saved_owned_flags.keys():
+		planet_owned_flags[str(planet_id_variant)] = bool(saved_owned_flags[planet_id_variant])
+	_ensure_planet_meta_defaults()
 
 	var saved_elements: Dictionary = save_data.get("elements", {})
 	for element_id_variant in saved_elements.keys():
@@ -948,10 +1499,62 @@ func apply_save_dict(save_data: Dictionary) -> void:
 		if planet == null:
 			continue
 		var planet_save: Dictionary = saved_planets[planet_id]
-		planet.apply_save_dict(planet_save, _calculate_planet_xp_requirement(planet.level))
+		var saved_level := maxi(1, int(planet_save.get("level", planet.level)))
+		planet.apply_save_dict(planet_save, _calculate_planet_xp_requirement(saved_level))
 
 	current_planet_id = str(save_data.get("current_planet_id", current_planet_id))
+	if next_milestone_id.is_empty():
+		next_milestone_id = _get_next_pending_milestone_id()
 	refresh_progression_state()
+
+func _reset_run_state() -> void:
+	dust = DigitMaster.zero()
+	current_element_id = ""
+	next_unlock_id = ""
+	max_unlocked_element_id = ""
+	player_level = 1
+	global_multiplier = DigitMaster.one()
+	tick_count = 0
+	total_played_seconds = 0.0
+	last_save_tick = 0
+	total_manual_smashes = 0
+	total_auto_smashes = 0
+	research_points = DigitMaster.zero()
+	research_progress = 0.0
+	best_planet_levels_this_run.clear()
+	_reset_elements_to_defaults()
+	_reset_upgrades_to_defaults()
+	_reset_planets_to_owned_defaults()
+	current_planet_id = DEFAULT_PLANET_ID
+
+func _reset_elements_to_defaults() -> void:
+	for element_id in element_ids_in_order:
+		var element := get_element_state(element_id)
+		if element == null:
+			continue
+		element.reset_to_default()
+
+func _reset_upgrades_to_defaults() -> void:
+	for upgrade_id in upgrade_ids_in_order:
+		var upgrade := get_upgrade_state(upgrade_id)
+		if upgrade == null:
+			continue
+		upgrade.reset_to_default()
+
+func _reset_planets_to_owned_defaults() -> void:
+	_ensure_planet_meta_defaults()
+	if has_unlocked_era(1):
+		planet_owned_flags[DEFAULT_PLANET_ID] = true
+
+	for planet_id in planet_ids_in_order:
+		var planet := get_planet_state(planet_id)
+		if planet == null:
+			continue
+		planet.reset_to_default(_calculate_planet_xp_requirement(planet.default_level))
+		planet.unlocked = bool(planet_owned_flags.get(planet_id, false))
+		if planet.unlocked:
+			planet.level = maxi(1, planet.level)
+			planet.xp_to_next_level = _calculate_planet_xp_requirement(planet.level)
 
 func _serialize_planets() -> Dictionary:
 	var serialized_planets := {}
@@ -979,6 +1582,7 @@ func _apply_planet_xp(planet: PlanetState, xp_amount: DigitMaster) -> void:
 		return
 
 	var level := planet.level
+	_update_best_planet_level(planet.id, level)
 	if level >= planet.max_level:
 		return
 
@@ -995,6 +1599,7 @@ func _apply_planet_xp(planet: PlanetState, xp_amount: DigitMaster) -> void:
 
 	planet.xp = current_xp
 	planet.xp_to_next_level = DigitMaster.one() if level >= planet.max_level else xp_to_next
+	_update_best_planet_level(planet.id, planet.level)
 
 func _apply_research_progress(rp_amount: DigitMaster) -> void:
 	if rp_amount.is_zero():

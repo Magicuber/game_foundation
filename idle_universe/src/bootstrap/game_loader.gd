@@ -5,6 +5,8 @@ const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
 const BLESSINGS_DATA_PATH := "res://src/data/blessings.json"
 const PLANETS_DATA_PATH := "res://src/data/planets.json"
 const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
+const PlanetsPanelControllerScript = preload("res://src/controllers/planets_panel_controller.gd")
+const PrestigePanelControllerScript = preload("res://src/controllers/prestige_panel_controller.gd")
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const AUTO_SAVE_INTERVAL_TICKS := 50
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
@@ -47,6 +49,7 @@ const UI_DIRTY_BLESSINGS := 1 << 11
 const UI_DIRTY_WORLD := 1 << 12
 const UI_DIRTY_MENU_BUTTONS := 1 << 13
 const UI_DIRTY_DEBUG := 1 << 14
+const UI_DIRTY_PRESTIGE := 1 << 15
 const UI_DIRTY_ALL := (
 	UI_DIRTY_TOP_BAR
 	| UI_DIRTY_SELECTION
@@ -63,6 +66,7 @@ const UI_DIRTY_ALL := (
 	| UI_DIRTY_WORLD
 	| UI_DIRTY_MENU_BUTTONS
 	| UI_DIRTY_DEBUG
+	| UI_DIRTY_PRESTIGE
 )
 
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
@@ -219,6 +223,8 @@ var hud_controller: HudController = HudController.new()
 var menu_controller: MenuController = MenuController.new()
 var element_menu_controller: ElementMenuController = ElementMenuController.new()
 var blessings_panel_controller = BlessingsPanelControllerScript.new()
+var planets_panel_controller = PlanetsPanelControllerScript.new()
+var prestige_panel_controller = PrestigePanelControllerScript.new()
 var upgrades_panel_controller: UpgradesPanelController = UpgradesPanelController.new()
 var era_panel_controller: EraPanelController = EraPanelController.new()
 
@@ -435,6 +441,12 @@ func _ready() -> void:
 	element_menu_controller.dust_close_requested.connect(_on_dust_close_pressed)
 	blessings_panel_controller.configure(blessings_panel, blessings_info)
 	blessings_panel_controller.open_requested.connect(_on_open_blessings_pressed)
+	planets_panel_controller.configure(planets_panel, planets_info)
+	planets_panel_controller.select_requested.connect(_on_planet_selected)
+	planets_panel_controller.purchase_requested.connect(_on_planet_purchase_requested)
+	prestige_panel_controller.configure(prestige_panel, prestige_info)
+	prestige_panel_controller.prestige_requested.connect(_on_prestige_requested)
+	prestige_panel_controller.claim_node_requested.connect(_on_claim_prestige_node_requested)
 	upgrades_panel_controller.configure(upgrades_panel, upgrades_info, upgrade_list)
 	upgrades_panel_controller.purchase_requested.connect(_on_upgrade_purchase_requested)
 	era_panel_controller.configure(
@@ -578,6 +590,7 @@ func _get_resource_refresh_flags() -> int:
 		| UI_DIRTY_PLANETS
 		| UI_DIRTY_BLESSINGS
 		| UI_DIRTY_WORLD
+		| UI_DIRTY_PRESTIGE
 	)
 
 func _get_selection_refresh_flags() -> int:
@@ -600,6 +613,8 @@ func _get_menu_mode_refresh_flags() -> int:
 			flags |= UI_DIRTY_SHOP
 		MENU_PLANETS:
 			flags |= UI_DIRTY_PLANETS
+		MENU_PRESTIGE:
+			flags |= UI_DIRTY_PRESTIGE
 		MENU_SETTINGS:
 			flags |= UI_DIRTY_SETTINGS
 	return flags
@@ -672,6 +687,8 @@ func _flush_dirty_ui() -> void:
 			_refresh_shop_panel()
 		if flags & UI_DIRTY_PLANETS:
 			_refresh_planets_panel()
+		if flags & UI_DIRTY_PRESTIGE:
+			_refresh_prestige_panel()
 		if flags & UI_DIRTY_SETTINGS:
 			_refresh_settings_panel()
 		if flags & UI_DIRTY_BLESSINGS:
@@ -739,9 +756,13 @@ func _refresh_stats_panel() -> void:
 	]
 	planetary_stats_info.visible = game_state.has_unlocked_era(1)
 	if planetary_stats_info.visible:
-		planetary_stats_info.text = "Planetary Stats\nResearch Points: %s\nPrestige Count: %d" % [
+		var next_milestone := game_state.get_next_prestige_milestone()
+		var next_milestone_title := "None" if next_milestone.is_empty() else str(next_milestone.get("title", "None"))
+		planetary_stats_info.text = "Planetary Stats\nResearch Points: %s\nPrestige Points: %d (%d unspent)\nNext Milestone: %s" % [
 			game_state.get_research_points().big_to_short_string(),
-			game_state.prestige_count
+			game_state.prestige_points_total,
+			game_state.prestige_points_unspent,
+			next_milestone_title
 		]
 
 func _refresh_shop_panel() -> void:
@@ -754,7 +775,13 @@ func _refresh_planets_panel() -> void:
 	if not planets_panel.visible:
 		return
 
-	planets_info.text = "Planets menu is not implemented yet.\nCurrent RP: %s" % game_state.get_research_points().big_to_short_string()
+	planets_panel_controller.refresh(game_state)
+
+func _refresh_prestige_panel() -> void:
+	if not prestige_panel.visible:
+		return
+
+	prestige_panel_controller.refresh(game_state)
 
 func _refresh_blessings_panel() -> void:
 	if not blessings_panel.visible:
@@ -765,7 +792,8 @@ func _refresh_settings_panel() -> void:
 	if not settings_panel.visible:
 		return
 
-	settings_info.text = "Developer Tools\nAdjust prestige for debug testing."
+	settings_info.text = "Developer Tools\nUse Dust and Orbs to test prestige milestones and planet purchases."
+	prestige_debug_row.visible = false
 	prestige_count_label.text = "Prestige Count: %d" % game_state.prestige_count
 	click_boxes_toggle.button_pressed = debug_show_element_hitboxes
 
@@ -992,12 +1020,39 @@ func _on_add_dust_pressed() -> void:
 
 func _on_add_orbs_pressed() -> void:
 	game_state.orbs += 1000
-	_refresh_ui(UI_DIRTY_TOP_BAR | UI_DIRTY_ERA)
+	_refresh_ui(UI_DIRTY_TOP_BAR | UI_DIRTY_ERA | UI_DIRTY_PLANETS | UI_DIRTY_PRESTIGE)
 
 func _on_reset_blessings_pressed() -> void:
 	if not game_state.reset_blessings():
 		return
 	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
+
+func _on_planet_selected(planet_id: String) -> void:
+	if not game_state.select_planet(planet_id):
+		return
+	_refresh_ui(UI_DIRTY_PLANETS | UI_DIRTY_WORLD)
+
+func _on_planet_purchase_requested(planet_id: String) -> void:
+	if not game_state.purchase_planet(planet_id):
+		return
+	_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_PLANETS | UI_DIRTY_WORLD)
+
+func _on_prestige_requested() -> void:
+	if not game_state.perform_prestige():
+		return
+	dust_recipe_service.invalidate()
+	upgrades_system.mark_cache_dirty()
+	tick_system.configure(game_state, element_system, upgrades_system)
+	atom_effects_controller.clear()
+	world_view_controller.clear_particles()
+	_refresh_ui(UI_DIRTY_ALL)
+
+func _on_claim_prestige_node_requested() -> void:
+	if not game_state.claim_next_prestige_node():
+		return
+	dust_recipe_service.invalidate()
+	upgrades_system.mark_cache_dirty()
+	_refresh_ui(UI_DIRTY_PRESTIGE | UI_DIRTY_ELEMENTS | UI_DIRTY_STATS | UI_DIRTY_TOP_BAR)
 
 func _on_prestige_decrement_pressed() -> void:
 	_adjust_prestige_count(-1)
