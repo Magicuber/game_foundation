@@ -168,12 +168,12 @@
 	  "color": "#B284C7",
 	  "parent_planet_id": "planet_a",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Violet Channel I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Violet Channel II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Violet Channel III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Violet Channel IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Violet Channel V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Violet Channel VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Violet Channel I", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_2", "name": "Violet Channel II", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_3", "name": "Violet Channel III", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_4", "name": "Violet Channel IV", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true },
+		{ "id": "slot_5", "name": "Violet Channel V", "description": "Placeholder moon upgrade.", "rp_cost": 64, "placeholder": true },
+		{ "id": "slot_6", "name": "Violet Channel VI", "description": "Placeholder moon upgrade.", "rp_cost": 128, "placeholder": true }
 	  ]
 	},
 	"moon_b_1": {
@@ -182,12 +182,12 @@
 	  "color": "#D99A6C",
 	  "parent_planet_id": "planet_b",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Amber Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Amber Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Amber Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Amber Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Amber Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Amber Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Amber Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_2", "name": "Amber Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true },
+		{ "id": "slot_3", "name": "Amber Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 64, "placeholder": true },
+		{ "id": "slot_4", "name": "Amber Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 128, "placeholder": true },
+		{ "id": "slot_5", "name": "Amber Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 256, "placeholder": true },
+		{ "id": "slot_6", "name": "Amber Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 512, "placeholder": true }
 	  ]
 	},
 	"moon_b_2": {
@@ -196,12 +196,12 @@
 	  "color": "#87D8E9",
 	  "parent_planet_id": "planet_b",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Cyan Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Cyan Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Cyan Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Cyan Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Cyan Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Cyan Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Cyan Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 64, "placeholder": true },
+		{ "id": "slot_2", "name": "Cyan Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 128, "placeholder": true },
+		{ "id": "slot_3", "name": "Cyan Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 256, "placeholder": true },
+		{ "id": "slot_4", "name": "Cyan Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 512, "placeholder": true },
+		{ "id": "slot_5", "name": "Cyan Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 1024, "placeholder": true },
+		{ "id": "slot_6", "name": "Cyan Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 2048, "placeholder": true }
 	  ]
 	},
 	"moon_c_1": {
@@ -210,12 +210,12 @@
 	  "color": "#D98DD0",
 	  "parent_planet_id": "planet_c",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Rose Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Rose Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Rose Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Rose Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Rose Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Rose Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Rose Array I", "description": "Placeholder moon upgrade.", "rp_cost": 256, "placeholder": true },
+		{ "id": "slot_2", "name": "Rose Array II", "description": "Placeholder moon upgrade.", "rp_cost": 512, "placeholder": true },
+		{ "id": "slot_3", "name": "Rose Array III", "description": "Placeholder moon upgrade.", "rp_cost": 1024, "placeholder": true },
+		{ "id": "slot_4", "name": "Rose Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 2048, "placeholder": true },
+		{ "id": "slot_5", "name": "Rose Array V", "description": "Placeholder moon upgrade.", "rp_cost": 4096, "placeholder": true },
+		{ "id": "slot_6", "name": "Rose Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 8192, "placeholder": true }
 	  ]
 	},
 	"moon_c_2": {
@@ -224,12 +224,12 @@
 	  "color": "#6C7FD9",
 	  "parent_planet_id": "planet_c",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Indigo Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Indigo Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Indigo Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Indigo Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Indigo Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Indigo Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Indigo Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1024, "placeholder": true },
+		{ "id": "slot_2", "name": "Indigo Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2048, "placeholder": true },
+		{ "id": "slot_3", "name": "Indigo Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4096, "placeholder": true },
+		{ "id": "slot_4", "name": "Indigo Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8192, "placeholder": true },
+		{ "id": "slot_5", "name": "Indigo Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16384, "placeholder": true },
+		{ "id": "slot_6", "name": "Indigo Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32768, "placeholder": true }
 	  ]
 	},
 	"moon_d_1": {
@@ -238,12 +238,12 @@
 	  "color": "#93B28F",
 	  "parent_planet_id": "planet_d",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Sage Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Sage Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Sage Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Sage Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Sage Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Sage Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Sage Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 4096, "placeholder": true },
+		{ "id": "slot_2", "name": "Sage Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 8192, "placeholder": true },
+		{ "id": "slot_3", "name": "Sage Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 16384, "placeholder": true },
+		{ "id": "slot_4", "name": "Sage Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 32768, "placeholder": true },
+		{ "id": "slot_5", "name": "Sage Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 65536, "placeholder": true },
+		{ "id": "slot_6", "name": "Sage Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 131072, "placeholder": true }
 	  ]
 	},
 	"moon_d_2": {
@@ -252,12 +252,12 @@
 	  "color": "#D96C6C",
 	  "parent_planet_id": "planet_d",
 	  "upgrades": [
-		{ "id": "slot_1", "name": "Coral Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-		{ "id": "slot_2", "name": "Coral Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-		{ "id": "slot_3", "name": "Coral Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-		{ "id": "slot_4", "name": "Coral Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-		{ "id": "slot_5", "name": "Coral Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-		{ "id": "slot_6", "name": "Coral Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+		{ "id": "slot_1", "name": "Coral Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 16384, "placeholder": true },
+		{ "id": "slot_2", "name": "Coral Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 32768, "placeholder": true },
+		{ "id": "slot_3", "name": "Coral Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 65536, "placeholder": true },
+		{ "id": "slot_4", "name": "Coral Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 131072, "placeholder": true },
+		{ "id": "slot_5", "name": "Coral Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 262144, "placeholder": true },
+		{ "id": "slot_6", "name": "Coral Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 524288, "placeholder": true }
 	  ]
 	}
   }

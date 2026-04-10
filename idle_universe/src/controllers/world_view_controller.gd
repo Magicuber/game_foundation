@@ -202,7 +202,7 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		int(round(allocation_ratio * 100.0)),
 		int(round((1.0 - allocation_ratio) * 100.0))
 	]
-	_planet_sprite.texture = _icon_cache.get_planet_icon(planet_level)
+	_planet_sprite.texture = _icon_cache.get_planet_icon(planet.id, planet_level)
 	_worker_slider.set_block_signals(true)
 	_worker_slider.step = slider_step
 	_worker_slider.value = allocation_ratio * 100.0

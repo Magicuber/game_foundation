@@ -14,10 +14,8 @@ func enqueue(action_type: String, payload: Dictionary = {}) -> void:
 	})
 
 func drain() -> Array[Dictionary]:
-	var drained: Array[Dictionary] = []
-	for action in _queued_actions:
-		drained.append(action.duplicate(true))
-	_queued_actions.clear()
+	var drained := _queued_actions
+	_queued_actions = []
 	return drained
 
 func clear() -> void:

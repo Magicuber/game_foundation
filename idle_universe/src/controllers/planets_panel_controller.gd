@@ -438,7 +438,7 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 	_preview_subtitle.text = str(planet_entry.get("preview_subtitle", ""))
 
 	var level := int(planet_entry.get("level", 1))
-	_preview_icon.texture = _icon_cache.get_planet_icon(maxi(1, level))
+	_preview_icon.texture = _icon_cache.get_planet_icon(str(planet_entry.get("id", "")), maxi(1, level))
 	_preview_icon.modulate = Color.WHITE if owned else accent_color
 
 	var stats_lines: Array[String] = []

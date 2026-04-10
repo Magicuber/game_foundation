@@ -908,32 +908,14 @@ func can_purchase_planet(planet_id: String) -> bool:
 		return false
 	if not is_planet_purchase_unlocked(planet_id):
 		return false
-
-	for cost_entry in get_planet_purchase_cost_entries(planet_id):
-		if bool(cost_entry.get("is_orb_requirement", false)):
-			if orbs < int(cost_entry.get("required_amount", 0)):
-				return false
-			continue
-
-		var resource_id := str(cost_entry.get("resource_id", ""))
-		var required_amount: DigitMaster = cost_entry["required_amount"]
-		if not can_afford_resource(resource_id, required_amount):
-			return false
-	return true
+	return can_afford_cost_entries(get_planet_purchase_cost_entries(planet_id))
 
 func purchase_planet(planet_id: String) -> bool:
 	if not can_purchase_planet(planet_id):
 		return false
 
-	for cost_entry in get_planet_purchase_cost_entries(planet_id):
-		if bool(cost_entry.get("is_orb_requirement", false)):
-			orbs -= int(cost_entry.get("required_amount", 0))
-			continue
-
-		var resource_id := str(cost_entry.get("resource_id", ""))
-		var required_amount: DigitMaster = cost_entry["required_amount"]
-		if not spend_resource(resource_id, required_amount):
-			return false
+	if not spend_cost_entries_atomic(get_planet_purchase_cost_entries(planet_id)):
+		return false
 
 	planet_owned_flags[planet_id] = true
 	refresh_progression_state()
@@ -1370,6 +1352,36 @@ func get_resource_amount(resource_id: String) -> DigitMaster:
 func can_afford_resource(resource_id: String, cost: DigitMaster) -> bool:
 	return get_resource_amount(resource_id).compare(cost) >= 0
 
+func can_afford_cost_entries(cost_entries: Array[Dictionary]) -> bool:
+	if cost_entries.is_empty():
+		return false
+
+	var orb_total := 0
+	var resource_totals: Dictionary = {}
+	for cost_entry in cost_entries:
+		if bool(cost_entry.get("is_orb_requirement", false)):
+			orb_total += int(cost_entry.get("required_amount", 0))
+			continue
+
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var amount := _get_cost_entry_amount(cost_entry)
+		if resource_id.is_empty() or amount == null:
+			return false
+		if resource_totals.has(resource_id):
+			var existing_total: DigitMaster = resource_totals[resource_id]
+			resource_totals[resource_id] = existing_total.add(amount)
+		else:
+			resource_totals[resource_id] = amount.clone()
+
+	if orbs < orb_total:
+		return false
+
+	for resource_id in resource_totals.keys():
+		var total_cost: DigitMaster = resource_totals[resource_id]
+		if not can_afford_resource(str(resource_id), total_cost):
+			return false
+	return true
+
 func add_resource(resource_id: String, amount: DigitMaster) -> void:
 	if resource_id.to_lower() == DUST_RESOURCE_ID:
 		dust = dust.add(amount)
@@ -1392,6 +1404,69 @@ func spend_resource(resource_id: String, amount: DigitMaster) -> bool:
 		return false
 	element.amount = element.amount.subtract(amount)
 	return true
+
+func spend_cost_entries_atomic(cost_entries: Array[Dictionary]) -> bool:
+	if not can_afford_cost_entries(cost_entries):
+		return false
+
+	var orb_total := 0
+	var resource_totals: Dictionary = {}
+	for cost_entry in cost_entries:
+		if bool(cost_entry.get("is_orb_requirement", false)):
+			orb_total += int(cost_entry.get("required_amount", 0))
+			continue
+
+		var resource_id := str(cost_entry.get("resource_id", ""))
+		var amount := _get_cost_entry_amount(cost_entry)
+		if resource_id.is_empty() or amount == null:
+			return false
+		if resource_totals.has(resource_id):
+			var existing_total: DigitMaster = resource_totals[resource_id]
+			resource_totals[resource_id] = existing_total.add(amount)
+		else:
+			resource_totals[resource_id] = amount.clone()
+
+	var previous_orbs := orbs
+	var previous_resources: Dictionary = {}
+	for resource_id in resource_totals.keys():
+		previous_resources[resource_id] = get_resource_amount(str(resource_id))
+
+	if orb_total > 0:
+		orbs -= orb_total
+		if orbs < 0:
+			orbs = previous_orbs
+			return false
+
+	for resource_id_variant in resource_totals.keys():
+		var resource_id := str(resource_id_variant)
+		var total_cost: DigitMaster = resource_totals[resource_id_variant]
+		if not spend_resource(resource_id, total_cost):
+			orbs = previous_orbs
+			for restore_id_variant in previous_resources.keys():
+				var restore_id := str(restore_id_variant)
+				var restore_amount: DigitMaster = previous_resources[restore_id_variant]
+				_set_resource_amount(restore_id, restore_amount)
+			return false
+
+	return true
+
+func _get_cost_entry_amount(cost_entry: Dictionary) -> DigitMaster:
+	if cost_entry.has("cost") and cost_entry["cost"] is DigitMaster:
+		return cost_entry["cost"]
+	if cost_entry.has("required_amount") and cost_entry["required_amount"] is DigitMaster:
+		return cost_entry["required_amount"]
+	return null
+
+func _set_resource_amount(resource_id: String, amount: DigitMaster) -> void:
+	if amount == null:
+		return
+	if resource_id.to_lower() == DUST_RESOURCE_ID:
+		dust = amount.clone()
+		return
+	var element := get_element_state(resource_id)
+	if element == null:
+		return
+	element.amount = amount.clone()
 
 func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 	if resource_id.is_empty():
@@ -1536,18 +1611,7 @@ func can_unlock_next_era() -> bool:
 	var requirements := get_next_era_requirements()
 	if requirements.is_empty():
 		return false
-
-	for requirement in requirements:
-		if bool(requirement.get("is_orb_requirement", false)):
-			if orbs < int(requirement.get("required_amount", 0)):
-				return false
-			continue
-
-		var resource_id := str(requirement.get("resource_id", ""))
-		var required_amount: DigitMaster = requirement["required_amount"]
-		if not can_afford_resource(resource_id, required_amount):
-			return false
-	return true
+	return can_afford_cost_entries(requirements)
 
 func unlock_next_era() -> bool:
 	if not can_unlock_next_era():
@@ -1557,15 +1621,8 @@ func unlock_next_era() -> bool:
 	if next_era_index < 0:
 		return false
 
-	for requirement in get_next_era_requirements():
-		if bool(requirement.get("is_orb_requirement", false)):
-			orbs -= int(requirement.get("required_amount", 0))
-			continue
-
-		var resource_id := str(requirement.get("resource_id", ""))
-		var required_amount: DigitMaster = requirement["required_amount"]
-		if not spend_resource(resource_id, required_amount):
-			return false
+	if not spend_cost_entries_atomic(get_next_era_requirements()):
+		return false
 
 	unlocked_era_index = max(unlocked_era_index, next_era_index)
 	if next_era_index == 1:

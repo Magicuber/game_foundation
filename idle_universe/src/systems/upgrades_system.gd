@@ -45,14 +45,7 @@ func can_purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 		return false
 
 	var cost_entries := get_upgrade_purchase_cost_entries(game_state, upgrade_id)
-	if cost_entries.is_empty():
-		return false
-	for cost_entry in cost_entries:
-		var resource_id := str(cost_entry.get("resource_id", ""))
-		var current_cost: DigitMaster = cost_entry["cost"]
-		if resource_id.is_empty() or not game_state.can_afford_resource(resource_id, current_cost):
-			return false
-	return true
+	return game_state.can_afford_cost_entries(cost_entries)
 
 func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if not can_purchase_upgrade(game_state, upgrade_id):
@@ -62,11 +55,8 @@ func purchase_upgrade(game_state: GameState, upgrade_id: String) -> bool:
 	if upgrade == null:
 		return false
 
-	for cost_entry in get_upgrade_purchase_cost_entries(game_state, upgrade_id):
-		var resource_id := str(cost_entry.get("resource_id", ""))
-		var current_cost: DigitMaster = cost_entry["cost"]
-		if not game_state.spend_resource(resource_id, current_cost):
-			return false
+	if not game_state.spend_cost_entries_atomic(get_upgrade_purchase_cost_entries(game_state, upgrade_id)):
+		return false
 
 	game_state.set_upgrade_level(upgrade_id, upgrade.current_level + 1)
 	if _is_element_sequence_upgrade(upgrade):

@@ -7,6 +7,7 @@ signal manual_smash_resolved(result: Dictionary)
 signal auto_smash_requested(request: Dictionary)
 
 const DEFAULT_TICKS_PER_SECOND := 10.0
+const MAX_TICKS_PER_FRAME := 5
 
 var game_state: GameState
 var element_system: ElementSystem
@@ -39,9 +40,11 @@ func _process(delta: float) -> void:
 	var tick_duration := 1.0 / ticks_per_second
 	_tick_accumulator += delta
 
-	while _tick_accumulator >= tick_duration:
+	var processed_ticks := 0
+	while _tick_accumulator >= tick_duration and processed_ticks < MAX_TICKS_PER_FRAME:
 		_tick_accumulator -= tick_duration
 		_process_tick(tick_duration)
+		processed_ticks += 1
 
 func _process_tick(tick_duration: float) -> void:
 	game_state.tick_count += 1
