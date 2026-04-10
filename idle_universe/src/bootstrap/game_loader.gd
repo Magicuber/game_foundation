@@ -488,8 +488,10 @@ func _process(delta: float) -> void:
 		if resolved_auto_smashes > 0:
 			dust_recipe_service.invalidate()
 			_pulse_fuse_element()
-			_refresh_ui(_get_resource_refresh_flags())
+			_mark_ui_dirty(_get_resource_refresh_flags())
 	world_view_controller.update(delta, view_mode == VIEW_WORLD)
+	if _ui_dirty_flags != 0:
+		_flush_dirty_ui()
 
 func _unhandled_input(event: InputEvent) -> void:
 	pass
@@ -884,14 +886,14 @@ func _on_tick_processed(_tick_count: int, processed_actions: Array, production_c
 				dust_recipe_service.invalidate()
 				dirty_flags |= _get_resource_refresh_flags()
 	if dirty_flags != 0:
-		_refresh_ui(dirty_flags)
+		_mark_ui_dirty(dirty_flags)
 	_autosave_if_needed()
 
 func _on_manual_smash_resolved(result: Dictionary) -> void:
 	dust_recipe_service.invalidate()
 	_pulse_fuse_element()
 	atom_effects_controller.spawn_manual_result(result)
-	_refresh_ui(_get_resource_refresh_flags())
+	_mark_ui_dirty(_get_resource_refresh_flags())
 
 func _on_auto_smash_requested(request: Dictionary) -> void:
 	var target_element_id := str(request.get("target_element_id", ""))
@@ -904,7 +906,7 @@ func _on_auto_smash_requested(request: Dictionary) -> void:
 				any_resolved = true
 		if any_resolved:
 			dust_recipe_service.invalidate()
-			_refresh_ui(_get_resource_refresh_flags())
+			_mark_ui_dirty(_get_resource_refresh_flags())
 		return
 	var pending_results: Array[Dictionary] = []
 	for _i in range(spawn_count):

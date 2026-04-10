@@ -13,6 +13,7 @@ const SELECTED_BORDER_COLOR := Color8(105, 145, 102)
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const DUST_FILL_COLOR := Color(0.82, 0.14, 0.14, 0.42)
 
+# Bounded cache: one AtlasTexture per element index (fixed max of 118 elements).
 static var _background_cache: Dictionary = {}
 
 var game_state: GameState

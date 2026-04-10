@@ -1179,27 +1179,25 @@ func get_current_planet_worker_cost() -> DigitMaster:
 	var planet := get_current_planet_state()
 	if planet == null:
 		return DigitMaster.zero()
-
-	var worker_count: float = planet.workers.to_float()
-	var raw_cost: float = PLANET_WORKER_BASE_COST * pow(PLANET_WORKER_COST_RATIO, worker_count)
-	var rounded_cost: float = ceil(raw_cost / PLANET_WORKER_COST_ROUND_TO) * PLANET_WORKER_COST_ROUND_TO
-	return DigitMaster.new(rounded_cost)
+	return _calculate_planet_worker_cost(planet)
 
 func can_buy_current_planet_worker() -> bool:
 	var planet := get_current_planet_state()
 	if planet == null or not planet.unlocked:
 		return false
-	return can_afford_resource(DUST_RESOURCE_ID, get_current_planet_worker_cost())
+	return can_afford_resource(DUST_RESOURCE_ID, _calculate_planet_worker_cost(planet))
 
 func buy_current_planet_worker() -> bool:
-	if not can_buy_current_planet_worker():
-		return false
-	if not spend_resource(DUST_RESOURCE_ID, get_current_planet_worker_cost()):
+	var planet := get_current_planet_state()
+	if planet == null or not planet.unlocked:
 		return false
 
-	var planet := get_current_planet_state()
-	if planet == null:
+	var worker_cost := _calculate_planet_worker_cost(planet)
+	if not can_afford_resource(DUST_RESOURCE_ID, worker_cost):
 		return false
+	if not spend_resource(DUST_RESOURCE_ID, worker_cost):
+		return false
+
 	planet.workers = planet.workers.add(DigitMaster.one())
 	return true
 
@@ -1229,21 +1227,20 @@ func process_planet_production(delta_seconds: float) -> Dictionary:
 		if planet == null or not planet.unlocked or planet.workers.is_zero():
 			continue
 
-		var total_production := planet.workers.multiply_scalar(delta_seconds)
 		var allocation_to_xp := clampf(planet.worker_allocation_to_xp, 0.0, 1.0)
 		if allocation_to_xp > 0.0:
 			var previous_level := planet.level
-			var previous_xp := planet.xp.clone()
-			_apply_planet_xp(planet, total_production.multiply_scalar(allocation_to_xp))
+			var previous_xp := planet.xp
+			_apply_planet_xp(planet, planet.workers.multiply_scalar(delta_seconds * allocation_to_xp))
 			var planet_changed := planet.level != previous_level or planet.xp.compare(previous_xp) != 0
 			if planet_changed:
 				production_changes["any_planet_changed"] = true
 				if planet_id == current_planet_id:
 					production_changes["current_planet_changed"] = true
 		if allocation_to_xp < 1.0:
-			var previous_research_points := research_points.clone()
+			var previous_research_points := research_points
 			var previous_research_progress := research_progress
-			_apply_research_progress(total_production.multiply_scalar((1.0 - allocation_to_xp) * RESEARCH_POINTS_PER_PRODUCTION))
+			_apply_research_progress(planet.workers.multiply_scalar(delta_seconds * (1.0 - allocation_to_xp) * RESEARCH_POINTS_PER_PRODUCTION))
 			if research_points.compare(previous_research_points) != 0 or research_progress != previous_research_progress:
 				production_changes["research_changed"] = true
 
@@ -1961,6 +1958,10 @@ func _apply_planet_xp(planet: PlanetState, xp_amount: DigitMaster) -> void:
 	var current_xp := planet.xp.add(xp_amount)
 	var xp_to_next := planet.xp_to_next_level
 	while level < planet.max_level and current_xp.compare(xp_to_next) >= 0:
+		if xp_to_next.is_zero():
+			push_warning("Planet XP requirement reached zero for %s at level %d; stopping XP application." % [planet.id, level])
+			break
+
 		current_xp = current_xp.subtract(xp_to_next)
 		level += 1
 		planet.level = level
@@ -1968,10 +1969,22 @@ func _apply_planet_xp(planet: PlanetState, xp_amount: DigitMaster) -> void:
 			current_xp = DigitMaster.zero()
 			break
 		xp_to_next = _calculate_planet_xp_requirement(level)
+		if xp_to_next.is_zero():
+			push_warning("Calculated planet XP requirement reached zero for %s at level %d; stopping XP application." % [planet.id, level])
+			break
 
 	planet.xp = current_xp
 	planet.xp_to_next_level = DigitMaster.one() if level >= planet.max_level else xp_to_next
 	_update_best_planet_level(planet.id, planet.level)
+
+func _calculate_planet_worker_cost(planet: PlanetState) -> DigitMaster:
+	if planet == null:
+		return DigitMaster.zero()
+
+	var worker_count: float = planet.workers.to_float()
+	var raw_cost: float = PLANET_WORKER_BASE_COST * pow(PLANET_WORKER_COST_RATIO, worker_count)
+	var rounded_cost: float = ceil(raw_cost / PLANET_WORKER_COST_ROUND_TO) * PLANET_WORKER_COST_ROUND_TO
+	return DigitMaster.new(rounded_cost)
 
 func _apply_research_progress(rp_amount: DigitMaster) -> void:
 	if rp_amount.is_zero():
