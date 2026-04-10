@@ -25,10 +25,24 @@ func _init() -> void:
 	rng.randomize()
 
 func manual_smash(game_state: GameState, upgrades_system: UpgradesSystem) -> Dictionary:
-	return _produce_from_element(game_state, upgrades_system, game_state.current_element_id, false)
+	var result := _build_smash_result(game_state, upgrades_system, game_state.current_element_id, false)
+	if result.is_empty():
+		return {}
+	_apply_smash_result(game_state, result, false)
+	return result
 
 func resolve_auto_smash(game_state: GameState, upgrades_system: UpgradesSystem, element_id: String) -> Dictionary:
-	return _produce_from_element(game_state, upgrades_system, element_id, true)
+	var result := preview_auto_smash(game_state, upgrades_system, element_id)
+	if result.is_empty():
+		return {}
+	apply_deferred_auto_smash_result(game_state, result)
+	return result
+
+func preview_auto_smash(game_state: GameState, upgrades_system: UpgradesSystem, element_id: String) -> Dictionary:
+	return _build_smash_result(game_state, upgrades_system, element_id, true)
+
+func apply_deferred_auto_smash_result(game_state: GameState, result: Dictionary) -> void:
+	_apply_smash_result(game_state, result, true)
 
 func unlock_next_element(game_state: GameState) -> bool:
 	if game_state == null:
@@ -45,7 +59,7 @@ func select_element(game_state: GameState, element_id: String) -> bool:
 		return false
 	return game_state.select_element(element_id)
 
-func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSystem, element_id: String, is_auto: bool) -> Dictionary:
+func _build_smash_result(game_state: GameState, upgrades_system: UpgradesSystem, element_id: String, is_auto: bool) -> Dictionary:
 	if game_state == null or upgrades_system == null or element_id.is_empty():
 		return {}
 
@@ -72,40 +86,63 @@ func _produce_from_element(game_state: GameState, upgrades_system: UpgradesSyste
 	for resource_id in produced_resource_ids:
 		for _copy_index in range(base_reward_multiplier):
 			base_resource_ids.append(resource_id)
-			game_state.produce_resource(resource_id, DigitMaster.one())
 
 	var bonus_resource_ids: Array[String] = []
 	for resource_id in base_resource_ids:
 		if is_auto and upgrades_system.should_trigger_critical_payload(game_state):
-			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 2)
+			_add_bonus_copies(bonus_resource_ids, resource_id, 2)
 		if not is_auto and upgrades_system.should_trigger_manual_double_hit(game_state):
-			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 1)
+			_add_bonus_copies(bonus_resource_ids, resource_id, 1)
 		if upgrades_system.should_trigger_resonant_yield(game_state):
-			_add_bonus_copies(game_state, bonus_resource_ids, resource_id, 1)
+			_add_bonus_copies(bonus_resource_ids, resource_id, 1)
 
 	var final_resource_ids := base_resource_ids.duplicate()
 	final_resource_ids.append_array(bonus_resource_ids)
-
-	if is_auto:
-		game_state.total_auto_smashes += 1
-	else:
-		game_state.total_manual_smashes += 1
+	if final_resource_ids.is_empty():
+		return {}
+	var resource_counts := _build_resource_counts(final_resource_ids)
 
 	return {
 		"source_element_id": element_id,
 		"produced_resource_ids": final_resource_ids,
 		"produced_resource_id": final_resource_ids[0],
 		"bonus_resource_ids": bonus_resource_ids,
+		"resource_counts": resource_counts,
 		"was_fission": was_fission,
 		"variant": smasher_variant,
 		"rolled_variants": rolled_variants,
 		"base_reward_multiplier": base_reward_multiplier
 	}
 
-func _add_bonus_copies(game_state: GameState, bonus_resource_ids: Array[String], resource_id: String, copy_count: int) -> void:
+func _apply_smash_result(game_state: GameState, result: Dictionary, is_auto: bool) -> void:
+	if game_state == null or result.is_empty():
+		return
+
+	var resource_counts: Dictionary = result.get("resource_counts", {})
+	for resource_id_variant in resource_counts.keys():
+		var resource_id := str(resource_id_variant)
+		var count := maxi(0, int(resource_counts[resource_id_variant]))
+		if resource_id.is_empty() or count <= 0:
+			continue
+		game_state.produce_resource(resource_id, DigitMaster.new(float(count)))
+
+	if is_auto:
+		game_state.total_auto_smashes += 1
+	else:
+		game_state.total_manual_smashes += 1
+
+func _add_bonus_copies(bonus_resource_ids: Array[String], resource_id: String, copy_count: int) -> void:
 	for _copy_index in range(copy_count):
 		bonus_resource_ids.append(resource_id)
-		game_state.produce_resource(resource_id, DigitMaster.one())
+
+func _build_resource_counts(resource_ids: Array[String]) -> Dictionary:
+	var resource_counts := {}
+	for resource_id in resource_ids:
+		var normalized_id := str(resource_id)
+		if normalized_id.is_empty():
+			continue
+		resource_counts[normalized_id] = int(resource_counts.get(normalized_id, 0)) + 1
+	return resource_counts
 
 func _roll_fission_split(game_state: GameState, produced_resource_id: String) -> Array[String]:
 	if not game_state.is_element_id(produced_resource_id):
@@ -118,51 +155,25 @@ func _roll_fission_split(game_state: GameState, produced_resource_id: String) ->
 	if target_weight <= 1:
 		return []
 
-	var unlocked_ids: Array[String] = game_state.get_unlocked_real_element_ids()
-	if unlocked_ids.is_empty():
+	var max_unlocked_index := game_state.get_max_unlocked_real_element_index()
+	if max_unlocked_index <= 0:
 		return []
 
-	var candidates: Array = []
-	_build_partitions(game_state, unlocked_ids, target_weight, FISSION_PART_COUNT, 0, [], candidates)
-	if candidates.is_empty():
+	var min_left := maxi(1, target_weight - max_unlocked_index)
+	var max_left := mini(max_unlocked_index, int(floor(float(target_weight) / float(FISSION_PART_COUNT))))
+	if min_left > max_left:
 		return []
 
-	var chosen_index := rng.randi_range(0, candidates.size() - 1)
-	var chosen_partition: Array = candidates[chosen_index]
-	var results: Array[String] = []
-	for resource_id in chosen_partition:
-		results.append(str(resource_id))
-	return results
+	var left_index := rng.randi_range(min_left, max_left)
+	var right_index := target_weight - left_index
+	var left_element := game_state.get_element_state_by_index(left_index)
+	var right_element := game_state.get_element_state_by_index(right_index)
+	if left_element == null or right_element == null:
+		return []
+	if not left_element.unlocked or not right_element.unlocked:
+		return []
 
-func _build_partitions(game_state: GameState, unlocked_ids: Array[String], remaining_weight: int, remaining_parts: int, start_index: int, current_ids: Array, results: Array) -> void:
-	if remaining_parts == 0:
-		if remaining_weight == 0:
-			results.append(current_ids.duplicate())
-		return
-
-	if remaining_weight <= 0 or start_index >= unlocked_ids.size():
-		return
-
-	for i in range(start_index, unlocked_ids.size()):
-		var element_id := unlocked_ids[i]
-		var element := game_state.get_element_state(element_id)
-		if element == null:
-			continue
-		var element_weight := element.index
-		if element_weight <= 0 or element_weight > remaining_weight:
-			continue
-
-		var next_ids: Array = current_ids.duplicate()
-		next_ids.append(element_id)
-		_build_partitions(
-			game_state,
-			unlocked_ids,
-			remaining_weight - element_weight,
-			remaining_parts - 1,
-			i,
-			next_ids,
-			results
-		)
+	return [left_element.id, right_element.id]
 
 func _roll_smasher_variants(game_state: GameState) -> Array[String]:
 	var rolled_variants: Array[String] = []

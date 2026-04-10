@@ -1,264 +1,264 @@
 {
   "root": {
-    "id": "root",
-    "label": "Planet Network"
+	"id": "root",
+	"label": "Planet Network"
   },
   "stages": [
-    {
-      "id": "stage_1",
-      "stage_index": 1,
-      "visible_planets": ["planet_a"],
-      "visible_moons": ["moon_a_1", "moon_a_2"],
-      "node_positions": {
-        "root": { "x": 0.5, "y": 0.16 },
-        "planet_a": { "x": 0.5, "y": 0.56 },
-        "moon_a_1": { "x": 0.43, "y": 0.78 },
-        "moon_a_2": { "x": 0.57, "y": 0.78 }
-      },
-      "lines": [
-        { "from_id": "root", "to_id": "planet_a" },
-        { "from_id": "planet_a", "to_id": "moon_a_1" },
-        { "from_id": "planet_a", "to_id": "moon_a_2" }
-      ]
-    },
-    {
-      "id": "stage_2",
-      "stage_index": 2,
-      "visible_planets": ["planet_a", "planet_b"],
-      "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2"],
-      "node_positions": {
-        "root": { "x": 0.5, "y": 0.15 },
-        "planet_a": { "x": 0.26, "y": 0.53 },
-        "planet_b": { "x": 0.74, "y": 0.53 },
-        "moon_a_1": { "x": 0.18, "y": 0.77 },
-        "moon_a_2": { "x": 0.34, "y": 0.77 },
-        "moon_b_1": { "x": 0.66, "y": 0.77 },
-        "moon_b_2": { "x": 0.82, "y": 0.77 }
-      },
-      "lines": [
-        { "from_id": "root", "to_id": "planet_a" },
-        { "from_id": "root", "to_id": "planet_b" },
-        { "from_id": "planet_a", "to_id": "moon_a_1" },
-        { "from_id": "planet_a", "to_id": "moon_a_2" },
-        { "from_id": "planet_b", "to_id": "moon_b_1" },
-        { "from_id": "planet_b", "to_id": "moon_b_2" }
-      ]
-    },
-    {
-      "id": "stage_3",
-      "stage_index": 3,
-      "visible_planets": ["planet_a", "planet_b", "planet_c"],
-      "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2", "moon_c_1", "moon_c_2"],
-      "node_positions": {
-        "root": { "x": 0.5, "y": 0.14 },
-        "planet_a": { "x": 0.18, "y": 0.48 },
-        "planet_b": { "x": 0.5, "y": 0.63 },
-        "planet_c": { "x": 0.82, "y": 0.48 },
-        "moon_a_1": { "x": 0.11, "y": 0.75 },
-        "moon_a_2": { "x": 0.25, "y": 0.75 },
-        "moon_b_1": { "x": 0.43, "y": 0.89 },
-        "moon_b_2": { "x": 0.57, "y": 0.89 },
-        "moon_c_1": { "x": 0.75, "y": 0.75 },
-        "moon_c_2": { "x": 0.89, "y": 0.75 }
-      },
-      "lines": [
-        { "from_id": "root", "to_id": "planet_a" },
-        { "from_id": "root", "to_id": "planet_b" },
-        { "from_id": "root", "to_id": "planet_c" },
-        { "from_id": "planet_a", "to_id": "moon_a_1" },
-        { "from_id": "planet_a", "to_id": "moon_a_2" },
-        { "from_id": "planet_b", "to_id": "moon_b_1" },
-        { "from_id": "planet_b", "to_id": "moon_b_2" },
-        { "from_id": "planet_c", "to_id": "moon_c_1" },
-        { "from_id": "planet_c", "to_id": "moon_c_2" }
-      ]
-    },
-    {
-      "id": "stage_4",
-      "stage_index": 4,
-      "visible_planets": ["planet_a", "planet_b", "planet_c", "planet_d"],
-      "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2", "moon_c_1", "moon_c_2", "moon_d_1", "moon_d_2"],
-      "node_positions": {
-        "root": { "x": 0.5, "y": 0.13 },
-        "planet_a": { "x": 0.15, "y": 0.43 },
-        "planet_b": { "x": 0.38, "y": 0.67 },
-        "planet_c": { "x": 0.62, "y": 0.67 },
-        "planet_d": { "x": 0.85, "y": 0.43 },
-        "moon_a_1": { "x": 0.08, "y": 0.75 },
-        "moon_a_2": { "x": 0.22, "y": 0.75 },
-        "moon_b_1": { "x": 0.31, "y": 0.90 },
-        "moon_b_2": { "x": 0.45, "y": 0.90 },
-        "moon_c_1": { "x": 0.55, "y": 0.90 },
-        "moon_c_2": { "x": 0.69, "y": 0.90 },
-        "moon_d_1": { "x": 0.78, "y": 0.75 },
-        "moon_d_2": { "x": 0.92, "y": 0.75 }
-      },
-      "lines": [
-        { "from_id": "root", "to_id": "planet_a" },
-        { "from_id": "root", "to_id": "planet_b" },
-        { "from_id": "root", "to_id": "planet_c" },
-        { "from_id": "root", "to_id": "planet_d" },
-        { "from_id": "planet_a", "to_id": "moon_a_1" },
-        { "from_id": "planet_a", "to_id": "moon_a_2" },
-        { "from_id": "planet_b", "to_id": "moon_b_1" },
-        { "from_id": "planet_b", "to_id": "moon_b_2" },
-        { "from_id": "planet_c", "to_id": "moon_c_1" },
-        { "from_id": "planet_c", "to_id": "moon_c_2" },
-        { "from_id": "planet_d", "to_id": "moon_d_1" },
-        { "from_id": "planet_d", "to_id": "moon_d_2" }
-      ]
-    }
+	{
+	  "id": "stage_1",
+	  "stage_index": 1,
+	  "visible_planets": ["planet_a"],
+	  "visible_moons": ["moon_a_1", "moon_a_2"],
+	  "node_positions": {
+		"root": { "x": 0.5, "y": 0.16 },
+		"planet_a": { "x": 0.5, "y": 0.56 },
+		"moon_a_1": { "x": 0.43, "y": 0.78 },
+		"moon_a_2": { "x": 0.57, "y": 0.78 }
+	  },
+	  "lines": [
+		{ "from_id": "root", "to_id": "planet_a" },
+		{ "from_id": "planet_a", "to_id": "moon_a_1" },
+		{ "from_id": "planet_a", "to_id": "moon_a_2" }
+	  ]
+	},
+	{
+	  "id": "stage_2",
+	  "stage_index": 2,
+	  "visible_planets": ["planet_a", "planet_b"],
+	  "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2"],
+	  "node_positions": {
+		"root": { "x": 0.5, "y": 0.15 },
+		"planet_a": { "x": 0.26, "y": 0.53 },
+		"planet_b": { "x": 0.74, "y": 0.53 },
+		"moon_a_1": { "x": 0.18, "y": 0.77 },
+		"moon_a_2": { "x": 0.34, "y": 0.77 },
+		"moon_b_1": { "x": 0.66, "y": 0.77 },
+		"moon_b_2": { "x": 0.82, "y": 0.77 }
+	  },
+	  "lines": [
+		{ "from_id": "root", "to_id": "planet_a" },
+		{ "from_id": "root", "to_id": "planet_b" },
+		{ "from_id": "planet_a", "to_id": "moon_a_1" },
+		{ "from_id": "planet_a", "to_id": "moon_a_2" },
+		{ "from_id": "planet_b", "to_id": "moon_b_1" },
+		{ "from_id": "planet_b", "to_id": "moon_b_2" }
+	  ]
+	},
+	{
+	  "id": "stage_3",
+	  "stage_index": 3,
+	  "visible_planets": ["planet_a", "planet_b", "planet_c"],
+	  "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2", "moon_c_1", "moon_c_2"],
+	  "node_positions": {
+		"root": { "x": 0.5, "y": 0.14 },
+		"planet_a": { "x": 0.18, "y": 0.48 },
+		"planet_b": { "x": 0.5, "y": 0.63 },
+		"planet_c": { "x": 0.82, "y": 0.48 },
+		"moon_a_1": { "x": 0.11, "y": 0.75 },
+		"moon_a_2": { "x": 0.25, "y": 0.75 },
+		"moon_b_1": { "x": 0.43, "y": 0.89 },
+		"moon_b_2": { "x": 0.57, "y": 0.89 },
+		"moon_c_1": { "x": 0.75, "y": 0.75 },
+		"moon_c_2": { "x": 0.89, "y": 0.75 }
+	  },
+	  "lines": [
+		{ "from_id": "root", "to_id": "planet_a" },
+		{ "from_id": "root", "to_id": "planet_b" },
+		{ "from_id": "root", "to_id": "planet_c" },
+		{ "from_id": "planet_a", "to_id": "moon_a_1" },
+		{ "from_id": "planet_a", "to_id": "moon_a_2" },
+		{ "from_id": "planet_b", "to_id": "moon_b_1" },
+		{ "from_id": "planet_b", "to_id": "moon_b_2" },
+		{ "from_id": "planet_c", "to_id": "moon_c_1" },
+		{ "from_id": "planet_c", "to_id": "moon_c_2" }
+	  ]
+	},
+	{
+	  "id": "stage_4",
+	  "stage_index": 4,
+	  "visible_planets": ["planet_a", "planet_b", "planet_c", "planet_d"],
+	  "visible_moons": ["moon_a_1", "moon_a_2", "moon_b_1", "moon_b_2", "moon_c_1", "moon_c_2", "moon_d_1", "moon_d_2"],
+	  "node_positions": {
+		"root": { "x": 0.5, "y": 0.13 },
+		"planet_a": { "x": 0.15, "y": 0.43 },
+		"planet_b": { "x": 0.38, "y": 0.67 },
+		"planet_c": { "x": 0.62, "y": 0.67 },
+		"planet_d": { "x": 0.85, "y": 0.43 },
+		"moon_a_1": { "x": 0.08, "y": 0.75 },
+		"moon_a_2": { "x": 0.22, "y": 0.75 },
+		"moon_b_1": { "x": 0.31, "y": 0.90 },
+		"moon_b_2": { "x": 0.45, "y": 0.90 },
+		"moon_c_1": { "x": 0.55, "y": 0.90 },
+		"moon_c_2": { "x": 0.69, "y": 0.90 },
+		"moon_d_1": { "x": 0.78, "y": 0.75 },
+		"moon_d_2": { "x": 0.92, "y": 0.75 }
+	  },
+	  "lines": [
+		{ "from_id": "root", "to_id": "planet_a" },
+		{ "from_id": "root", "to_id": "planet_b" },
+		{ "from_id": "root", "to_id": "planet_c" },
+		{ "from_id": "root", "to_id": "planet_d" },
+		{ "from_id": "planet_a", "to_id": "moon_a_1" },
+		{ "from_id": "planet_a", "to_id": "moon_a_2" },
+		{ "from_id": "planet_b", "to_id": "moon_b_1" },
+		{ "from_id": "planet_b", "to_id": "moon_b_2" },
+		{ "from_id": "planet_c", "to_id": "moon_c_1" },
+		{ "from_id": "planet_c", "to_id": "moon_c_2" },
+		{ "from_id": "planet_d", "to_id": "moon_d_1" },
+		{ "from_id": "planet_d", "to_id": "moon_d_2" }
+	  ]
+	}
   ],
   "planets": {
-    "planet_a": {
-      "id": "planet_a",
-      "label": "Planet A",
-      "tier": 1,
-      "panel_accent_color": "#D96C6C",
-      "preview_title": "Planet A",
-      "preview_subtitle": "Starter branch for early planetary growth.",
-      "moon_ids": ["moon_a_1", "moon_a_2"]
-    },
-    "planet_b": {
-      "id": "planet_b",
-      "label": "Planet B",
-      "tier": 2,
-      "panel_accent_color": "#D99A6C",
-      "preview_title": "Planet B",
-      "preview_subtitle": "Mid branch unlocked by the first prestige milestone.",
-      "moon_ids": ["moon_b_1", "moon_b_2"]
-    },
-    "planet_c": {
-      "id": "planet_c",
-      "label": "Planet C",
-      "tier": 3,
-      "panel_accent_color": "#6C7FD9",
-      "preview_title": "Planet C",
-      "preview_subtitle": "Future branch placeholder for later planetary content.",
-      "moon_ids": ["moon_c_1", "moon_c_2"]
-    },
-    "planet_d": {
-      "id": "planet_d",
-      "label": "Planet D",
-      "tier": 4,
-      "panel_accent_color": "#7FD96C",
-      "preview_title": "Planet D",
-      "preview_subtitle": "Late branch placeholder for future unlocks.",
-      "moon_ids": ["moon_d_1", "moon_d_2"]
-    }
+	"planet_a": {
+	  "id": "planet_a",
+	  "label": "Planet A",
+	  "tier": 1,
+	  "panel_accent_color": "#D96C6C",
+	  "preview_title": "Planet A",
+	  "preview_subtitle": "Starter branch for early planetary growth.",
+	  "moon_ids": ["moon_a_1", "moon_a_2"]
+	},
+	"planet_b": {
+	  "id": "planet_b",
+	  "label": "Planet B",
+	  "tier": 2,
+	  "panel_accent_color": "#D99A6C",
+	  "preview_title": "Planet B",
+	  "preview_subtitle": "Mid branch unlocked by the first prestige milestone.",
+	  "moon_ids": ["moon_b_1", "moon_b_2"]
+	},
+	"planet_c": {
+	  "id": "planet_c",
+	  "label": "Planet C",
+	  "tier": 3,
+	  "panel_accent_color": "#6C7FD9",
+	  "preview_title": "Planet C",
+	  "preview_subtitle": "Future branch placeholder for later planetary content.",
+	  "moon_ids": ["moon_c_1", "moon_c_2"]
+	},
+	"planet_d": {
+	  "id": "planet_d",
+	  "label": "Planet D",
+	  "tier": 4,
+	  "panel_accent_color": "#7FD96C",
+	  "preview_title": "Planet D",
+	  "preview_subtitle": "Late branch placeholder for future unlocks.",
+	  "moon_ids": ["moon_d_1", "moon_d_2"]
+	}
   },
   "moons": {
-    "moon_a_1": {
-      "id": "moon_a_1",
-      "label": "Crimson Moon",
-      "color": "#D96C6C",
-      "parent_planet_id": "planet_a",
-      "upgrades": [
-        { "id": "slot_1", "name": "Orbital Lattice I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Orbital Lattice II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Orbital Lattice III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Orbital Lattice IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Orbital Lattice V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Orbital Lattice VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_a_2": {
-      "id": "moon_a_2",
-      "label": "Violet Moon",
-      "color": "#B284C7",
-      "parent_planet_id": "planet_a",
-      "upgrades": [
-        { "id": "slot_1", "name": "Violet Channel I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Violet Channel II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Violet Channel III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Violet Channel IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Violet Channel V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Violet Channel VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_b_1": {
-      "id": "moon_b_1",
-      "label": "Amber Moon",
-      "color": "#D99A6C",
-      "parent_planet_id": "planet_b",
-      "upgrades": [
-        { "id": "slot_1", "name": "Amber Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Amber Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Amber Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Amber Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Amber Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Amber Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_b_2": {
-      "id": "moon_b_2",
-      "label": "Cyan Moon",
-      "color": "#87D8E9",
-      "parent_planet_id": "planet_b",
-      "upgrades": [
-        { "id": "slot_1", "name": "Cyan Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Cyan Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Cyan Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Cyan Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Cyan Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Cyan Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_c_1": {
-      "id": "moon_c_1",
-      "label": "Rose Moon",
-      "color": "#D98DD0",
-      "parent_planet_id": "planet_c",
-      "upgrades": [
-        { "id": "slot_1", "name": "Rose Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Rose Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Rose Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Rose Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Rose Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Rose Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_c_2": {
-      "id": "moon_c_2",
-      "label": "Indigo Moon",
-      "color": "#6C7FD9",
-      "parent_planet_id": "planet_c",
-      "upgrades": [
-        { "id": "slot_1", "name": "Indigo Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Indigo Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Indigo Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Indigo Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Indigo Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Indigo Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_d_1": {
-      "id": "moon_d_1",
-      "label": "Sage Moon",
-      "color": "#93B28F",
-      "parent_planet_id": "planet_d",
-      "upgrades": [
-        { "id": "slot_1", "name": "Sage Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Sage Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Sage Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Sage Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Sage Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Sage Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    },
-    "moon_d_2": {
-      "id": "moon_d_2",
-      "label": "Coral Moon",
-      "color": "#D96C6C",
-      "parent_planet_id": "planet_d",
-      "upgrades": [
-        { "id": "slot_1", "name": "Coral Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
-        { "id": "slot_2", "name": "Coral Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
-        { "id": "slot_3", "name": "Coral Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
-        { "id": "slot_4", "name": "Coral Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
-        { "id": "slot_5", "name": "Coral Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
-        { "id": "slot_6", "name": "Coral Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
-      ]
-    }
+	"moon_a_1": {
+	  "id": "moon_a_1",
+	  "label": "Crimson Moon",
+	  "color": "#D96C6C",
+	  "parent_planet_id": "planet_a",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Orbital Lattice I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Orbital Lattice II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Orbital Lattice III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Orbital Lattice IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Orbital Lattice V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Orbital Lattice VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_a_2": {
+	  "id": "moon_a_2",
+	  "label": "Violet Moon",
+	  "color": "#B284C7",
+	  "parent_planet_id": "planet_a",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Violet Channel I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Violet Channel II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Violet Channel III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Violet Channel IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Violet Channel V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Violet Channel VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_b_1": {
+	  "id": "moon_b_1",
+	  "label": "Amber Moon",
+	  "color": "#D99A6C",
+	  "parent_planet_id": "planet_b",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Amber Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Amber Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Amber Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Amber Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Amber Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Amber Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_b_2": {
+	  "id": "moon_b_2",
+	  "label": "Cyan Moon",
+	  "color": "#87D8E9",
+	  "parent_planet_id": "planet_b",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Cyan Relay I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Cyan Relay II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Cyan Relay III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Cyan Relay IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Cyan Relay V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Cyan Relay VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_c_1": {
+	  "id": "moon_c_1",
+	  "label": "Rose Moon",
+	  "color": "#D98DD0",
+	  "parent_planet_id": "planet_c",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Rose Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Rose Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Rose Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Rose Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Rose Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Rose Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_c_2": {
+	  "id": "moon_c_2",
+	  "label": "Indigo Moon",
+	  "color": "#6C7FD9",
+	  "parent_planet_id": "planet_c",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Indigo Array I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Indigo Array II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Indigo Array III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Indigo Array IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Indigo Array V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Indigo Array VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_d_1": {
+	  "id": "moon_d_1",
+	  "label": "Sage Moon",
+	  "color": "#93B28F",
+	  "parent_planet_id": "planet_d",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Sage Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Sage Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Sage Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Sage Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Sage Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Sage Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	},
+	"moon_d_2": {
+	  "id": "moon_d_2",
+	  "label": "Coral Moon",
+	  "color": "#D96C6C",
+	  "parent_planet_id": "planet_d",
+	  "upgrades": [
+		{ "id": "slot_1", "name": "Coral Matrix I", "description": "Placeholder moon upgrade.", "rp_cost": 1, "placeholder": true },
+		{ "id": "slot_2", "name": "Coral Matrix II", "description": "Placeholder moon upgrade.", "rp_cost": 2, "placeholder": true },
+		{ "id": "slot_3", "name": "Coral Matrix III", "description": "Placeholder moon upgrade.", "rp_cost": 4, "placeholder": true },
+		{ "id": "slot_4", "name": "Coral Matrix IV", "description": "Placeholder moon upgrade.", "rp_cost": 8, "placeholder": true },
+		{ "id": "slot_5", "name": "Coral Matrix V", "description": "Placeholder moon upgrade.", "rp_cost": 16, "placeholder": true },
+		{ "id": "slot_6", "name": "Coral Matrix VI", "description": "Placeholder moon upgrade.", "rp_cost": 32, "placeholder": true }
+	  ]
+	}
   }
 }

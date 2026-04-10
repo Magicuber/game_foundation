@@ -493,6 +493,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	pass
 
 func _exit_tree() -> void:
+	_flush_pending_atom_hits(false)
 	if game_state != null and SaveManager.save_state(game_state):
 		game_state.last_save_tick = game_state.tick_count
 
@@ -577,6 +578,9 @@ func _set_view_mode(new_mode: int) -> void:
 		return
 	view_mode = new_mode
 	if view_mode == VIEW_WORLD:
+		var flushed_auto_smashes := _flush_pending_atom_hits(false)
+		if flushed_auto_smashes > 0:
+			_mark_ui_dirty(_get_resource_refresh_flags())
 		atom_effects_controller.clear()
 	else:
 		world_view_controller.clear_particles()
@@ -886,7 +890,23 @@ func _on_auto_smash_requested(request: Dictionary) -> void:
 			dust_recipe_service.invalidate()
 			_refresh_ui(_get_resource_refresh_flags())
 		return
-	atom_effects_controller.spawn_auto_smashes(target_element_id, spawn_count)
+	var pending_results: Array[Dictionary] = []
+	for _i in range(spawn_count):
+		var result := element_system.preview_auto_smash(game_state, upgrades_system, target_element_id)
+		if result.is_empty():
+			continue
+		pending_results.append(result)
+	if not pending_results.is_empty():
+		atom_effects_controller.queue_auto_smash_results(pending_results)
+
+func _flush_pending_atom_hits(refresh_ui_after_flush: bool = true) -> int:
+	var resolved_auto_smashes := atom_effects_controller.flush_pending_hits()
+	if resolved_auto_smashes <= 0:
+		return 0
+	dust_recipe_service.invalidate()
+	if refresh_ui_after_flush:
+		_refresh_ui(_get_resource_refresh_flags())
+	return resolved_auto_smashes
 
 func _on_prev_pressed() -> void:
 	if view_mode == VIEW_WORLD:

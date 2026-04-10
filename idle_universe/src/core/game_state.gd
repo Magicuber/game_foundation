@@ -835,6 +835,15 @@ func get_unlocked_real_element_ids() -> Array[String]:
 		unlocked_ids.append(element_id)
 	return unlocked_ids
 
+func get_max_unlocked_real_element_index() -> int:
+	var max_index := 0
+	for element_id in element_ids_in_order:
+		var element := get_element_state(element_id)
+		if element == null or not element.unlocked or element.index <= 0:
+			continue
+		max_index = maxi(max_index, element.index)
+	return max_index
+
 func get_visible_counter_element_ids() -> Array[String]:
 	var visible_ids: Array[String] = []
 	for element_id in element_ids_in_order:
