@@ -396,6 +396,20 @@ func _load_upgrades(upgrades_data: Array) -> void:
 		upgrade_ids_in_order.append(upgrade.id)
 
 func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
+	_rebuild_blessings_state(blessings_data, rarity_data)
+
+func _rebuild_blessings_state(blessings_data: Array, rarity_data: Array) -> void:
+	_reset_blessing_state_containers()
+	_load_blessing_rarity_metadata(rarity_data)
+
+	for raw_blessing_variant in blessings_data:
+		if typeof(raw_blessing_variant) != TYPE_DICTIONARY:
+			continue
+
+		var blessing := BlessingStateScript.from_content(raw_blessing_variant)
+		_register_blessing_state(blessing)
+
+func _reset_blessing_state_containers() -> void:
 	blessings.clear()
 	blessing_ids_in_order.clear()
 	blessing_ids_by_rarity.clear()
@@ -407,6 +421,7 @@ func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
 	for rarity in BLESSING_RARITY_ORDER:
 		blessing_ids_by_rarity[rarity] = []
 
+func _load_blessing_rarity_metadata(rarity_data: Array) -> void:
 	for raw_rarity_variant in rarity_data:
 		if typeof(raw_rarity_variant) != TYPE_DICTIONARY:
 			continue
@@ -418,32 +433,15 @@ func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
 		blessing_rarity_roll_displays[rarity] = str(raw_rarity.get("display_chance", ""))
 		blessing_rarity_colors[rarity] = str(raw_rarity.get("color", "ffffff"))
 
-	for raw_blessing_variant in blessings_data:
-		if typeof(raw_blessing_variant) != TYPE_DICTIONARY:
-			continue
+func _register_blessing_state(blessing: BlessingState) -> void:
+	if blessing == null or blessing.id.is_empty():
+		return
 
-		var raw_blessing: Dictionary = raw_blessing_variant
-		var blessing = BlessingStateScript.new()
-		blessing.id = str(raw_blessing.get("id", ""))
-		blessing.name = str(raw_blessing.get("name", blessing.id))
-		blessing.description = str(raw_blessing.get("description", ""))
-		blessing.rarity = str(raw_blessing.get("rarity", ""))
-		blessing.color_hex = str(raw_blessing.get("color", blessing.color_hex))
-		blessing.slot_index = int(raw_blessing.get("slot_index", 0))
-		blessing.level = maxi(0, int(raw_blessing.get("level", 0)))
-		blessing.max_level = maxi(0, int(raw_blessing.get("max_level", 0)))
-		blessing.effect_type = str(raw_blessing.get("effect_type", ""))
-		blessing.effect_amount = float(raw_blessing.get("effect_amount", 0.0))
-		blessing.effect_cap = maxf(0.0, float(raw_blessing.get("effect_cap", 0.0)))
-		blessing.placeholder = bool(raw_blessing.get("placeholder", false))
-		if blessing.id.is_empty():
-			continue
-
-		blessings[blessing.id] = blessing
-		blessing_ids_in_order.append(blessing.id)
-		if not blessing_ids_by_rarity.has(blessing.rarity):
-			blessing_ids_by_rarity[blessing.rarity] = []
-		blessing_ids_by_rarity[blessing.rarity].append(blessing.id)
+	blessings[blessing.id] = blessing
+	blessing_ids_in_order.append(blessing.id)
+	if not blessing_ids_by_rarity.has(blessing.rarity):
+		blessing_ids_by_rarity[blessing.rarity] = []
+	blessing_ids_by_rarity[blessing.rarity].append(blessing.id)
 
 func _load_planets(planets_data: Array) -> void:
 	planets.clear()
@@ -1512,15 +1510,8 @@ func open_earned_blessings() -> int:
 	return blessings_to_open
 
 func reset_blessings() -> bool:
-	var changed := get_unopened_blessings_count() > 0
+	var changed := _reset_blessing_levels_to_zero()
 	unopened_blessings_count = blessings_count
-	for blessing_id in blessing_ids_in_order:
-		var blessing = get_blessing_state(blessing_id)
-		if blessing == null:
-			continue
-		if blessing.level > 0:
-			changed = true
-		blessing.level = 0
 	if changed:
 		_invalidate_blessing_effect_cache()
 	return changed
@@ -1845,13 +1836,7 @@ func apply_save_dict(save_data: Dictionary) -> void:
 		upgrade.apply_save_dict(upgrade_save)
 
 	var saved_blessings: Dictionary = save_data.get("blessings", {})
-	for blessing_id_variant in saved_blessings.keys():
-		var blessing_id := str(blessing_id_variant)
-		var blessing = get_blessing_state(blessing_id)
-		if blessing == null:
-			continue
-		var blessing_save: Dictionary = saved_blessings[blessing_id]
-		blessing.apply_save_dict(blessing_save)
+	_apply_saved_blessing_levels(saved_blessings)
 	if not save_data.has("unopened_blessings_count") and blessings_count > 0:
 		var opened_blessings := get_discovered_blessing_count()
 		unopened_blessings_count = maxi(0, blessings_count - opened_blessings)
@@ -2083,6 +2068,26 @@ func _get_blessing_effect_total(effect_type: String) -> float:
 func _invalidate_blessing_effect_cache() -> void:
 	_cached_blessing_effect_totals.clear()
 	_blessing_effect_cache_dirty = true
+
+func _apply_saved_blessing_levels(saved_blessings: Dictionary) -> void:
+	for blessing_id_variant in saved_blessings.keys():
+		var blessing_id := str(blessing_id_variant)
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null:
+			continue
+		var blessing_save: Dictionary = saved_blessings[blessing_id]
+		blessing.apply_save_dict(blessing_save)
+
+func _reset_blessing_levels_to_zero() -> bool:
+	var changed := get_unopened_blessings_count() > 0
+	for blessing_id in blessing_ids_in_order:
+		var blessing = get_blessing_state(blessing_id)
+		if blessing == null:
+			continue
+		if blessing.level > 0:
+			changed = true
+		blessing.level = 0
+	return changed
 
 func _ensure_blessing_effect_cache() -> void:
 	if not _blessing_effect_cache_dirty:

@@ -21,6 +21,22 @@ var effect_amount := 0.0
 var effect_cap := 0.0
 var placeholder := false
 
+static func from_content(raw_blessing: Dictionary) -> BlessingState:
+	var blessing := BlessingState.new()
+	blessing.id = str(raw_blessing.get("id", ""))
+	blessing.name = str(raw_blessing.get("name", blessing.id))
+	blessing.description = str(raw_blessing.get("description", ""))
+	blessing.rarity = str(raw_blessing.get("rarity", ""))
+	blessing.color_hex = str(raw_blessing.get("color", blessing.color_hex))
+	blessing.slot_index = int(raw_blessing.get("slot_index", 0))
+	blessing.level = maxi(0, int(raw_blessing.get("level", 0)))
+	blessing.max_level = maxi(0, int(raw_blessing.get("max_level", 0)))
+	blessing.effect_type = str(raw_blessing.get("effect_type", ""))
+	blessing.effect_amount = float(raw_blessing.get("effect_amount", 0.0))
+	blessing.effect_cap = maxf(0.0, float(raw_blessing.get("effect_cap", 0.0)))
+	blessing.placeholder = bool(raw_blessing.get("placeholder", false))
+	return blessing
+
 func to_save_dict() -> Dictionary:
 	return {
 		"level": level

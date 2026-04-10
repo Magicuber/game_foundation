@@ -5,6 +5,7 @@ class_name SaveManager
 const SAVE_PATH := "user://idle_universe_save.json"
 const TEMP_SUFFIX := ".tmp"
 const BACKUP_SUFFIX := ".bak"
+const INVALID_SUFFIX := ".invalid"
 
 static func save_state(game_state: GameState, save_path: String = SAVE_PATH) -> bool:
 	if game_state == null:
@@ -40,11 +41,14 @@ static func load_into_state(game_state: GameState, save_path: String = SAVE_PATH
 		return false
 
 	var backup_path := _get_backup_path(save_path)
+	var primary_exists := FileAccess.file_exists(save_path)
 	var loaded_save := _load_save_dict_from_path(save_path)
 	if loaded_save.is_empty():
 		loaded_save = _load_save_dict_from_path(backup_path)
 		if loaded_save.is_empty():
 			return false
+		if primary_exists:
+			_quarantine_invalid_save(save_path)
 		push_warning("Primary save was unavailable or invalid; loaded backup save instead.")
 
 	game_state.apply_save_dict(loaded_save)
@@ -73,7 +77,20 @@ static func _load_save_dict_from_path(path: String) -> Dictionary:
 		push_warning("Unable to open save file for reading: %s" % path)
 		return {}
 
-	var parsed_value: Variant = JSON.parse_string(file.get_as_text())
+	var raw_text := file.get_as_text()
+	var json := JSON.new()
+	var parse_error := json.parse(raw_text)
+	if parse_error != OK:
+		push_warning(
+			"Save JSON parse failed for %s at line %d: %s" % [
+				path,
+				json.get_error_line(),
+				json.get_error_message()
+			]
+		)
+		return {}
+
+	var parsed_value: Variant = json.data
 	if typeof(parsed_value) != TYPE_DICTIONARY:
 		push_warning("Save data is not a dictionary; ignoring save file %s." % path)
 		return {}
@@ -95,15 +112,46 @@ static func _is_valid_save_dict(save_data: Dictionary) -> bool:
 	var save_version := int(save_version_variant)
 	if save_version <= 0 or save_version > GameState.SAVE_VERSION:
 		return false
+
 	if typeof(save_data.get("elements", {})) != TYPE_DICTIONARY:
 		return false
 	if typeof(save_data.get("upgrades", {})) != TYPE_DICTIONARY:
 		return false
+	if typeof(save_data.get("blessings", {})) != TYPE_DICTIONARY:
+		return false
 	if typeof(save_data.get("planets", {})) != TYPE_DICTIONARY:
+		return false
+	if typeof(save_data.get("planet_purchase_unlocks", {})) != TYPE_DICTIONARY:
+		return false
+	if typeof(save_data.get("planet_owned_flags", {})) != TYPE_DICTIONARY:
+		return false
+	if typeof(save_data.get("moon_upgrade_purchases", {})) != TYPE_DICTIONARY:
+		return false
+	if typeof(save_data.get("best_planet_levels_this_run", {})) != TYPE_DICTIONARY:
+		return false
+	if typeof(save_data.get("completed_milestones", [])) != TYPE_ARRAY:
+		return false
+	if typeof(save_data.get("prestige_nodes_claimed", [])) != TYPE_ARRAY:
 		return false
 	if typeof(save_data.get("current_element_id", "")) != TYPE_STRING:
 		return false
 	if typeof(save_data.get("current_planet_id", "")) != TYPE_STRING:
+		return false
+	if not _is_integer_number(save_data.get("orbs", 0)):
+		return false
+	if not _is_integer_number(save_data.get("player_level", 1)):
+		return false
+	if not _is_integer_number(save_data.get("tick_count", 0)):
+		return false
+	if not _is_integer_number(save_data.get("last_save_tick", 0)):
+		return false
+	if not _is_integer_number(save_data.get("total_manual_smashes", 0)):
+		return false
+	if not _is_integer_number(save_data.get("total_auto_smashes", 0)):
+		return false
+	if not _is_integer_number(save_data.get("blessings_count", 0)):
+		return false
+	if not _is_integer_number(save_data.get("unopened_blessings_count", 0)):
 		return false
 	return true
 
@@ -149,6 +197,20 @@ static func _rotate_save_files(temp_path: String, save_path: String, backup_path
 		if restore_error != OK:
 			push_warning("Unable to restore backup save after failed promotion: %s" % backup_path)
 	return false
+
+static func _quarantine_invalid_save(path: String) -> void:
+	if not FileAccess.file_exists(path):
+		return
+
+	var invalid_path := "%s%s" % [path, INVALID_SUFFIX]
+	if FileAccess.file_exists(invalid_path):
+		_delete_file_if_exists(invalid_path)
+	var quarantine_error := DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(path),
+		ProjectSettings.globalize_path(invalid_path)
+	)
+	if quarantine_error != OK:
+		push_warning("Unable to quarantine invalid save file: %s" % path)
 
 static func _delete_file_if_exists(path: String) -> void:
 	if not FileAccess.file_exists(path):
