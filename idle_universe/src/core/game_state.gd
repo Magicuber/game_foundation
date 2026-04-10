@@ -1233,9 +1233,14 @@ func get_current_planet_worker_allocation_to_xp() -> float:
 		return 1.0
 	return clampf(planet.worker_allocation_to_xp, 0.0, 1.0)
 
-func process_planet_production(delta_seconds: float) -> void:
+func process_planet_production(delta_seconds: float) -> Dictionary:
+	var production_changes := {
+		"current_planet_changed": false,
+		"any_planet_changed": false,
+		"research_changed": false
+	}
 	if delta_seconds <= 0.0:
-		return
+		return production_changes
 
 	for planet_id in planet_ids_in_order:
 		var planet := get_planet_state(planet_id)
@@ -1245,9 +1250,22 @@ func process_planet_production(delta_seconds: float) -> void:
 		var total_production := planet.workers.multiply_scalar(delta_seconds)
 		var allocation_to_xp := clampf(planet.worker_allocation_to_xp, 0.0, 1.0)
 		if allocation_to_xp > 0.0:
+			var previous_level := planet.level
+			var previous_xp := planet.xp.clone()
 			_apply_planet_xp(planet, total_production.multiply_scalar(allocation_to_xp))
+			var planet_changed := planet.level != previous_level or planet.xp.compare(previous_xp) != 0
+			if planet_changed:
+				production_changes["any_planet_changed"] = true
+				if planet_id == current_planet_id:
+					production_changes["current_planet_changed"] = true
 		if allocation_to_xp < 1.0:
+			var previous_research_points := research_points.clone()
+			var previous_research_progress := research_progress
 			_apply_research_progress(total_production.multiply_scalar((1.0 - allocation_to_xp) * RESEARCH_POINTS_PER_PRODUCTION))
+			if research_points.compare(previous_research_points) != 0 or research_progress != previous_research_progress:
+				production_changes["research_changed"] = true
+
+	return production_changes
 
 func get_current_planet_level_progress_ratio() -> float:
 	var planet := get_current_planet_state()

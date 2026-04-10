@@ -855,8 +855,15 @@ func _autosave_if_needed() -> void:
 	if SaveManager.save_state(game_state):
 		game_state.last_save_tick = game_state.tick_count
 
-func _on_tick_processed(_tick_count: int, processed_actions: Array) -> void:
-	var dirty_flags := UI_DIRTY_WORLD | UI_DIRTY_PLANETS
+func _on_tick_processed(_tick_count: int, processed_actions: Array, production_changes: Dictionary) -> void:
+	var dirty_flags := 0
+	var current_planet_changed := bool(production_changes.get("current_planet_changed", false))
+	var any_planet_changed := bool(production_changes.get("any_planet_changed", false))
+	var research_changed := bool(production_changes.get("research_changed", false))
+	if view_mode == VIEW_WORLD and (current_planet_changed or research_changed):
+		dirty_flags |= UI_DIRTY_WORLD
+	if menu_mode == MENU_PLANETS and (any_planet_changed or research_changed):
+		dirty_flags |= UI_DIRTY_PLANETS
 	for action_type_variant in processed_actions:
 		match str(action_type_variant):
 			"unlock_next":

@@ -2,7 +2,7 @@ extends Node
 
 class_name TickSystem
 
-signal tick_processed(tick_count: int, processed_actions: Array)
+signal tick_processed(tick_count: int, processed_actions: Array, production_changes: Dictionary)
 signal manual_smash_resolved(result: Dictionary)
 signal auto_smash_requested(request: Dictionary)
 
@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 func _process_tick(tick_duration: float) -> void:
 	game_state.tick_count += 1
 	game_state.total_played_seconds += tick_duration
-	game_state.process_planet_production(tick_duration)
+	var production_changes := game_state.process_planet_production(tick_duration)
 
 	var processed_actions: Array[String] = []
 	for queued_action in action_queue.drain():
@@ -55,7 +55,7 @@ func _process_tick(tick_duration: float) -> void:
 
 	_process_auto_smash(tick_duration)
 
-	emit_signal("tick_processed", game_state.tick_count, processed_actions)
+	emit_signal("tick_processed", game_state.tick_count, processed_actions, production_changes)
 
 func _apply_action(action: Dictionary) -> bool:
 	var action_type := str(action.get("type", ""))
