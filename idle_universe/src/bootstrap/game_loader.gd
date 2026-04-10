@@ -46,11 +46,12 @@ const UI_DIRTY_STATS := 1 << 7
 const UI_DIRTY_SHOP := 1 << 8
 const UI_DIRTY_PLANETS := 1 << 9
 const UI_DIRTY_SETTINGS := 1 << 10
-const UI_DIRTY_BLESSINGS := 1 << 11
+const UI_DIRTY_BLESSINGS_PROGRESS := 1 << 11
 const UI_DIRTY_WORLD := 1 << 12
 const UI_DIRTY_MENU_BUTTONS := 1 << 13
 const UI_DIRTY_DEBUG := 1 << 14
 const UI_DIRTY_PRESTIGE := 1 << 15
+const UI_DIRTY_BLESSINGS_CATALOG := 1 << 16
 const UI_DIRTY_ALL := (
 	UI_DIRTY_TOP_BAR
 	| UI_DIRTY_SELECTION
@@ -63,11 +64,12 @@ const UI_DIRTY_ALL := (
 	| UI_DIRTY_SHOP
 	| UI_DIRTY_PLANETS
 	| UI_DIRTY_SETTINGS
-	| UI_DIRTY_BLESSINGS
+	| UI_DIRTY_BLESSINGS_PROGRESS
 	| UI_DIRTY_WORLD
 	| UI_DIRTY_MENU_BUTTONS
 	| UI_DIRTY_DEBUG
 	| UI_DIRTY_PRESTIGE
+	| UI_DIRTY_BLESSINGS_CATALOG
 )
 
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
@@ -600,7 +602,7 @@ func _get_resource_refresh_flags() -> int:
 		| UI_DIRTY_ERA
 		| UI_DIRTY_STATS
 		| UI_DIRTY_PLANETS
-		| UI_DIRTY_BLESSINGS
+		| UI_DIRTY_BLESSINGS_PROGRESS
 		| UI_DIRTY_WORLD
 		| UI_DIRTY_PRESTIGE
 	)
@@ -616,7 +618,7 @@ func _get_menu_mode_refresh_flags() -> int:
 		MENU_ELEMENTS:
 			flags |= UI_DIRTY_ELEMENTS
 		MENU_BLESSINGS:
-			flags |= UI_DIRTY_BLESSINGS
+			flags |= UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG
 		MENU_ERA:
 			flags |= UI_DIRTY_ERA
 		MENU_STATS:
@@ -703,8 +705,10 @@ func _flush_dirty_ui() -> void:
 			_refresh_prestige_panel()
 		if flags & UI_DIRTY_SETTINGS:
 			_refresh_settings_panel()
-		if flags & UI_DIRTY_BLESSINGS:
-			_refresh_blessings_panel()
+		if flags & UI_DIRTY_BLESSINGS_PROGRESS:
+			_refresh_blessings_progress()
+		if flags & UI_DIRTY_BLESSINGS_CATALOG:
+			_refresh_blessings_catalog()
 		if flags & UI_DIRTY_WORLD:
 			_refresh_world_ui()
 		if flags & UI_DIRTY_DEBUG:
@@ -795,10 +799,15 @@ func _refresh_prestige_panel() -> void:
 
 	prestige_panel_controller.refresh(game_state)
 
-func _refresh_blessings_panel() -> void:
+func _refresh_blessings_progress() -> void:
 	if not blessings_panel.visible:
 		return
-	blessings_panel_controller.refresh(game_state)
+	blessings_panel_controller.refresh_progress(game_state)
+
+func _refresh_blessings_catalog() -> void:
+	if not blessings_panel.visible:
+		return
+	blessings_panel_controller.refresh_catalog(game_state)
 
 func _refresh_settings_panel() -> void:
 	if not settings_panel.visible:
@@ -979,7 +988,7 @@ func _on_blessings_menu_pressed() -> void:
 func _on_open_blessings_pressed() -> void:
 	if game_state.open_earned_blessings() <= 0:
 		return
-	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
+	_refresh_ui(UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG | UI_DIRTY_STATS)
 
 func _on_era_menu_pressed() -> void:
 	if not game_state.is_era_menu_unlocked():
@@ -1070,7 +1079,7 @@ func _on_add_orbs_pressed() -> void:
 func _on_reset_blessings_pressed() -> void:
 	if not game_state.reset_blessings():
 		return
-	_refresh_ui(UI_DIRTY_BLESSINGS | UI_DIRTY_STATS)
+	_refresh_ui(UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG | UI_DIRTY_STATS)
 
 func _on_planet_purchase_requested(planet_id: String) -> void:
 	if not game_state.purchase_planet(planet_id):

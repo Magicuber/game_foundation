@@ -1198,7 +1198,7 @@ func get_current_planet_worker_cost() -> DigitMaster:
 	if planet == null:
 		return DigitMaster.zero()
 
-	var worker_count: float = _digit_master_to_float(planet.workers)
+	var worker_count: float = planet.workers.to_float()
 	var raw_cost: float = PLANET_WORKER_BASE_COST * pow(PLANET_WORKER_COST_RATIO, worker_count)
 	var rounded_cost: float = ceil(raw_cost / PLANET_WORKER_COST_ROUND_TO) * PLANET_WORKER_COST_ROUND_TO
 	return DigitMaster.new(rounded_cost)
@@ -1920,7 +1920,7 @@ func _apply_research_progress(rp_amount: DigitMaster) -> void:
 	if rp_amount.is_zero():
 		return
 
-	var amount_float := _digit_master_to_float(rp_amount)
+	var amount_float := rp_amount.to_float()
 	if is_inf(amount_float):
 		research_points = research_points.add(rp_amount)
 		research_progress = 0.0
@@ -2028,17 +2028,10 @@ func _ensure_blessing_effect_cache() -> void:
 	_blessing_effect_cache_dirty = false
 
 func _get_digit_ratio(current: DigitMaster, maximum: DigitMaster) -> float:
-	var max_float := _digit_master_to_float(maximum)
+	var max_float := maximum.to_float()
 	if max_float <= 0.0:
 		return 0.0
-	return clampf(_digit_master_to_float(current) / max_float, 0.0, 1.0)
-
-func _digit_master_to_float(value: DigitMaster) -> float:
-	if value.is_infinite:
-		return INF
-	if value.is_zero():
-		return 0.0
-	return value.mantissa * pow(10.0, value.exponent)
+	return clampf(current.to_float() / max_float, 0.0, 1.0)
 
 func _clamp_current_element_to_visible_sections() -> void:
 	var current_element := get_current_element_state()

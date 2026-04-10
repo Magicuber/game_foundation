@@ -6,7 +6,7 @@ signal purchase_requested(upgrade_id: String)
 
 const UPGRADE_T1_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_t1_upgrd.png")
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
-const UPGRADE_T2_BACKGROUND_PATH := "res://assests/sprites/spr_t2_upgrd.png"
+const UPGRADE_T2_BACKGROUND_TEXTURE = preload("res://assests/sprites/spr_t2_upgrd.png")
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const ENABLED_MODULATE := Color(1, 1, 1, 1)
 const DISABLED_MODULATE := Color(0.55, 0.55, 0.55, 1)
@@ -24,13 +24,11 @@ var description_label: Label
 var effect_label: Label
 var cost_button: TextureButton
 var cost_label: Label
-var tier_2_background_texture: Texture2D
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	custom_minimum_size = Vector2(0, UIMetrics.UPGRADE_BUTTON_MIN_HEIGHT)
-	tier_2_background_texture = _load_png_texture(UPGRADE_T2_BACKGROUND_PATH, UPGRADE_T1_BACKGROUND_TEXTURE)
 
 	background_rect = TextureRect.new()
 	background_rect.texture = UPGRADE_T1_BACKGROUND_TEXTURE
@@ -183,12 +181,5 @@ func _on_cost_button_pressed() -> void:
 
 func _get_background_texture_for_tier(tier: int) -> Texture2D:
 	if tier >= 2:
-		return tier_2_background_texture
+		return UPGRADE_T2_BACKGROUND_TEXTURE
 	return UPGRADE_T1_BACKGROUND_TEXTURE
-
-func _load_png_texture(path: String, fallback: Texture2D) -> Texture2D:
-	var image := Image.new()
-	var error := image.load(path)
-	if error != OK or image.get_width() <= 0 or image.get_height() <= 0:
-		return fallback
-	return ImageTexture.create_from_image(image)

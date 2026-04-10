@@ -5,6 +5,7 @@ class_name BlessingsPanelController
 signal open_requested
 
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
+const BlessingCatalogRowScript = preload("res://src/ui/blessing_catalog_row.gd")
 
 var _panel: VBoxContainer
 var _info_label: Label
@@ -12,10 +13,8 @@ var _open_button: Button
 var _scroll: ScrollContainer
 var _section_list: VBoxContainer
 var _ui_font: FontFile
-var _section_cards: Dictionary = {}
-var _name_labels: Dictionary = {}
-var _level_labels: Dictionary = {}
-var _summary_labels: Dictionary = {}
+var _section_rows: Dictionary = {}
+var _catalog_built := false
 
 func configure(panel: VBoxContainer, info_label: Label) -> void:
 	_panel = panel
@@ -45,13 +44,28 @@ func configure(panel: VBoxContainer, info_label: Label) -> void:
 	_apply_layout()
 
 func refresh(game_state: GameState) -> void:
-	if not _panel.visible or game_state == null:
+	refresh_progress(game_state)
+	refresh_catalog(game_state)
+
+func refresh_progress(game_state: GameState) -> void:
+	if not _is_visible(game_state):
 		return
 
 	_refresh_info(game_state)
 	_refresh_open_button(game_state)
-	_sync_sections(game_state)
-	_refresh_cards(game_state)
+
+func refresh_catalog(game_state: GameState, changed_blessing_ids: Array[String] = []) -> void:
+	if not _is_visible(game_state):
+		return
+
+	_ensure_catalog(game_state)
+	if changed_blessing_ids.is_empty():
+		for blessing_id_variant in _section_rows.keys():
+			_refresh_row(game_state, str(blessing_id_variant))
+		return
+
+	for blessing_id in changed_blessing_ids:
+		_refresh_row(game_state, blessing_id)
 
 func _apply_layout() -> void:
 	if _open_button == null or _scroll == null or _section_list == null:
@@ -73,11 +87,12 @@ func _apply_layout() -> void:
 	_section_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_section_list.add_theme_constant_override("separation", UIMetrics.MENU_SECTION_LIST_SEPARATION)
 
-func _sync_sections(game_state: GameState) -> void:
+func _ensure_catalog(game_state: GameState) -> void:
 	if _section_list == null:
 		return
-	if not _section_cards.is_empty():
+	if _catalog_built:
 		return
+	_catalog_built = true
 
 	for rarity in game_state.get_blessing_rarity_order():
 		var section_box := VBoxContainer.new()
@@ -106,52 +121,10 @@ func _sync_sections(game_state: GameState) -> void:
 			if blessing == null:
 				continue
 
-			var card := PanelContainer.new()
-			card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			cards_box.add_child(card)
-			_section_cards[blessing_id] = card
-
-			var margin := MarginContainer.new()
-			margin.add_theme_constant_override("margin_left", 14)
-			margin.add_theme_constant_override("margin_top", 12)
-			margin.add_theme_constant_override("margin_right", 14)
-			margin.add_theme_constant_override("margin_bottom", 12)
-			card.add_child(margin)
-
-			var content := VBoxContainer.new()
-			content.add_theme_constant_override("separation", 6)
-			margin.add_child(content)
-
-			var top_row := HBoxContainer.new()
-			top_row.add_theme_constant_override("separation", 10)
-			content.add_child(top_row)
-
-			var name_label := Label.new()
-			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			name_label.text = blessing.name
-			name_label.add_theme_font_size_override("font_size", UIMetrics.FONT_SIZE_BODY)
-			if _ui_font != null:
-				name_label.add_theme_font_override("font", _ui_font)
-			top_row.add_child(name_label)
-			_name_labels[blessing_id] = name_label
-
-			var level_label := Label.new()
-			level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-			level_label.text = blessing.get_level_label()
-			level_label.add_theme_font_size_override("font_size", UIMetrics.FONT_SIZE_BODY)
-			if _ui_font != null:
-				level_label.add_theme_font_override("font", _ui_font)
-			top_row.add_child(level_label)
-			_level_labels[blessing_id] = level_label
-
-			var summary_label := Label.new()
-			summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			summary_label.text = blessing.get_summary()
-			summary_label.add_theme_font_size_override("font_size", UIMetrics.CURRENCY_DISPLAY_FONT_SIZE)
-			if _ui_font != null:
-				summary_label.add_theme_font_override("font", _ui_font)
-			content.add_child(summary_label)
-			_summary_labels[blessing_id] = summary_label
+			var row = BlessingCatalogRowScript.new()
+			row.configure(blessing_id, _ui_font)
+			cards_box.add_child(row)
+			_section_rows[blessing_id] = row
 
 func _refresh_info(game_state: GameState) -> void:
 	var blessing_progress := game_state.get_blessing_progress_mass()
@@ -168,36 +141,19 @@ func _refresh_open_button(game_state: GameState) -> void:
 	_open_button.disabled = unopened_count <= 0
 	_open_button.text = "Open Blessings" if unopened_count <= 0 else "Open Blessings (%d)" % unopened_count
 
-func _refresh_cards(game_state: GameState) -> void:
-	for blessing_id in _section_cards.keys():
-		var blessing = game_state.get_blessing_state(str(blessing_id))
-		if blessing == null:
-			continue
+func _refresh_row(game_state: GameState, blessing_id: String) -> void:
+	if not _section_rows.has(blessing_id):
+		return
 
-		var accent: Color = blessing.get_color()
-		var card: PanelContainer = _section_cards[blessing_id]
-		var style := StyleBoxFlat.new()
-		style.bg_color = accent.darkened(0.7)
-		style.bg_color.a = 1.0
-		style.border_color = accent
-		style.border_width_left = 2
-		style.border_width_top = 2
-		style.border_width_right = 2
-		style.border_width_bottom = 2
-		style.corner_radius_top_left = 10
-		style.corner_radius_top_right = 10
-		style.corner_radius_bottom_right = 10
-		style.corner_radius_bottom_left = 10
-		card.add_theme_stylebox_override("panel", style)
+	var blessing = game_state.get_blessing_state(blessing_id)
+	if blessing == null:
+		return
 
-		var title_color: Color = Color.WHITE if blessing.level > 0 else accent.lightened(0.2)
-		var detail_color := Color(1, 1, 1, 0.9) if blessing.level > 0 else Color(1, 1, 1, 0.72)
-		_name_labels[blessing_id].text = blessing.name
-		_name_labels[blessing_id].add_theme_color_override("font_color", title_color)
-		_level_labels[blessing_id].text = blessing.get_level_label()
-		_level_labels[blessing_id].add_theme_color_override("font_color", title_color)
-		_summary_labels[blessing_id].text = blessing.get_summary()
-		_summary_labels[blessing_id].add_theme_color_override("font_color", detail_color)
+	var row = _section_rows[blessing_id]
+	row.refresh_from_state(blessing)
 
 func _on_open_pressed() -> void:
 	open_requested.emit()
+
+func _is_visible(game_state: GameState) -> bool:
+	return _panel != null and _panel.visible and game_state != null

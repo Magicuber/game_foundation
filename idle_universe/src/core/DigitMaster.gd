@@ -81,6 +81,14 @@ func normalize() -> void:
 func is_zero() -> bool:
 	return not is_infinite and mantissa == 0.0
 
+func to_float() -> float:
+	"""Convert this DigitMaster to a standard float."""
+	if is_infinite:
+		return INF
+	if is_zero():
+		return 0.0
+	return mantissa * pow(10.0, exponent)
+
 func add(other: DigitMaster) -> DigitMaster:
 	if is_infinite or other.is_infinite:
 		return DigitMaster.infinity()

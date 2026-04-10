@@ -300,8 +300,6 @@ func _ensure_valid_selection(game_state: GameState, view_model: Dictionary) -> v
 		_selected_moon_id = "" if valid_moon_ids.is_empty() else valid_moon_ids[0]
 
 func _refresh_tree(view_model: Dictionary) -> void:
-	_clear_tree_nodes()
-
 	var current_visible_node_ids: Array[String] = ["root"]
 	var line_entries: Array[Dictionary] = []
 	var selected_planet := _game_state.get_planet_menu_planet_entry(_selected_planet_id)
@@ -332,7 +330,7 @@ func _refresh_tree(view_model: Dictionary) -> void:
 	_tree_canvas.set_line_entries(line_entries)
 
 	var root_position := _normalized_to_tree_point(view_model.get("root_position", {}))
-	_create_tree_node("root", root_position, UIMetrics.PLANETS_MENU_NODE_ROOT_SIZE, _color_from_hex(COLOR_NODE_DEFAULT), false, false, true)
+	_sync_tree_node("root", root_position, UIMetrics.PLANETS_MENU_NODE_ROOT_SIZE, _color_from_hex(COLOR_NODE_DEFAULT), false, false, true)
 
 	for planet_variant in view_model.get("planets", []):
 		if typeof(planet_variant) != TYPE_DICTIONARY:
@@ -343,7 +341,7 @@ func _refresh_tree(view_model: Dictionary) -> void:
 			continue
 		current_visible_node_ids.append(planet_id)
 		var node_color := _resolve_planet_node_color(planet_entry)
-		_create_tree_node(
+		_sync_tree_node(
 			planet_id,
 			_normalized_to_tree_point(planet_entry.get("position", {})),
 			UIMetrics.PLANETS_MENU_NODE_MEDIUM_SIZE,
@@ -362,7 +360,7 @@ func _refresh_tree(view_model: Dictionary) -> void:
 			continue
 		current_visible_node_ids.append(moon_id)
 		var moon_color := _resolve_moon_node_color(moon_entry)
-		_create_tree_node(
+		_sync_tree_node(
 			moon_id,
 			_normalized_to_tree_point(moon_entry.get("position", {})),
 			UIMetrics.PLANETS_MENU_NODE_SMALL_SIZE,
@@ -371,6 +369,7 @@ func _refresh_tree(view_model: Dictionary) -> void:
 			moon_id == _selected_moon_id,
 			false
 		)
+	_remove_stale_tree_nodes(current_visible_node_ids)
 	if _has_refreshed_once:
 		for node_id in current_visible_node_ids:
 			if node_id == "root" or _last_visible_node_ids.has(node_id):
@@ -384,21 +383,19 @@ func _refresh_upgrade_panel(game_state: GameState) -> void:
 	var moon_color := _color_from_hex(str(moon_entry.get("color", COLOR_NODE_DEFAULT)), _color_from_hex(COLOR_NODE_DEFAULT))
 	_upgrades_header.text = "Moon Upgrades\n%s" % str(moon_entry.get("label", "Select a moon"))
 	_upgrades_header.add_theme_color_override("font_color", moon_color.lightened(0.2))
-
-	for child in _upgrades_list.get_children():
-		child.queue_free()
-	_upgrade_buttons.clear()
+	var active_button_keys: Array[String] = []
+	var child_index := 0
 
 	for upgrade_entry in game_state.get_moon_upgrade_entries(_selected_moon_id):
-		var button := Button.new()
-		button.focus_mode = Control.FOCUS_NONE
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size = Vector2(0.0, UIMetrics.PLANETS_MENU_UPGRADE_ROW_MIN_HEIGHT)
-		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		button.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 		var upgrade_id := str(upgrade_entry.get("id", ""))
+		if upgrade_id.is_empty():
+			continue
+		var button_key := _get_upgrade_button_key(_selected_moon_id, upgrade_id)
+		active_button_keys.append(button_key)
+		var button := _upgrade_buttons.get(button_key, null) as Button
+		if button == null:
+			button = _create_upgrade_button(_selected_moon_id, upgrade_id)
 		var rp_cost: DigitMaster = upgrade_entry.get("rp_cost", DigitMaster.zero())
 		var locked := bool(upgrade_entry.get("locked", false))
 		var purchased := bool(upgrade_entry.get("purchased", false))
@@ -421,10 +418,10 @@ func _refresh_upgrade_panel(game_state: GameState) -> void:
 		button.add_theme_color_override("font_color", _color_from_hex(COLOR_PREVIEW_BG))
 		button.add_theme_color_override("font_disabled_color", _color_from_hex(COLOR_PREVIEW_BG).lightened(0.1))
 		_apply_upgrade_button_style(button, moon_color, locked, purchased, can_purchase)
-		if can_purchase:
-			button.pressed.connect(_on_upgrade_pressed.bind(_selected_moon_id, upgrade_id))
-		_upgrades_list.add_child(button)
-		_upgrade_buttons[_get_upgrade_button_key(_selected_moon_id, upgrade_id)] = button
+		_upgrades_list.move_child(button, child_index)
+		child_index += 1
+
+	_remove_stale_upgrade_buttons(active_button_keys)
 
 func _refresh_preview_panel(game_state: GameState) -> void:
 	var planet_entry := game_state.get_planet_menu_planet_entry(_selected_planet_id)
@@ -486,12 +483,7 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 	_action_button.disabled = not can_purchase
 	_apply_action_button_style(_action_button, accent_color, owned, can_purchase)
 
-func _clear_tree_nodes() -> void:
-	for child in _tree_canvas.get_children():
-		child.queue_free()
-	_tree_node_buttons.clear()
-
-func _create_tree_node(
+func _sync_tree_node(
 	node_id: String,
 	center_position: Vector2,
 	node_size: float,
@@ -500,6 +492,17 @@ func _create_tree_node(
 	selected: bool,
 	disabled: bool
 ) -> void:
+	var button := _tree_node_buttons.get(node_id, null) as Button
+	if button == null:
+		button = _create_tree_node(node_id, clickable, disabled)
+	button.disabled = disabled
+	button.custom_minimum_size = Vector2(node_size, node_size)
+	button.size = Vector2(node_size, node_size)
+	button.position = Vector2(round(center_position.x - (node_size * 0.5)), round(center_position.y - (node_size * 0.5)))
+	button.tooltip_text = node_id
+	_apply_tree_node_style(button, base_color, node_size, selected, clickable and not disabled)
+
+func _create_tree_node(node_id: String, clickable: bool, disabled: bool) -> Button:
 	var button := Button.new()
 	button.name = "Node_%s" % node_id
 	button.text = ""
@@ -508,22 +511,60 @@ func _create_tree_node(
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	button.disabled = disabled
-	button.custom_minimum_size = Vector2(node_size, node_size)
-	button.size = Vector2(node_size, node_size)
-	button.position = Vector2(round(center_position.x - (node_size * 0.5)), round(center_position.y - (node_size * 0.5)))
-	button.tooltip_text = node_id
-	_apply_tree_node_style(button, base_color, node_size, selected, clickable and not disabled)
 	_tree_canvas.add_child(button)
 	_tree_node_buttons[node_id] = button
 
 	if not clickable or disabled:
-		return
+		return button
 	if node_id.begins_with("planet_"):
 		button.gui_input.connect(_on_tree_node_gui_input.bind(node_id))
 		button.pressed.connect(_on_planet_pressed.bind(node_id))
 	else:
 		button.gui_input.connect(_on_tree_node_gui_input.bind(node_id))
 		button.pressed.connect(_on_moon_pressed.bind(node_id))
+	return button
+
+func _remove_stale_tree_nodes(active_node_ids: Array[String]) -> void:
+	var stale_node_ids: Array[String] = []
+	for node_id_variant in _tree_node_buttons.keys():
+		var node_id := str(node_id_variant)
+		if active_node_ids.has(node_id):
+			continue
+		stale_node_ids.append(node_id)
+
+	for node_id in stale_node_ids:
+		var button := _tree_node_buttons.get(node_id, null) as Button
+		if is_instance_valid(button):
+			button.queue_free()
+		_tree_node_buttons.erase(node_id)
+
+func _create_upgrade_button(moon_id: String, upgrade_id: String) -> Button:
+	var button := Button.new()
+	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(0.0, UIMetrics.PLANETS_MENU_UPGRADE_ROW_MIN_HEIGHT)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.pressed.connect(_on_upgrade_pressed.bind(moon_id, upgrade_id))
+	_apply_button_font(button)
+	_upgrades_list.add_child(button)
+	_upgrade_buttons[_get_upgrade_button_key(moon_id, upgrade_id)] = button
+	return button
+
+func _remove_stale_upgrade_buttons(active_button_keys: Array[String]) -> void:
+	var stale_button_keys: Array[String] = []
+	for button_key_variant in _upgrade_buttons.keys():
+		var button_key := str(button_key_variant)
+		if active_button_keys.has(button_key):
+			continue
+		stale_button_keys.append(button_key)
+
+	for button_key in stale_button_keys:
+		var button := _upgrade_buttons.get(button_key, null) as Button
+		if is_instance_valid(button):
+			button.queue_free()
+		_upgrade_buttons.erase(button_key)
 
 func _apply_tree_node_style(button: Button, base_color: Color, node_size: float, selected: bool, interactive: bool) -> void:
 	var fill_color := base_color

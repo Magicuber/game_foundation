@@ -4,11 +4,23 @@ class_name WorldViewController
 
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 
-const WORLD_WORKER_VISUAL_CAP := 1000
+const WORLD_WORKER_SOFT_VISUAL_CAP := 150
+const WORLD_WORKER_HARD_VISUAL_CAP := 200
+const WORLD_WORKER_OVERFLOW_VISUAL_DIVISOR := 4
 const WORLD_ORBIT_MIN_RADIUS := 168.0
 const WORLD_ORBIT_MAX_RADIUS := 240.0
 const WORLD_ORBIT_SPEED_MIN := 0.35
 const WORLD_ORBIT_SPEED_MAX := 1.15
+const WORLD_WORKER_BASE_COLOR := Color8(238, 240, 255, 220)
+const WORLD_WORKER_SIZE_GROWTH_THRESHOLD := 7
+const WORLD_WORKER_MAX_SIZE_SCALE := 2.4
+
+class WorkerCanvas extends Control:
+	var controller: WorldViewController
+
+	func _draw() -> void:
+		if controller != null:
+			controller._draw_worker_particles(self)
 
 signal worker_purchase_requested
 signal worker_allocation_changed(value: float)
@@ -35,6 +47,7 @@ var _rp_progress_fill: ColorRect
 var _rp_progress_label: Label
 var _rp_progress_value: Label
 var _icon_cache: GameIconCache
+var _worker_canvas: WorkerCanvas
 var _enabled_button_modulate := Color(1, 1, 1, 1)
 var _disabled_button_modulate := Color(0.45, 0.45, 0.45, 1.0)
 var _worker_particles: Array[Dictionary] = []
@@ -78,6 +91,7 @@ func configure(
 	_particle_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_particle_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.move_child(_particle_layer, 1)
+	_ensure_worker_canvas()
 
 	_planet_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_planet_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -160,7 +174,7 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		_worker_slider.editable = false
 		_worker_button.disabled = true
 		_worker_button.modulate = _disabled_button_modulate
-		_sync_worker_particles(0)
+		_sync_worker_particles(0, game_state)
 		return
 
 	var planet_level := planet.level
@@ -210,31 +224,22 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		game_state.get_research_points().big_to_short_string(),
 		game_state.get_research_progress_display()
 	]
-	_sync_worker_particles(_estimate_visible_worker_particle_count(workers))
+	_sync_worker_particles(_get_total_worker_count(workers), game_state)
 
 func update(delta: float, is_world_view: bool) -> void:
 	if not is_world_view or _worker_particles.is_empty():
 		return
 
-	var center := _planet_sprite.global_position + (_planet_sprite.size * 0.5)
 	for i in range(_worker_particles.size()):
 		var particle: Dictionary = _worker_particles[i]
-		var node: ColorRect = particle["node"]
 		var angle := float(particle.get("angle", 0.0)) + (float(particle.get("speed", 0.0)) * delta)
 		particle["angle"] = fmod(angle, TAU)
 		_worker_particles[i] = particle
-		var radius := float(particle.get("radius", WORLD_ORBIT_MIN_RADIUS))
-		var phase := float(particle.get("phase", 1.0))
-		var offset := Vector2.RIGHT.rotated(angle) * radius
-		offset.y *= phase
-		node.global_position = center + offset - (node.size * 0.5)
+	_queue_worker_redraw()
 
 func clear_particles() -> void:
-	for particle in _worker_particles:
-		var node: ColorRect = particle.get("node", null)
-		if is_instance_valid(node):
-			node.queue_free()
 	_worker_particles.clear()
+	_queue_worker_redraw()
 
 func _configure_texture_button(button: TextureButton, texture: Texture2D) -> void:
 	button.texture_normal = texture
@@ -318,42 +323,121 @@ func _set_progress_fill_ratio(fill: ColorRect, ratio: float) -> void:
 	var width := maxf(0.0, parent_rect.size.x * clampf(ratio, 0.0, 1.0))
 	fill.offset_right = width
 
-func _estimate_visible_worker_particle_count(workers: DigitMaster) -> int:
-	if workers.is_infinite or workers.exponent >= 4:
-		return WORLD_WORKER_VISUAL_CAP
-	return mini(int(floor(_digit_master_to_float(workers))), WORLD_WORKER_VISUAL_CAP)
+func _ensure_worker_canvas() -> void:
+	if _particle_layer == null:
+		return
+	if is_instance_valid(_worker_canvas):
+		if _worker_canvas.get_parent() != _particle_layer:
+			if _worker_canvas.get_parent() != null:
+				_worker_canvas.get_parent().remove_child(_worker_canvas)
+			_particle_layer.add_child(_worker_canvas)
+	else:
+		_worker_canvas = WorkerCanvas.new()
+		_worker_canvas.name = "WorldWorkerCanvas"
+		_worker_canvas.controller = self
+		_worker_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_worker_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_particle_layer.add_child(_worker_canvas)
+	_worker_canvas.visible = true
 
-func _sync_worker_particles(target_count: int) -> void:
-	target_count = clampi(target_count, 0, WORLD_WORKER_VISUAL_CAP)
+func _get_total_worker_count(workers: DigitMaster) -> int:
+	if workers == null or workers.is_zero():
+		return 0
+	if workers.is_infinite or workers.exponent >= 6:
+		return WORLD_WORKER_HARD_VISUAL_CAP * WORLD_WORKER_SIZE_GROWTH_THRESHOLD
+	return maxi(0, int(floor(_digit_master_to_float(workers))))
+
+func _estimate_visible_worker_particle_count(total_workers: int) -> int:
+	if total_workers <= 0:
+		return 0
+	if total_workers <= WORLD_WORKER_SOFT_VISUAL_CAP:
+		return total_workers
+	var overflow_workers := total_workers - WORLD_WORKER_SOFT_VISUAL_CAP
+	var overflow_visuals := int(ceil(float(overflow_workers) / float(WORLD_WORKER_OVERFLOW_VISUAL_DIVISOR)))
+	return clampi(WORLD_WORKER_SOFT_VISUAL_CAP + overflow_visuals, 0, WORLD_WORKER_HARD_VISUAL_CAP)
+
+func _sync_worker_particles(total_workers: int, game_state: GameState) -> void:
+	var target_count := _estimate_visible_worker_particle_count(total_workers)
 	while _worker_particles.size() < target_count:
 		_add_worker_particle()
 	while _worker_particles.size() > target_count:
-		_remove_worker_particle_at(_worker_particles.size() - 1)
+		_worker_particles.remove_at(_worker_particles.size() - 1)
+
+	if target_count <= 0:
+		_queue_worker_redraw()
+		return
+
+	var base_represented_count := int(total_workers / target_count)
+	var remainder := total_workers % target_count
+	for index in range(target_count):
+		var represented_count := base_represented_count
+		if index < remainder:
+			represented_count += 1
+		var particle := _worker_particles[index]
+		particle["represented_count"] = represented_count
+		particle["color"] = _get_worker_particle_color(represented_count, game_state)
+		particle["size"] = _get_worker_particle_size(represented_count)
+		_worker_particles[index] = particle
+	_queue_worker_redraw()
 
 func _add_worker_particle() -> void:
-	var node := ColorRect.new()
-	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	node.color = Color8(238, 240, 255, 220)
-	node.custom_minimum_size = UIMetrics.WORLD_PARTICLE_SIZE
-	node.size = UIMetrics.WORLD_PARTICLE_SIZE
-	_particle_layer.add_child(node)
-
 	_worker_particles.append({
-		"node": node,
 		"angle": _rng.randf_range(0.0, TAU),
 		"radius": _rng.randf_range(WORLD_ORBIT_MIN_RADIUS, WORLD_ORBIT_MAX_RADIUS),
 		"speed": _rng.randf_range(WORLD_ORBIT_SPEED_MIN, WORLD_ORBIT_SPEED_MAX),
-		"phase": _rng.randf_range(0.6, 1.4)
+		"phase": _rng.randf_range(0.6, 1.4),
+		"represented_count": 1,
+		"color": WORLD_WORKER_BASE_COLOR,
+		"size": float(UIMetrics.WORLD_PARTICLE_SIZE.x)
 	})
 
-func _remove_worker_particle_at(index: int) -> void:
-	var particle: Dictionary = _worker_particles[index]
-	var node: ColorRect = particle["node"]
-	if is_instance_valid(node):
-		node.queue_free()
-	_worker_particles.remove_at(index)
+func _draw_worker_particles(canvas: Control) -> void:
+	if canvas == null or _worker_particles.is_empty():
+		return
+	var center := _planet_sprite.position + (_planet_sprite.size * 0.5)
+	for particle in _worker_particles:
+		var angle := float(particle.get("angle", 0.0))
+		var radius := float(particle.get("radius", WORLD_ORBIT_MIN_RADIUS))
+		var phase := float(particle.get("phase", 1.0))
+		var size := float(particle.get("size", float(UIMetrics.WORLD_PARTICLE_SIZE.x)))
+		var color: Color = particle.get("color", WORLD_WORKER_BASE_COLOR)
+		var offset := Vector2.RIGHT.rotated(angle) * radius
+		offset.y *= phase
+		var draw_rect := Rect2(center + offset - (Vector2.ONE * size * 0.5), Vector2.ONE * size)
+		canvas.draw_rect(draw_rect, color)
+
+func _get_worker_particle_color(represented_count: int, game_state: GameState) -> Color:
+	if game_state == null or represented_count <= 1:
+		return WORLD_WORKER_BASE_COLOR
+	match represented_count:
+		2:
+			return game_state.get_blessing_rarity_color("Uncommon")
+		3:
+			return game_state.get_blessing_rarity_color("Rare")
+		4:
+			return game_state.get_blessing_rarity_color("Legendary")
+		5:
+			return game_state.get_blessing_rarity_color("Exotic")
+		6:
+			return game_state.get_blessing_rarity_color("Exalted")
+		_:
+			return game_state.get_blessing_rarity_color("Divine")
+
+func _get_worker_particle_size(represented_count: int) -> float:
+	var base_size := float(UIMetrics.WORLD_PARTICLE_SIZE.x)
+	if represented_count <= WORLD_WORKER_SIZE_GROWTH_THRESHOLD:
+		return base_size
+	var overflow_count := represented_count - WORLD_WORKER_SIZE_GROWTH_THRESHOLD
+	var scale := minf(1.0 + (sqrt(float(overflow_count)) * 0.18), WORLD_WORKER_MAX_SIZE_SCALE)
+	return base_size * scale
+
+func _queue_worker_redraw() -> void:
+	if is_instance_valid(_worker_canvas):
+		_worker_canvas.queue_redraw()
 
 func _digit_master_to_float(value: DigitMaster) -> float:
+	if value == null:
+		return 0.0
 	if value.is_infinite:
 		return INF
 	if value.is_zero():
