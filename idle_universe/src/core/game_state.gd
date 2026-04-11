@@ -8,6 +8,8 @@ const ResourceManagerScript = preload("res://src/core/managers/resource_manager.
 const PrestigeManagerScript = preload("res://src/core/managers/prestige_manager.gd")
 const PlanetManagerScript = preload("res://src/core/managers/planet_manager.gd")
 const ProgressionManagerScript = preload("res://src/core/managers/progression_manager.gd")
+const UpgradeManagerScript = preload("res://src/core/managers/upgrade_manager.gd")
+const ResetManagerScript = preload("res://src/core/managers/reset_manager.gd")
 const GameStateSerializerScript = preload("res://src/core/save/game_state_serializer.gd")
 
 const SAVE_VERSION := 6
@@ -298,6 +300,8 @@ var resource_manager
 var prestige_manager
 var planet_manager
 var progression_manager
+var upgrade_manager
+var reset_manager
 var serializer
 
 static func from_content(
@@ -376,6 +380,8 @@ func _init() -> void:
 	resource_manager = ResourceManagerScript.new(self)
 	planet_manager = PlanetManagerScript.new(self)
 	progression_manager = ProgressionManagerScript.new(self)
+	upgrade_manager = UpgradeManagerScript.new(self)
+	reset_manager = ResetManagerScript.new(self)
 	prestige_manager = PrestigeManagerScript.new(self)
 	serializer = GameStateSerializerScript.new()
 	next_milestone_id = _get_first_milestone_id()
@@ -384,20 +390,7 @@ func _load_elements(elements_data: Array) -> void:
 	progression_manager.load_elements(elements_data)
 
 func _load_upgrades(upgrades_data: Array) -> void:
-	upgrades.clear()
-	upgrade_ids_in_order.clear()
-
-	for raw_upgrade_variant in upgrades_data:
-		if typeof(raw_upgrade_variant) != TYPE_DICTIONARY:
-			continue
-
-		var raw_upgrade: Dictionary = raw_upgrade_variant
-		var upgrade := UpgradeState.from_content(raw_upgrade)
-		if upgrade.id.is_empty():
-			continue
-
-		upgrades[upgrade.id] = upgrade
-		upgrade_ids_in_order.append(upgrade.id)
+	upgrade_manager.load_upgrades(upgrades_data)
 
 func _load_blessings(blessings_data: Array, rarity_data: Array) -> void:
 	blessing_manager.load_blessings(blessings_data, rarity_data)
@@ -652,12 +645,10 @@ func get_research_progress_display() -> String:
 	return resource_manager.get_research_progress_display()
 
 func get_upgrade_state(upgrade_id: String) -> UpgradeState:
-	if not upgrades.has(upgrade_id):
-		return null
-	return upgrades[upgrade_id]
+	return upgrade_manager.get_upgrade_state(upgrade_id)
 
 func get_upgrade_ids() -> Array[String]:
-	return upgrade_ids_in_order.duplicate()
+	return upgrade_manager.get_upgrade_ids()
 
 func has_blessing(blessing_id: String) -> bool:
 	return blessing_manager.has_blessing(blessing_id)
@@ -804,22 +795,13 @@ func unlock_next_element() -> bool:
 	return progression_manager.unlock_next_element()
 
 func set_upgrade_level(upgrade_id: String, level: int) -> void:
-	var upgrade := get_upgrade_state(upgrade_id)
-	if upgrade == null:
-		return
-	upgrade.current_level = level
+	upgrade_manager.set_upgrade_level(upgrade_id, level)
 
 func set_upgrade_current_cost(upgrade_id: String, cost: DigitMaster) -> void:
-	var upgrade := get_upgrade_state(upgrade_id)
-	if upgrade == null:
-		return
-	upgrade.current_cost = cost.clone()
+	upgrade_manager.set_upgrade_current_cost(upgrade_id, cost)
 
 func set_upgrade_secondary_current_cost(upgrade_id: String, cost: DigitMaster) -> void:
-	var upgrade := get_upgrade_state(upgrade_id)
-	if upgrade == null:
-		return
-	upgrade.secondary_current_cost = cost.clone()
+	upgrade_manager.set_upgrade_secondary_current_cost(upgrade_id, cost)
 
 func to_save_dict() -> Dictionary:
 	return serializer.to_save_dict(self)
@@ -828,59 +810,16 @@ func apply_save_dict(save_data: Dictionary) -> void:
 	serializer.apply_save_dict(self, save_data)
 
 func _reset_run_state() -> void:
-	dust = DigitMaster.zero()
-	current_element_id = ""
-	next_unlock_id = ""
-	max_unlocked_element_id = ""
-	player_level = 1
-	global_multiplier = DigitMaster.one()
-	tick_count = 0
-	total_played_seconds = 0.0
-	last_save_tick = 0
-	total_manual_smashes = 0
-	total_auto_smashes = 0
-	research_points = DigitMaster.zero()
-	research_progress = 0.0
-	best_planet_levels_this_run.clear()
-	moon_upgrade_purchases.clear()
-	_reset_elements_to_defaults()
-	_reset_upgrades_to_defaults()
-	_reset_planets_to_owned_defaults()
-	current_planet_id = DEFAULT_PLANET_ID
+	reset_manager.reset_run_state()
 
 func _reset_elements_to_defaults() -> void:
 	progression_manager.reset_elements_to_defaults()
 
 func _reset_upgrades_to_defaults() -> void:
-	for upgrade_id in upgrade_ids_in_order:
-		var upgrade := get_upgrade_state(upgrade_id)
-		if upgrade == null:
-			continue
-		upgrade.reset_to_default()
+	upgrade_manager.reset_upgrades_to_defaults()
 
 func _reset_planets_to_owned_defaults() -> void:
-	_ensure_planet_meta_defaults()
-	if has_unlocked_era(1):
-		planet_owned_flags[DEFAULT_PLANET_ID] = true
-
-	for planet_id in planet_ids_in_order:
-		var planet := get_planet_state(planet_id)
-		if planet == null:
-			continue
-		planet.reset_to_default(_calculate_planet_xp_requirement(planet.default_level))
-		planet.unlocked = bool(planet_owned_flags.get(planet_id, false))
-		if planet.unlocked:
-			planet.level = maxi(1, planet.level)
-			planet.xp_to_next_level = _calculate_planet_xp_requirement(planet.level)
-
-func _serialize_planets() -> Dictionary:
-	var serialized_planets := {}
-	for planet_id in planet_ids_in_order:
-		var planet := get_planet_state(planet_id)
-		if planet == null:
-			continue
-		serialized_planets[planet_id] = planet.to_save_dict()
-	return serialized_planets
+	reset_manager.reset_planets_to_owned_defaults()
 
 func _calculate_planet_xp_requirement(level: int) -> DigitMaster:
 	return planet_manager.calculate_planet_xp_requirement(level)

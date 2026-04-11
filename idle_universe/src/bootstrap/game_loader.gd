@@ -3,6 +3,9 @@ extends Control
 const GameBootstrapScript = preload("res://src/bootstrap/game_bootstrap.gd")
 const AutosaveServiceScript = preload("res://src/bootstrap/autosave_service.gd")
 const UiStateControllerScript = preload("res://src/bootstrap/ui_state_controller.gd")
+const GameActionRouterScript = preload("res://src/bootstrap/game_action_router.gd")
+const GameUiRefreshCoordinatorScript = preload("res://src/bootstrap/game_ui_refresh_coordinator.gd")
+const GameLoaderSetupHelperScript = preload("res://src/bootstrap/game_loader_setup_helper.gd")
 const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
 const PlanetsPanelControllerScript = preload("res://src/controllers/planets_panel_controller.gd")
 const PrestigePanelControllerScript = preload("res://src/controllers/prestige_panel_controller.gd")
@@ -227,11 +230,17 @@ var era_panel_controller: EraPanelController = EraPanelController.new()
 var game_bootstrap: GameBootstrap = GameBootstrapScript.new()
 var autosave_service: AutosaveService = AutosaveServiceScript.new()
 var ui_state_controller: UiStateController = UiStateControllerScript.new(MENU_CLOSED, VIEW_ATOM, UI_DIRTY_ALL)
+var action_router
+var ui_refresh_coordinator
+var setup_helper
 
 func _ready() -> void:
 	set_process(true)
 
 	game_state = game_bootstrap.build_and_load_game_state()
+	action_router = GameActionRouterScript.new(self)
+	ui_refresh_coordinator = GameUiRefreshCoordinatorScript.new(self)
+	setup_helper = GameLoaderSetupHelperScript.new(self)
 	upgrades_system.mark_cache_dirty()
 	_ensure_factory_and_collider_menu_nodes()
 
@@ -610,516 +619,149 @@ func _get_view_mode_refresh_flags() -> int:
 		UI_DIRTY_MENU_BUTTONS
 	)
 
-func _get_counter_ids() -> Array[String]:
-	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
-	var limited_ids: Array[String] = []
-	for element_id in visible_ids:
-		limited_ids.append(element_id)
-		if limited_ids.size() >= MAX_COUNTERS:
-			break
-	return limited_ids
-
-func _sync_resource_displays() -> void:
-	if not counter_margin.visible:
-		return
-
-	var visible_ids: Array[String] = _get_counter_ids()
-	if resource_display_ids != visible_ids:
-		for child in counter_list.get_children():
-			child.queue_free()
-
-		resource_displays.clear()
-		resource_display_ids = visible_ids.duplicate()
-
-		for element_id in resource_display_ids:
-			var display: CurrencyDisplay = CurrencyDisplay.new()
-			display.configure(game_state, element_id)
-			counter_list.add_child(display)
-			resource_displays[element_id] = display
-
-	for element_id in resource_display_ids:
-		var display: CurrencyDisplay = resource_displays[element_id]
-		display.refresh()
-
 func _refresh_ui(flags: int = UI_DIRTY_ALL) -> void:
-	ui_state_controller.refresh_ui(flags, _flush_dirty_ui)
+	ui_refresh_coordinator.refresh_ui(flags)
 
 func _flush_dirty_ui() -> void:
-	ui_state_controller.flush_dirty_ui(game_state, [
-		{"flag": UI_DIRTY_NAVIGATION, "callable": _refresh_navigation},
-		{"flag": UI_DIRTY_TOP_BAR, "callable": _refresh_top_bar},
-		{"flag": UI_DIRTY_SELECTION, "callable": _refresh_selection_ui},
-		{"flag": UI_DIRTY_MENU_BUTTONS, "callable": _refresh_menu_buttons},
-		{"flag": UI_DIRTY_COUNTERS, "callable": _sync_resource_displays},
-		{"flag": UI_DIRTY_UPGRADES, "callable": _refresh_upgrades_panel},
-		{"flag": UI_DIRTY_ELEMENTS, "callable": _refresh_elements_panel},
-		{"flag": UI_DIRTY_ERA, "callable": _refresh_era_ui},
-		{"flag": UI_DIRTY_STATS, "callable": _refresh_stats_panel},
-		{"flag": UI_DIRTY_SHOP, "callable": _refresh_shop_panel},
-		{"flag": UI_DIRTY_PLANETS, "callable": _refresh_planets_panel},
-		{"flag": UI_DIRTY_PRESTIGE, "callable": _refresh_prestige_panel},
-		{"flag": UI_DIRTY_SETTINGS, "callable": _refresh_settings_panel},
-		{"flag": UI_DIRTY_BLESSINGS_PROGRESS, "callable": _refresh_blessings_progress},
-		{"flag": UI_DIRTY_BLESSINGS_CATALOG, "callable": _refresh_blessings_catalog},
-		{"flag": UI_DIRTY_WORLD, "callable": _refresh_world_ui},
-		{"flag": UI_DIRTY_DEBUG, "callable": _refresh_debug_hitboxes}
-	])
-
-func _refresh_top_bar() -> void:
-	hud_controller.refresh_top_bar(game_state)
-
-func _refresh_selection_ui() -> void:
-	var current_element := game_state.get_current_element_state()
-	var current_index := 0 if current_element == null else current_element.index
-	var current_icon := icon_cache.get_element_icon(current_index)
-	fuse_button.texture_normal = current_icon
-	fuse_button.texture_pressed = current_icon
-	fuse_button.texture_hover = current_icon
-	fuse_button.texture_disabled = current_icon
-
-func _refresh_navigation() -> void:
-	fuse_button.visible = ui_state_controller.view_mode == VIEW_ATOM
-	effects_layer.visible = ui_state_controller.view_mode == VIEW_ATOM
-	world_view_controller.set_navigation_state(ui_state_controller.view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
-	hud_controller.refresh_navigation(
-		ui_state_controller.view_mode == VIEW_ATOM,
-		game_state.has_adjacent_owned_planet(-1) if ui_state_controller.view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
-		game_state.has_adjacent_owned_planet(1) if ui_state_controller.view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
-		ui_state_controller.view_mode == VIEW_WORLD,
-		ui_state_controller.view_mode == VIEW_ATOM and game_state.has_unlocked_era(1)
-	)
-
-func _refresh_menu_buttons() -> void:
-	var blessings_enabled := game_state.is_blessings_menu_unlocked()
-	var era_menu_enabled := game_state.is_era_menu_unlocked()
-	var planets_enabled := game_state.has_unlocked_era(1)
-	var shop_enabled := game_state.is_element_unlocked("ele_H")
-	menu_controller.refresh_main_menu_buttons(blessings_enabled, era_menu_enabled, planets_enabled, shop_enabled)
-	hud_controller.refresh_menu_button(ui_state_controller.menu_mode != MENU_CLOSED)
-	hud_controller.refresh_shop_button(shop_enabled, shop_enabled and ui_state_controller.menu_mode == MENU_CLOSED)
-
-func _refresh_upgrades_panel() -> void:
-	upgrades_panel_controller.refresh(game_state, upgrades_system)
-
-func _refresh_stats_panel() -> void:
-	if not stats_panel.visible:
-		return
-
-	var current_element := game_state.get_current_element_state()
-	var current_name := "" if current_element == null else current_element.name
-	var produced_name := "" if current_element == null else game_state.get_resource_name(current_element.produces)
-	var total_fission_chance := upgrades_system.get_fission_chance_percent(game_state)
-	stats_info.text = "Run Stats\nCurrent Element: %s\nProduces: %s\nManual Smashes: %d\nAuto Smashes: %d\n\nSmash Stats\n%s\nFission Sources Combined: %.2f%% total\n\nBlessing Progress\nBlessings Earned: %d\nDiscovered: %d / %d\n\nUpgrade Effects\n%s" % [
-		current_name,
-		produced_name,
-		game_state.total_manual_smashes,
-		game_state.total_auto_smashes,
-		_build_upgrade_stats_text(),
-		total_fission_chance,
-		game_state.blessings_count,
-		game_state.get_discovered_blessing_count(),
-		game_state.get_blessing_ids().size(),
-		_build_upgrade_effects_text()
-	]
-	planetary_stats_info.visible = game_state.has_unlocked_era(1)
-	if planetary_stats_info.visible:
-		var next_milestone := game_state.get_next_prestige_milestone()
-		var next_milestone_title := "None" if next_milestone.is_empty() else str(next_milestone.get("title", "None"))
-		planetary_stats_info.text = "Planetary Stats\nResearch Points: %s\nPrestige Points: %d (%d unspent)\nNext Milestone: %s" % [
-			game_state.get_research_points().big_to_short_string(),
-			game_state.prestige_points_total,
-			game_state.prestige_points_unspent,
-			next_milestone_title
-		]
-
-func _refresh_shop_panel() -> void:
-	if not shop_panel.visible:
-		return
-
-	shop_info.text = "Shop inventory is not implemented yet.\nThis panel will hold orb and meta purchases."
-
-func _refresh_planets_panel() -> void:
-	if not planets_panel.visible:
-		return
-
-	planets_panel_controller.refresh(game_state)
-
-func _refresh_prestige_panel() -> void:
-	if not prestige_panel.visible:
-		return
-
-	prestige_panel_controller.refresh(game_state)
-
-func _refresh_blessings_progress() -> void:
-	if not blessings_panel.visible:
-		return
-	blessings_panel_controller.refresh_progress(game_state)
-
-func _refresh_blessings_catalog() -> void:
-	if not blessings_panel.visible:
-		return
-	blessings_panel_controller.refresh_catalog(game_state)
-
-func _refresh_settings_panel() -> void:
-	if not settings_panel.visible:
-		return
-
-	settings_info.text = "Developer Tools\nUse Dust and Orbs to test prestige milestones and planet purchases."
-	prestige_debug_row.visible = false
-	prestige_count_label.text = "Prestige Count: %d" % game_state.prestige_count
-	click_boxes_toggle.button_pressed = debug_show_element_hitboxes
-
-func _refresh_elements_panel() -> void:
-	element_menu_controller.refresh(
-		game_state,
-		upgrades_system,
-		dust_recipe_service,
-		dust_mode_active,
-		debug_show_element_hitboxes
-	)
-
-func _refresh_world_ui() -> void:
-	world_view_controller.refresh(game_state, ui_state_controller.view_mode == VIEW_WORLD)
-
-func _refresh_era_ui() -> void:
-	era_panel_controller.refresh(game_state)
+	ui_refresh_coordinator.flush_dirty_ui()
 
 func _perform_dust_conversion() -> bool:
-	var selected_amounts: Dictionary = dust_recipe_service.get_selected_amounts(game_state, upgrades_system)
-	if selected_amounts.is_empty():
-		return false
-
-	var dust_preview: DigitMaster = dust_recipe_service.get_preview(game_state, upgrades_system)
-	if dust_preview.is_zero():
-		return false
-
-	for element_id_variant in selected_amounts.keys():
-		var element_id := str(element_id_variant)
-		var amount: DigitMaster = selected_amounts[element_id]
-		if not game_state.can_afford_resource(element_id, amount):
-			return false
-
-	for element_id_variant in selected_amounts.keys():
-		var element_id := str(element_id_variant)
-		var amount: DigitMaster = selected_amounts[element_id]
-		if not game_state.spend_resource(element_id, amount):
-			return false
-
-	game_state.produce_resource(GameState.DUST_RESOURCE_ID, dust_preview)
-	dust_recipe_service.invalidate()
-	return true
+	return action_router.perform_dust_conversion()
 
 func _autosave_if_needed() -> void:
 	autosave_service.autosave_if_needed(game_state)
 
 func _on_tick_processed(_tick_count: int, processed_actions: Array, production_changes: Dictionary) -> void:
-	var dirty_flags := 0
-	var current_planet_changed := bool(production_changes.get("current_planet_changed", false))
-	var any_planet_changed := bool(production_changes.get("any_planet_changed", false))
-	var research_changed := bool(production_changes.get("research_changed", false))
-	if ui_state_controller.view_mode == VIEW_WORLD and (current_planet_changed or research_changed):
-		dirty_flags |= UI_DIRTY_WORLD
-	if ui_state_controller.menu_mode == MENU_PLANETS and (any_planet_changed or research_changed):
-		dirty_flags |= UI_DIRTY_PLANETS
-	for action_type_variant in processed_actions:
-		match str(action_type_variant):
-			"unlock_next":
-				dust_recipe_service.invalidate()
-				dirty_flags |= _get_resource_refresh_flags() | _get_selection_refresh_flags() | UI_DIRTY_MENU_BUTTONS
-			"select_adjacent", "select_element":
-				dirty_flags |= _get_selection_refresh_flags()
-			"purchase_upgrade":
-				dust_recipe_service.invalidate()
-				dirty_flags |= _get_resource_refresh_flags()
-	if dirty_flags != 0:
-		_mark_ui_dirty(dirty_flags)
-	_autosave_if_needed()
+	action_router.on_tick_processed(_tick_count, processed_actions, production_changes)
 
 func _on_manual_smash_resolved(result: Dictionary) -> void:
-	dust_recipe_service.invalidate()
-	_pulse_fuse_element()
-	atom_effects_controller.spawn_manual_result(result)
-	_mark_ui_dirty(_get_resource_refresh_flags())
+	action_router.on_manual_smash_resolved(result)
 
 func _on_auto_smash_requested(request: Dictionary) -> void:
-	var target_element_id := str(request.get("target_element_id", ""))
-	var spawn_count := int(request.get("spawn_count", 1))
-	if ui_state_controller.view_mode != VIEW_ATOM:
-		var any_resolved := false
-		for _i in range(spawn_count):
-			var result: Dictionary = element_system.resolve_auto_smash(game_state, upgrades_system, target_element_id)
-			if not result.is_empty():
-				any_resolved = true
-		if any_resolved:
-			dust_recipe_service.invalidate()
-			_mark_ui_dirty(_get_resource_refresh_flags())
-		return
-	var pending_results: Array[Dictionary] = []
-	for _i in range(spawn_count):
-		var result := element_system.preview_auto_smash(game_state, upgrades_system, target_element_id)
-		if result.is_empty():
-			continue
-		pending_results.append(result)
-	if not pending_results.is_empty():
-		atom_effects_controller.queue_auto_smash_results(pending_results)
+	action_router.on_auto_smash_requested(request)
 
 func _flush_pending_atom_hits(refresh_ui_after_flush: bool = true) -> int:
-	var resolved_auto_smashes := atom_effects_controller.flush_pending_hits()
-	if resolved_auto_smashes <= 0:
-		return 0
-	dust_recipe_service.invalidate()
-	if refresh_ui_after_flush:
-		_refresh_ui(_get_resource_refresh_flags())
-	return resolved_auto_smashes
+	return action_router.flush_pending_atom_hits(refresh_ui_after_flush)
 
 func _on_prev_pressed() -> void:
-	if ui_state_controller.view_mode == VIEW_WORLD:
-		if not game_state.select_adjacent_owned_planet(-1):
-			return
-		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
-		return
-	tick_system.enqueue_action("select_adjacent", {"direction": -1})
+	action_router.on_prev_pressed()
 
 func _on_next_pressed() -> void:
-	if ui_state_controller.view_mode == VIEW_WORLD:
-		if not game_state.select_adjacent_owned_planet(1):
-			return
-		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
-		return
-	tick_system.enqueue_action("select_adjacent", {"direction": 1})
+	action_router.on_next_pressed()
 
 func _on_zin_pressed() -> void:
-	if ui_state_controller.view_mode != VIEW_WORLD:
-		return
-	_set_view_mode(VIEW_ATOM)
-	_refresh_ui(_get_view_mode_refresh_flags())
+	action_router.on_zin_pressed()
 
 func _on_zout_pressed() -> void:
-	if not game_state.has_unlocked_era(1):
-		return
-	_set_view_mode(VIEW_WORLD)
-	_refresh_ui(_get_view_mode_refresh_flags())
+	action_router.on_zout_pressed()
 
 func _on_smash_pressed() -> void:
-	if ui_state_controller.view_mode != VIEW_ATOM:
-		return
-	tick_system.enqueue_action("manual_smash")
+	action_router.on_smash_pressed()
 
 func _on_menu_pressed() -> void:
-	match ui_state_controller.menu_mode:
-		MENU_CLOSED:
-			_set_menu_mode(MENU_MAIN)
-		MENU_MAIN:
-			_set_menu_mode(MENU_CLOSED)
-		_:
-			_set_menu_mode(MENU_MAIN)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_menu_pressed()
 
 func _on_upgrades_menu_pressed() -> void:
-	_set_menu_mode(MENU_UPGRADES)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_upgrades_menu_pressed()
 
 func _on_profile_menu_pressed() -> void:
-	_set_menu_mode(MENU_PROFILE)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_profile_menu_pressed()
 
 func _on_elements_menu_pressed() -> void:
-	_set_menu_mode(MENU_ELEMENTS)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_elements_menu_pressed()
 
 func _on_blessings_menu_pressed() -> void:
-	if not game_state.is_blessings_menu_unlocked():
-		return
-	_set_menu_mode(MENU_BLESSINGS)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_blessings_menu_pressed()
 
 func _on_open_blessings_pressed() -> void:
-	if game_state.open_earned_blessings() <= 0:
-		return
-	_refresh_ui(UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG | UI_DIRTY_STATS)
+	action_router.on_open_blessings_pressed()
 
 func _on_era_menu_pressed() -> void:
-	if not game_state.is_era_menu_unlocked():
-		return
-	_set_menu_mode(MENU_ERA)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_era_menu_pressed()
 
 func _on_planets_menu_pressed() -> void:
-	if not game_state.has_unlocked_era(1):
-		return
-	_set_menu_mode(MENU_PLANETS)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_planets_menu_pressed()
 
 func _on_prestige_menu_pressed() -> void:
-	_set_menu_mode(MENU_PRESTIGE)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_prestige_menu_pressed()
 
 func _on_factory_menu_pressed() -> void:
-	_set_menu_mode(MENU_FACTORY)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_factory_menu_pressed()
 
 func _on_collider_menu_pressed() -> void:
-	_set_menu_mode(MENU_COLLIDER)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_collider_menu_pressed()
 
 func _on_stats_menu_pressed() -> void:
-	_set_menu_mode(MENU_STATS)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_stats_menu_pressed()
 
 func _on_shop_pressed() -> void:
-	if not game_state.is_element_unlocked("ele_H"):
-		return
-	_set_menu_mode(MENU_SHOP)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_shop_pressed()
 
 func _on_settings_menu_pressed() -> void:
-	_set_menu_mode(MENU_SETTINGS)
-	_refresh_ui(_get_menu_mode_refresh_flags())
+	action_router.on_settings_menu_pressed()
 
 func _on_element_tile_pressed(element_id: String) -> void:
-	if dust_mode_active:
-		dust_recipe_service.cycle_selection(element_id)
-		_refresh_ui(UI_DIRTY_ELEMENTS)
-		return
-	if game_state.select_element(element_id):
-		_set_menu_mode(MENU_CLOSED)
-		_refresh_ui(_get_selection_refresh_flags() | UI_DIRTY_MENU_BUTTONS)
+	action_router.on_element_tile_pressed(element_id)
 
 func _on_unlock_pressed() -> void:
-	tick_system.enqueue_action("unlock_next")
+	action_router.on_unlock_pressed()
 
 func _on_make_dust_pressed() -> void:
-	if not dust_mode_active:
-		dust_mode_active = true
-		dust_recipe_service.invalidate()
-		_refresh_ui(UI_DIRTY_ELEMENTS)
-		return
-
-	if _perform_dust_conversion():
-		dust_mode_active = false
-		_refresh_ui(_get_resource_refresh_flags())
+	action_router.on_make_dust_pressed()
 
 func _on_dust_close_pressed() -> void:
-	dust_mode_active = false
-	_refresh_ui(UI_DIRTY_ELEMENTS)
+	action_router.on_dust_close_pressed()
 
 func _on_dust_cycle_all_pressed() -> void:
-	dust_recipe_service.cycle_all_unlocked_selections(game_state)
-	_refresh_ui(UI_DIRTY_ELEMENTS)
+	action_router.on_dust_cycle_all_pressed()
 
 func _on_dust_clear_all_pressed() -> void:
-	dust_recipe_service.clear_selection()
-	_refresh_ui(UI_DIRTY_ELEMENTS)
+	action_router.on_dust_clear_all_pressed()
 
 func _on_click_boxes_toggled(toggled_on: bool) -> void:
-	debug_show_element_hitboxes = toggled_on
-	_refresh_ui(UI_DIRTY_DEBUG)
+	action_router.on_click_boxes_toggled(toggled_on)
 
 func _on_add_dust_pressed() -> void:
-	game_state.produce_resource(GameState.DUST_RESOURCE_ID, DigitMaster.new(1000.0))
-	dust_recipe_service.invalidate()
-	_refresh_ui(_get_resource_refresh_flags())
+	action_router.on_add_dust_pressed()
 
 func _on_add_orbs_pressed() -> void:
-	game_state.orbs += 1000
-	_refresh_ui(UI_DIRTY_TOP_BAR | UI_DIRTY_ERA | UI_DIRTY_PLANETS | UI_DIRTY_PRESTIGE)
+	action_router.on_add_orbs_pressed()
 
 func _on_reset_blessings_pressed() -> void:
-	if not game_state.reset_blessings():
-		return
-	_refresh_ui(UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG | UI_DIRTY_STATS)
+	action_router.on_reset_blessings_pressed()
 
 func _on_planet_purchase_requested(planet_id: String) -> void:
-	if not game_state.purchase_planet(planet_id):
-		return
-	_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_PLANETS | UI_DIRTY_WORLD | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
-	planets_panel_controller.play_planet_unlock_animation(planet_id)
+	action_router.on_planet_purchase_requested(planet_id)
 
 func _on_moon_upgrade_requested(moon_id: String, upgrade_id: String) -> void:
-	if not game_state.purchase_moon_upgrade(moon_id, upgrade_id):
-		return
-	_refresh_ui(UI_DIRTY_PLANETS | UI_DIRTY_WORLD | UI_DIRTY_STATS | UI_DIRTY_TOP_BAR)
-	planets_panel_controller.play_moon_upgrade_purchase_animation(moon_id, upgrade_id)
+	action_router.on_moon_upgrade_requested(moon_id, upgrade_id)
 
 func _on_prestige_requested() -> void:
-	if not game_state.perform_prestige():
-		return
-	dust_recipe_service.invalidate()
-	upgrades_system.mark_cache_dirty()
-	tick_system.configure(game_state, element_system, upgrades_system)
-	atom_effects_controller.clear()
-	world_view_controller.clear_particles()
-	_refresh_ui(UI_DIRTY_ALL)
+	action_router.on_prestige_requested()
 
 func _on_claim_prestige_node_requested() -> void:
-	if not game_state.claim_next_prestige_node():
-		return
-	dust_recipe_service.invalidate()
-	upgrades_system.mark_cache_dirty()
-	_refresh_ui(UI_DIRTY_PRESTIGE | UI_DIRTY_ELEMENTS | UI_DIRTY_STATS | UI_DIRTY_TOP_BAR)
+	action_router.on_claim_prestige_node_requested()
 
 func _on_prestige_decrement_pressed() -> void:
-	_adjust_prestige_count(-1)
+	action_router.on_prestige_decrement_pressed()
 
 func _on_prestige_increment_pressed() -> void:
-	_adjust_prestige_count(1)
+	action_router.on_prestige_increment_pressed()
 
 func _on_era_unlock_pressed() -> void:
-	if game_state.unlock_next_era():
-		dust_recipe_service.invalidate()
-		_refresh_ui(_get_resource_refresh_flags() | UI_DIRTY_NAVIGATION | UI_DIRTY_MENU_BUTTONS | UI_DIRTY_ERA)
+	action_router.on_era_unlock_pressed()
 
 func _on_world_worker_button_pressed() -> void:
-	if game_state.buy_current_planet_worker():
-		dust_recipe_service.invalidate()
-		_refresh_ui(_get_resource_refresh_flags())
+	action_router.on_world_worker_button_pressed()
 
 func _on_world_worker_slider_changed(value: float) -> void:
-	game_state.set_current_planet_worker_allocation_to_xp(value / 100.0)
-	if ui_state_controller.view_mode == VIEW_WORLD:
-		_refresh_ui(UI_DIRTY_WORLD)
+	action_router.on_world_worker_slider_changed(value)
 
 func _on_upgrade_purchase_requested(upgrade_id: String) -> void:
-	tick_system.enqueue_action("purchase_upgrade", {"id": upgrade_id})
+	action_router.on_upgrade_purchase_requested(upgrade_id)
 
 func _adjust_prestige_count(delta: int) -> void:
-	if not game_state.adjust_prestige_count(delta):
-		return
-	_refresh_ui(_get_selection_refresh_flags() | UI_DIRTY_SETTINGS)
-
-func _build_upgrade_stats_text() -> String:
-	return "Particle Smasher: %.2f actions/sec\nCrit Chance: %.0f%% | Crit Payload: %.0f%%\nFission Chance: %.0f%% | Double Hit: %.0f%%\nResonant Yield: %.0f%%\nFoil Chance: %.0f%% | Holographic: %.0f%% | Polychrome: %.0f%%" % [
-		upgrades_system.get_auto_smashes_per_second(game_state),
-		upgrades_system.get_global_critical_smash_chance_percent(game_state),
-		upgrades_system.get_critical_payload_chance_percent(game_state),
-		upgrades_system.get_fission_chance_percent(game_state),
-		upgrades_system.get_manual_double_hit_chance(game_state) * 100.0,
-		upgrades_system.get_resonant_yield_chance(game_state) * 100.0,
-		game_state.get_foil_spawn_chance_percent(),
-		game_state.get_holographic_spawn_chance_percent(),
-		game_state.get_polychrome_spawn_chance_percent()
-	]
-
-func _build_upgrade_effects_text() -> String:
-	var sections: Array[String] = []
-	for upgrade_id in game_state.get_upgrade_ids():
-		if not upgrades_system.should_show_upgrade(game_state, upgrade_id):
-			continue
-		var upgrade := game_state.get_upgrade_state(upgrade_id)
-		if upgrade == null:
-			continue
-		if NON_UNIQUE_UPGRADE_EFFECT_TYPES.has(upgrade.effect_type):
-			continue
-		sections.append(upgrades_system.get_upgrade_effect_summary(game_state, upgrade_id))
-	if sections.is_empty():
-		return "No upgrade effects unlocked yet."
-
-	var summary := ""
-	for index in range(sections.size()):
-		if index > 0:
-			summary += "\n"
-		summary += sections[index]
-	return summary
+	action_router.adjust_prestige_count(delta)
 
 func _pulse_fuse_element() -> void:
 	if not is_instance_valid(fuse_button):
@@ -1132,77 +774,10 @@ func _pulse_fuse_element() -> void:
 	tween.tween_property(fuse_button, "scale", Vector2.ONE, 0.08)
 
 func _ensure_reset_blessings_button() -> void:
-	if is_instance_valid(reset_blessings_button):
-		return
-
-	reset_blessings_button = Button.new()
-	reset_blessings_button.name = "ResetBlessingsButton"
-	reset_blessings_button.text = "Reset Blessings"
-	reset_blessings_button.focus_mode = Control.FOCUS_NONE
-	settings_panel.add_child(reset_blessings_button)
-	settings_panel.move_child(reset_blessings_button, settings_panel.get_child_count() - 1)
-	reset_blessings_button.pressed.connect(_on_reset_blessings_pressed)
+	setup_helper.ensure_reset_blessings_button()
 
 func _style_reset_blessings_button() -> void:
-	if not is_instance_valid(reset_blessings_button):
-		return
-
-	reset_blessings_button.custom_minimum_size = Vector2(0.0, UIMetrics.MENU_BUTTON_MIN_HEIGHT)
-	var ui_font: FontFile = UIFont.load_ui_font()
-	if ui_font != null:
-		reset_blessings_button.add_theme_font_override("font", ui_font)
-	reset_blessings_button.add_theme_font_size_override("font_size", UIMetrics.FONT_SIZE_BODY)
-	reset_blessings_button.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	setup_helper.style_reset_blessings_button()
 
 func _ensure_factory_and_collider_menu_nodes() -> void:
-	factory_menu_button = _ensure_main_menu_button("FactoryMenuButton", "Factory", prestige_menu_button.get_index() + 1)
-	collider_menu_button = _ensure_main_menu_button("ColliderMenuButton", "Collider", factory_menu_button.get_index() + 1)
-	factory_panel = _ensure_placeholder_menu_panel("FactoryPanel", "Factory", "Factory systems will live here.")
-	collider_panel = _ensure_placeholder_menu_panel("ColliderPanel", "Collider", "Collider systems will live here.")
-	factory_title = factory_panel.get_node("FactoryTitle")
-	factory_info = factory_panel.get_node("FactoryInfo")
-	collider_title = collider_panel.get_node("ColliderTitle")
-	collider_info = collider_panel.get_node("ColliderInfo")
-
-func _ensure_main_menu_button(button_name: String, button_text: String, child_index: int) -> Button:
-	var button := main_menu_panel.get_node_or_null(button_name) as Button
-	if button == null:
-		button = Button.new()
-		button.name = button_name
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.focus_mode = Control.FOCUS_NONE
-		main_menu_panel.add_child(button)
-	button.text = button_text
-	main_menu_panel.move_child(button, child_index)
-	return button
-
-func _ensure_placeholder_menu_panel(panel_name: String, panel_title: String, panel_text: String) -> VBoxContainer:
-	var panel := menu_panels.get_node_or_null(panel_name) as VBoxContainer
-	if panel == null:
-		panel = VBoxContainer.new()
-		panel.name = panel_name
-		panel.visible = false
-		panel.layout_mode = 1
-		panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-		panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-		menu_panels.add_child(panel)
-
-		var title := Label.new()
-		title.name = "%sTitle" % panel_title
-		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title.text = panel_title
-		panel.add_child(title)
-
-		var info := Label.new()
-		info.name = "%sInfo" % panel_title
-		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		panel.add_child(info)
-
-	var title_label := panel.get_node("%sTitle" % panel_title) as Label
-	var info_label := panel.get_node("%sInfo" % panel_title) as Label
-	title_label.text = panel_title
-	info_label.text = panel_text
-	menu_panels.move_child(panel, min(menu_panels.get_child_count() - 1, settings_panel.get_index()))
-	return panel
+	setup_helper.ensure_factory_and_collider_menu_nodes()
