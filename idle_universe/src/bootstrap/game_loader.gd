@@ -1,15 +1,12 @@
 extends Control
 
-const ELEMENTS_DATA_PATH := "res://src/data/elements.json"
-const UPGRADES_DATA_PATH := "res://src/data/upgrades.json"
-const BLESSINGS_DATA_PATH := "res://src/data/blessings.json"
-const PLANETS_DATA_PATH := "res://src/data/planets.json"
-const PLANET_MENU_DATA_PATH := "res://src/data/planet_menu.json"
+const GameBootstrapScript = preload("res://src/bootstrap/game_bootstrap.gd")
+const AutosaveServiceScript = preload("res://src/bootstrap/autosave_service.gd")
+const UiStateControllerScript = preload("res://src/bootstrap/ui_state_controller.gd")
 const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
 const PlanetsPanelControllerScript = preload("res://src/controllers/planets_panel_controller.gd")
 const PrestigePanelControllerScript = preload("res://src/controllers/prestige_panel_controller.gd")
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
-const AUTO_SAVE_INTERVAL_TICKS := 50
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
 const MAX_COUNTERS := 10
@@ -213,11 +210,8 @@ var factory_info: Label
 var collider_panel: VBoxContainer
 var collider_title: Label
 var collider_info: Label
-var menu_mode: int = MENU_CLOSED
-var view_mode: int = VIEW_ATOM
 var debug_show_element_hitboxes := false
 var dust_mode_active := false
-var _ui_dirty_flags: int = UI_DIRTY_ALL
 var icon_cache: GameIconCache = GameIconCache.new()
 var dust_recipe_service: DustRecipeService = DustRecipeService.new()
 var atom_effects_controller: AtomEffectsController = AtomEffectsController.new()
@@ -230,12 +224,14 @@ var planets_panel_controller = PlanetsPanelControllerScript.new()
 var prestige_panel_controller = PrestigePanelControllerScript.new()
 var upgrades_panel_controller: UpgradesPanelController = UpgradesPanelController.new()
 var era_panel_controller: EraPanelController = EraPanelController.new()
+var game_bootstrap: GameBootstrap = GameBootstrapScript.new()
+var autosave_service: AutosaveService = AutosaveServiceScript.new()
+var ui_state_controller: UiStateController = UiStateControllerScript.new(MENU_CLOSED, VIEW_ATOM, UI_DIRTY_ALL)
 
 func _ready() -> void:
 	set_process(true)
 
-	game_state = _build_default_state()
-	SaveManager.load_into_state(game_state)
+	game_state = game_bootstrap.build_and_load_game_state()
 	upgrades_system.mark_cache_dirty()
 	_ensure_factory_and_collider_menu_nodes()
 
@@ -483,14 +479,14 @@ func _notification(what: int) -> void:
 		_apply_reference_layout()
 
 func _process(delta: float) -> void:
-	if view_mode == VIEW_ATOM:
+	if ui_state_controller.view_mode == VIEW_ATOM:
 		var resolved_auto_smashes := atom_effects_controller.update(delta)
 		if resolved_auto_smashes > 0:
 			dust_recipe_service.invalidate()
 			_pulse_fuse_element()
 			_mark_ui_dirty(_get_resource_refresh_flags())
-	world_view_controller.update(delta, view_mode == VIEW_WORLD)
-	if _ui_dirty_flags != 0:
+	world_view_controller.update(delta, ui_state_controller.view_mode == VIEW_WORLD)
+	if ui_state_controller.ui_dirty_flags != 0:
 		_flush_dirty_ui()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -498,40 +494,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _exit_tree() -> void:
 	_flush_pending_atom_hits(false)
-	if game_state != null and SaveManager.save_state(game_state):
-		game_state.last_save_tick = game_state.tick_count
-
-func _build_default_state() -> GameState:
-	var elements_content: Dictionary = _load_json_dictionary(ELEMENTS_DATA_PATH)
-	var upgrades_content: Dictionary = _load_json_dictionary(UPGRADES_DATA_PATH)
-	var blessings_content: Dictionary = _load_json_dictionary(BLESSINGS_DATA_PATH)
-	var planets_content: Dictionary = _load_json_dictionary(PLANETS_DATA_PATH)
-	var planet_menu_content: Dictionary = _load_json_dictionary(PLANET_MENU_DATA_PATH)
-	return GameState.from_content(
-		elements_content,
-		upgrades_content,
-		blessings_content,
-		planets_content,
-		planet_menu_content
-	)
-
-func _load_json_dictionary(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		push_warning("Missing data file: %s" % path)
-		return {}
-
-	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		push_warning("Unable to read data file: %s" % path)
-		return {}
-
-	var parsed_value: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed_value) != TYPE_DICTIONARY:
-		push_warning("Expected dictionary JSON at %s" % path)
-		return {}
-
-	var parsed: Dictionary = parsed_value
-	return parsed
+	autosave_service.save_on_exit(game_state)
 
 func _apply_reference_layout() -> void:
 	custom_minimum_size = UIMetrics.REFERENCE_VIEWPORT_SIZE
@@ -568,20 +531,19 @@ func _apply_debug_hitbox_style(panel: Panel) -> void:
 	panel.add_theme_stylebox_override("panel", style)
 
 func _refresh_debug_hitboxes() -> void:
-	fuse_hitbox_debug.visible = debug_show_element_hitboxes and view_mode == VIEW_ATOM
+	fuse_hitbox_debug.visible = debug_show_element_hitboxes and ui_state_controller.view_mode == VIEW_ATOM
 	element_menu_controller.refresh_debug_hitboxes(debug_show_element_hitboxes)
 
 func _set_menu_mode(new_mode: int) -> void:
 	if new_mode != MENU_ELEMENTS:
 		dust_mode_active = false
-	menu_mode = new_mode
-	menu_controller.set_menu_mode(menu_mode)
+	ui_state_controller.set_menu_mode(new_mode)
+	menu_controller.set_menu_mode(ui_state_controller.menu_mode)
 
 func _set_view_mode(new_mode: int) -> void:
-	if view_mode == new_mode:
+	if not ui_state_controller.set_view_mode(new_mode):
 		return
-	view_mode = new_mode
-	if view_mode == VIEW_WORLD:
+	if ui_state_controller.view_mode == VIEW_WORLD:
 		var flushed_auto_smashes := _flush_pending_atom_hits(false)
 		if flushed_auto_smashes > 0:
 			_mark_ui_dirty(_get_resource_refresh_flags())
@@ -591,52 +553,62 @@ func _set_view_mode(new_mode: int) -> void:
 	_mark_ui_dirty(UI_DIRTY_DEBUG)
 
 func _mark_ui_dirty(flags: int) -> void:
-	if flags == 0:
-		return
-	_ui_dirty_flags |= flags
+	ui_state_controller.mark_ui_dirty(flags)
 
 func _get_resource_refresh_flags() -> int:
-	return (
-		UI_DIRTY_TOP_BAR
-		| UI_DIRTY_COUNTERS
-		| UI_DIRTY_UPGRADES
-		| UI_DIRTY_ELEMENTS
-		| UI_DIRTY_ERA
-		| UI_DIRTY_STATS
-		| UI_DIRTY_PLANETS
-		| UI_DIRTY_BLESSINGS_PROGRESS
-		| UI_DIRTY_WORLD
-		| UI_DIRTY_PRESTIGE
+	return ui_state_controller.get_resource_refresh_flags(
+		UI_DIRTY_TOP_BAR,
+		UI_DIRTY_COUNTERS,
+		UI_DIRTY_UPGRADES,
+		UI_DIRTY_ELEMENTS,
+		UI_DIRTY_ERA,
+		UI_DIRTY_STATS,
+		UI_DIRTY_PLANETS,
+		UI_DIRTY_BLESSINGS_PROGRESS,
+		UI_DIRTY_WORLD,
+		UI_DIRTY_PRESTIGE
 	)
 
 func _get_selection_refresh_flags() -> int:
-	return UI_DIRTY_SELECTION | UI_DIRTY_NAVIGATION | UI_DIRTY_ELEMENTS | UI_DIRTY_STATS
+	return ui_state_controller.get_selection_refresh_flags(
+		UI_DIRTY_SELECTION,
+		UI_DIRTY_NAVIGATION,
+		UI_DIRTY_ELEMENTS,
+		UI_DIRTY_STATS
+	)
 
 func _get_menu_mode_refresh_flags() -> int:
-	var flags := UI_DIRTY_MENU_BUTTONS
-	match menu_mode:
-		MENU_UPGRADES:
-			flags |= UI_DIRTY_UPGRADES
-		MENU_ELEMENTS:
-			flags |= UI_DIRTY_ELEMENTS
-		MENU_BLESSINGS:
-			flags |= UI_DIRTY_BLESSINGS_PROGRESS | UI_DIRTY_BLESSINGS_CATALOG
-		MENU_ERA:
-			flags |= UI_DIRTY_ERA
-		MENU_STATS:
-			flags |= UI_DIRTY_STATS
-		MENU_SHOP:
-			flags |= UI_DIRTY_SHOP
-		MENU_PLANETS:
-			flags |= UI_DIRTY_PLANETS
-		MENU_PRESTIGE:
-			flags |= UI_DIRTY_PRESTIGE
-		MENU_SETTINGS:
-			flags |= UI_DIRTY_SETTINGS
-	return flags
+	return ui_state_controller.get_menu_mode_refresh_flags(
+		MENU_UPGRADES,
+		MENU_ELEMENTS,
+		MENU_BLESSINGS,
+		MENU_ERA,
+		MENU_STATS,
+		MENU_SHOP,
+		MENU_PLANETS,
+		MENU_PRESTIGE,
+		MENU_SETTINGS,
+		UI_DIRTY_MENU_BUTTONS,
+		UI_DIRTY_UPGRADES,
+		UI_DIRTY_ELEMENTS,
+		UI_DIRTY_BLESSINGS_PROGRESS,
+		UI_DIRTY_BLESSINGS_CATALOG,
+		UI_DIRTY_ERA,
+		UI_DIRTY_STATS,
+		UI_DIRTY_SHOP,
+		UI_DIRTY_PLANETS,
+		UI_DIRTY_PRESTIGE,
+		UI_DIRTY_SETTINGS
+	)
 
 func _get_view_mode_refresh_flags() -> int:
-	return UI_DIRTY_NAVIGATION | UI_DIRTY_COUNTERS | UI_DIRTY_WORLD | UI_DIRTY_DEBUG | UI_DIRTY_MENU_BUTTONS
+	return ui_state_controller.get_view_mode_refresh_flags(
+		UI_DIRTY_NAVIGATION,
+		UI_DIRTY_COUNTERS,
+		UI_DIRTY_WORLD,
+		UI_DIRTY_DEBUG,
+		UI_DIRTY_MENU_BUTTONS
+	)
 
 func _get_counter_ids() -> Array[String]:
 	var visible_ids: Array[String] = game_state.get_visible_counter_element_ids()
@@ -670,51 +642,28 @@ func _sync_resource_displays() -> void:
 		display.refresh()
 
 func _refresh_ui(flags: int = UI_DIRTY_ALL) -> void:
-	_mark_ui_dirty(flags)
-	_flush_dirty_ui()
+	ui_state_controller.refresh_ui(flags, _flush_dirty_ui)
 
 func _flush_dirty_ui() -> void:
-	if game_state == null:
-		return
-
-	while _ui_dirty_flags != 0:
-		var flags := _ui_dirty_flags
-		_ui_dirty_flags = 0
-
-		if flags & UI_DIRTY_NAVIGATION:
-			_refresh_navigation()
-		if flags & UI_DIRTY_TOP_BAR:
-			_refresh_top_bar()
-		if flags & UI_DIRTY_SELECTION:
-			_refresh_selection_ui()
-		if flags & UI_DIRTY_MENU_BUTTONS:
-			_refresh_menu_buttons()
-		if flags & UI_DIRTY_COUNTERS:
-			_sync_resource_displays()
-		if flags & UI_DIRTY_UPGRADES:
-			_refresh_upgrades_panel()
-		if flags & UI_DIRTY_ELEMENTS:
-			_refresh_elements_panel()
-		if flags & UI_DIRTY_ERA:
-			_refresh_era_ui()
-		if flags & UI_DIRTY_STATS:
-			_refresh_stats_panel()
-		if flags & UI_DIRTY_SHOP:
-			_refresh_shop_panel()
-		if flags & UI_DIRTY_PLANETS:
-			_refresh_planets_panel()
-		if flags & UI_DIRTY_PRESTIGE:
-			_refresh_prestige_panel()
-		if flags & UI_DIRTY_SETTINGS:
-			_refresh_settings_panel()
-		if flags & UI_DIRTY_BLESSINGS_PROGRESS:
-			_refresh_blessings_progress()
-		if flags & UI_DIRTY_BLESSINGS_CATALOG:
-			_refresh_blessings_catalog()
-		if flags & UI_DIRTY_WORLD:
-			_refresh_world_ui()
-		if flags & UI_DIRTY_DEBUG:
-			_refresh_debug_hitboxes()
+	ui_state_controller.flush_dirty_ui(game_state, [
+		{"flag": UI_DIRTY_NAVIGATION, "callable": _refresh_navigation},
+		{"flag": UI_DIRTY_TOP_BAR, "callable": _refresh_top_bar},
+		{"flag": UI_DIRTY_SELECTION, "callable": _refresh_selection_ui},
+		{"flag": UI_DIRTY_MENU_BUTTONS, "callable": _refresh_menu_buttons},
+		{"flag": UI_DIRTY_COUNTERS, "callable": _sync_resource_displays},
+		{"flag": UI_DIRTY_UPGRADES, "callable": _refresh_upgrades_panel},
+		{"flag": UI_DIRTY_ELEMENTS, "callable": _refresh_elements_panel},
+		{"flag": UI_DIRTY_ERA, "callable": _refresh_era_ui},
+		{"flag": UI_DIRTY_STATS, "callable": _refresh_stats_panel},
+		{"flag": UI_DIRTY_SHOP, "callable": _refresh_shop_panel},
+		{"flag": UI_DIRTY_PLANETS, "callable": _refresh_planets_panel},
+		{"flag": UI_DIRTY_PRESTIGE, "callable": _refresh_prestige_panel},
+		{"flag": UI_DIRTY_SETTINGS, "callable": _refresh_settings_panel},
+		{"flag": UI_DIRTY_BLESSINGS_PROGRESS, "callable": _refresh_blessings_progress},
+		{"flag": UI_DIRTY_BLESSINGS_CATALOG, "callable": _refresh_blessings_catalog},
+		{"flag": UI_DIRTY_WORLD, "callable": _refresh_world_ui},
+		{"flag": UI_DIRTY_DEBUG, "callable": _refresh_debug_hitboxes}
+	])
 
 func _refresh_top_bar() -> void:
 	hud_controller.refresh_top_bar(game_state)
@@ -729,15 +678,15 @@ func _refresh_selection_ui() -> void:
 	fuse_button.texture_disabled = current_icon
 
 func _refresh_navigation() -> void:
-	fuse_button.visible = view_mode == VIEW_ATOM
-	effects_layer.visible = view_mode == VIEW_ATOM
-	world_view_controller.set_navigation_state(view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
+	fuse_button.visible = ui_state_controller.view_mode == VIEW_ATOM
+	effects_layer.visible = ui_state_controller.view_mode == VIEW_ATOM
+	world_view_controller.set_navigation_state(ui_state_controller.view_mode == VIEW_WORLD, game_state.has_unlocked_era(1))
 	hud_controller.refresh_navigation(
-		view_mode == VIEW_ATOM,
-		game_state.has_adjacent_owned_planet(-1) if view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
-		game_state.has_adjacent_owned_planet(1) if view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
-		view_mode == VIEW_WORLD,
-		view_mode == VIEW_ATOM and game_state.has_unlocked_era(1)
+		ui_state_controller.view_mode == VIEW_ATOM,
+		game_state.has_adjacent_owned_planet(-1) if ui_state_controller.view_mode == VIEW_WORLD else game_state.has_adjacent_unlocked_element(-1),
+		game_state.has_adjacent_owned_planet(1) if ui_state_controller.view_mode == VIEW_WORLD else game_state.has_next_selectable_element_in_visible_sections(),
+		ui_state_controller.view_mode == VIEW_WORLD,
+		ui_state_controller.view_mode == VIEW_ATOM and game_state.has_unlocked_era(1)
 	)
 
 func _refresh_menu_buttons() -> void:
@@ -746,8 +695,8 @@ func _refresh_menu_buttons() -> void:
 	var planets_enabled := game_state.has_unlocked_era(1)
 	var shop_enabled := game_state.is_element_unlocked("ele_H")
 	menu_controller.refresh_main_menu_buttons(blessings_enabled, era_menu_enabled, planets_enabled, shop_enabled)
-	hud_controller.refresh_menu_button(menu_mode != MENU_CLOSED)
-	hud_controller.refresh_shop_button(shop_enabled, shop_enabled and menu_mode == MENU_CLOSED)
+	hud_controller.refresh_menu_button(ui_state_controller.menu_mode != MENU_CLOSED)
+	hud_controller.refresh_shop_button(shop_enabled, shop_enabled and ui_state_controller.menu_mode == MENU_CLOSED)
 
 func _refresh_upgrades_panel() -> void:
 	upgrades_panel_controller.refresh(game_state, upgrades_system)
@@ -830,7 +779,7 @@ func _refresh_elements_panel() -> void:
 	)
 
 func _refresh_world_ui() -> void:
-	world_view_controller.refresh(game_state, view_mode == VIEW_WORLD)
+	world_view_controller.refresh(game_state, ui_state_controller.view_mode == VIEW_WORLD)
 
 func _refresh_era_ui() -> void:
 	era_panel_controller.refresh(game_state)
@@ -861,19 +810,16 @@ func _perform_dust_conversion() -> bool:
 	return true
 
 func _autosave_if_needed() -> void:
-	if game_state.tick_count - game_state.last_save_tick < AUTO_SAVE_INTERVAL_TICKS:
-		return
-	if SaveManager.save_state(game_state):
-		game_state.last_save_tick = game_state.tick_count
+	autosave_service.autosave_if_needed(game_state)
 
 func _on_tick_processed(_tick_count: int, processed_actions: Array, production_changes: Dictionary) -> void:
 	var dirty_flags := 0
 	var current_planet_changed := bool(production_changes.get("current_planet_changed", false))
 	var any_planet_changed := bool(production_changes.get("any_planet_changed", false))
 	var research_changed := bool(production_changes.get("research_changed", false))
-	if view_mode == VIEW_WORLD and (current_planet_changed or research_changed):
+	if ui_state_controller.view_mode == VIEW_WORLD and (current_planet_changed or research_changed):
 		dirty_flags |= UI_DIRTY_WORLD
-	if menu_mode == MENU_PLANETS and (any_planet_changed or research_changed):
+	if ui_state_controller.menu_mode == MENU_PLANETS and (any_planet_changed or research_changed):
 		dirty_flags |= UI_DIRTY_PLANETS
 	for action_type_variant in processed_actions:
 		match str(action_type_variant):
@@ -898,7 +844,7 @@ func _on_manual_smash_resolved(result: Dictionary) -> void:
 func _on_auto_smash_requested(request: Dictionary) -> void:
 	var target_element_id := str(request.get("target_element_id", ""))
 	var spawn_count := int(request.get("spawn_count", 1))
-	if view_mode != VIEW_ATOM:
+	if ui_state_controller.view_mode != VIEW_ATOM:
 		var any_resolved := false
 		for _i in range(spawn_count):
 			var result: Dictionary = element_system.resolve_auto_smash(game_state, upgrades_system, target_element_id)
@@ -927,7 +873,7 @@ func _flush_pending_atom_hits(refresh_ui_after_flush: bool = true) -> int:
 	return resolved_auto_smashes
 
 func _on_prev_pressed() -> void:
-	if view_mode == VIEW_WORLD:
+	if ui_state_controller.view_mode == VIEW_WORLD:
 		if not game_state.select_adjacent_owned_planet(-1):
 			return
 		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
@@ -935,7 +881,7 @@ func _on_prev_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": -1})
 
 func _on_next_pressed() -> void:
-	if view_mode == VIEW_WORLD:
+	if ui_state_controller.view_mode == VIEW_WORLD:
 		if not game_state.select_adjacent_owned_planet(1):
 			return
 		_refresh_ui(UI_DIRTY_WORLD | UI_DIRTY_PLANETS | UI_DIRTY_NAVIGATION | UI_DIRTY_STATS)
@@ -943,7 +889,7 @@ func _on_next_pressed() -> void:
 	tick_system.enqueue_action("select_adjacent", {"direction": 1})
 
 func _on_zin_pressed() -> void:
-	if view_mode != VIEW_WORLD:
+	if ui_state_controller.view_mode != VIEW_WORLD:
 		return
 	_set_view_mode(VIEW_ATOM)
 	_refresh_ui(_get_view_mode_refresh_flags())
@@ -955,12 +901,12 @@ func _on_zout_pressed() -> void:
 	_refresh_ui(_get_view_mode_refresh_flags())
 
 func _on_smash_pressed() -> void:
-	if view_mode != VIEW_ATOM:
+	if ui_state_controller.view_mode != VIEW_ATOM:
 		return
 	tick_system.enqueue_action("manual_smash")
 
 func _on_menu_pressed() -> void:
-	match menu_mode:
+	match ui_state_controller.menu_mode:
 		MENU_CLOSED:
 			_set_menu_mode(MENU_MAIN)
 		MENU_MAIN:
@@ -1130,7 +1076,7 @@ func _on_world_worker_button_pressed() -> void:
 
 func _on_world_worker_slider_changed(value: float) -> void:
 	game_state.set_current_planet_worker_allocation_to_xp(value / 100.0)
-	if view_mode == VIEW_WORLD:
+	if ui_state_controller.view_mode == VIEW_WORLD:
 		_refresh_ui(UI_DIRTY_WORLD)
 
 func _on_upgrade_purchase_requested(upgrade_id: String) -> void:

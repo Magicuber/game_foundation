@@ -155,25 +155,28 @@ func _roll_fission_split(game_state: GameState, produced_resource_id: String) ->
 	if target_weight <= 1:
 		return []
 
-	var max_unlocked_index := game_state.get_max_unlocked_real_element_index()
-	if max_unlocked_index <= 0:
+	var candidate_splits: Array[Dictionary] = []
+	var max_left := int(floor(float(target_weight - 1) / float(FISSION_PART_COUNT)))
+	for left_index in range(1, max_left + 1):
+		var right_index := target_weight - left_index
+		if left_index >= right_index:
+			continue
+		var left_element := game_state.get_element_state_by_index(left_index)
+		var right_element := game_state.get_element_state_by_index(right_index)
+		if left_element == null or right_element == null:
+			continue
+		if not left_element.unlocked or not right_element.unlocked:
+			continue
+		candidate_splits.append({
+			"left_id": left_element.id,
+			"right_id": right_element.id
+		})
+
+	if candidate_splits.is_empty():
 		return []
 
-	var min_left := maxi(1, target_weight - max_unlocked_index)
-	var max_left := mini(max_unlocked_index, int(floor(float(target_weight) / float(FISSION_PART_COUNT))))
-	if min_left > max_left:
-		return []
-
-	var left_index := rng.randi_range(min_left, max_left)
-	var right_index := target_weight - left_index
-	var left_element := game_state.get_element_state_by_index(left_index)
-	var right_element := game_state.get_element_state_by_index(right_index)
-	if left_element == null or right_element == null:
-		return []
-	if not left_element.unlocked or not right_element.unlocked:
-		return []
-
-	return [left_element.id, right_element.id]
+	var split_entry: Dictionary = candidate_splits[rng.randi_range(0, candidate_splits.size() - 1)]
+	return [str(split_entry.get("left_id", "")), str(split_entry.get("right_id", ""))]
 
 func _roll_smasher_variants(game_state: GameState) -> Array[String]:
 	var rolled_variants: Array[String] = []

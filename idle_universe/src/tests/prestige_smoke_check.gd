@@ -54,7 +54,7 @@ func _initialize() -> void:
 	if state.current_planet_id != original_current_planet_id:
 		_fail("Buying Planet B should not switch the active world.")
 		return
-	state.research_points = DigitMaster.new(4.0)
+	state.research_points = DigitMaster.new(64.0)
 	if not state.purchase_moon_upgrade("moon_b_1", "slot_1"):
 		_fail("Moon upgrade slot_1 should be purchasable with RP.")
 		return
