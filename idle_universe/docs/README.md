@@ -52,6 +52,10 @@ This directory contains comprehensive documentation for the Idle Universe game p
 | Document | Purpose |
 |----------|---------|
 | [Project Index](./project_index.md) | Complete system walkthrough |
+| [Change Log](./change_log.md) | Commit history and repo evolution |
+| [Development Notes](./development_notes.md) | Why/what/how/when decisions |
+| [TODO](./TODO.md) | Outstanding non-implemented items |
+| [Balancing](./Balancing.md) | Balance pass targets |
 | [Data Format](./data_format.md) | JSON schema for all data files |
 
 ## Documentation Map
