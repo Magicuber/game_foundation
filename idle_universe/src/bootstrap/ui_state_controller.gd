@@ -56,7 +56,8 @@ func get_resource_refresh_flags(
 	ui_dirty_planets: int,
 	ui_dirty_blessings_progress: int,
 	ui_dirty_world: int,
-	ui_dirty_prestige: int
+	ui_dirty_prestige: int,
+	ui_dirty_oblations: int
 ) -> int:
 	return (
 		ui_dirty_top_bar
@@ -69,6 +70,7 @@ func get_resource_refresh_flags(
 		| ui_dirty_blessings_progress
 		| ui_dirty_world
 		| ui_dirty_prestige
+		| ui_dirty_oblations
 	)
 
 func get_selection_refresh_flags(
@@ -88,6 +90,7 @@ func get_menu_mode_refresh_flags(
 	menu_shop: int,
 	menu_planets: int,
 	menu_prestige: int,
+	menu_oblations: int,
 	menu_settings: int,
 	ui_dirty_menu_buttons: int,
 	ui_dirty_upgrades: int,
@@ -99,6 +102,7 @@ func get_menu_mode_refresh_flags(
 	ui_dirty_shop: int,
 	ui_dirty_planets: int,
 	ui_dirty_prestige: int,
+	ui_dirty_oblations: int,
 	ui_dirty_settings: int
 ) -> int:
 	var flags := ui_dirty_menu_buttons
@@ -119,6 +123,8 @@ func get_menu_mode_refresh_flags(
 			flags |= ui_dirty_planets
 		menu_prestige:
 			flags |= ui_dirty_prestige
+		menu_oblations:
+			flags |= ui_dirty_oblations
 		menu_settings:
 			flags |= ui_dirty_settings
 	return flags

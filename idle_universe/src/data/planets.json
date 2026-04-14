@@ -8,7 +8,8 @@
       "max_level": 25,
       "workers": 0,
       "xp": 0,
-      "worker_allocation_to_xp": 1.0
+      "worker_allocation_to_xp": 1.0,
+      "purchase_cost_dust": 10000
     },
     {
       "id": "planet_b",

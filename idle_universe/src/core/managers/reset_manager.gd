@@ -32,12 +32,12 @@ func reset_run_state() -> void:
 	game_state._reset_elements_to_defaults()
 	game_state._reset_upgrades_to_defaults()
 	game_state._reset_planets_to_owned_defaults()
-	game_state.current_planet_id = game_state.DEFAULT_PLANET_ID
+	game_state.current_planet_id = game_state.get_fallback_world_planet_id()
+	if game_state.current_planet_id.is_empty():
+		game_state.current_planet_id = game_state.DEFAULT_PLANET_ID
 
 func reset_planets_to_owned_defaults() -> void:
 	game_state._ensure_planet_meta_defaults()
-	if game_state.has_unlocked_era(1):
-		game_state.planet_owned_flags[game_state.DEFAULT_PLANET_ID] = true
 
 	for planet_id in game_state.planet_ids_in_order:
 		var planet: PlanetState = game_state.get_planet_state(planet_id)

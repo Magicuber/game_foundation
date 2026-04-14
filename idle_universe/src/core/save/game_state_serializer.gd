@@ -32,7 +32,6 @@ func to_save_dict(state) -> Dictionary:
 		"upgrades": serialized_upgrades,
 		"current_element_id": state.current_element_id,
 		"player_level": state.player_level,
-		"prestige_count": state.prestige_count,
 		"global_multiplier": state.global_multiplier.to_save_data(),
 		"tick_count": state.tick_count,
 		"total_played_seconds": state.total_played_seconds,
@@ -51,16 +50,17 @@ func to_save_dict(state) -> Dictionary:
 		"planets": _serialize_planets(state),
 		"completed_milestones": state.completed_milestones.duplicate(),
 		"next_milestone_id": state.next_milestone_id,
-		"prestige_points_total": state.prestige_points_total,
-		"prestige_points_unspent": state.prestige_points_unspent,
-		"prestige_nodes_claimed": state.prestige_nodes_claimed.duplicate(),
 		"best_planet_levels_this_run": state.best_planet_levels_this_run.duplicate(true),
 		"planet_purchase_unlocks": state.planet_purchase_unlocks.duplicate(true),
 		"planet_owned_flags": state.planet_owned_flags.duplicate(true),
-		"moon_upgrade_purchases": state.moon_upgrade_purchases.duplicate(true)
+		"sacrificed_planet_flags": state.sacrificed_planet_flags.duplicate(true),
+		"moon_upgrade_purchases": state.moon_upgrade_purchases.duplicate(true),
+		"oblation_claimed_recipe_ids": state.oblation_claimed_recipe_ids.duplicate(),
+		"prestige_count": state.prestige_count
 	}
 
 func apply_save_dict(state, save_data: Dictionary) -> void:
+	var save_version := int(save_data.get("save_version", 0))
 	state.orbs = int(save_data.get("orbs", 0))
 	state.dust = DigitMaster.from_variant(save_data.get("dust", 0))
 	state.player_level = int(save_data.get("player_level", 1))
@@ -82,8 +82,8 @@ func apply_save_dict(state, save_data: Dictionary) -> void:
 	for milestone_id_variant in save_data.get("completed_milestones", []):
 		state.completed_milestones.append(str(milestone_id_variant))
 	state.next_milestone_id = str(save_data.get("next_milestone_id", state.next_milestone_id))
-	state.prestige_points_total = maxi(0, int(save_data.get("prestige_points_total", 0)))
-	state.prestige_points_unspent = maxi(0, int(save_data.get("prestige_points_unspent", 0)))
+	state.prestige_points_total = 0
+	state.prestige_points_unspent = 0
 	state.prestige_nodes_claimed.clear()
 	for node_id_variant in save_data.get("prestige_nodes_claimed", []):
 		state.prestige_nodes_claimed.append(str(node_id_variant))
@@ -99,6 +99,10 @@ func apply_save_dict(state, save_data: Dictionary) -> void:
 	var saved_owned_flags: Dictionary = save_data.get("planet_owned_flags", {})
 	for planet_id_variant in saved_owned_flags.keys():
 		state.planet_owned_flags[str(planet_id_variant)] = bool(saved_owned_flags[planet_id_variant])
+	state.sacrificed_planet_flags.clear()
+	var saved_sacrificed_flags: Dictionary = save_data.get("sacrificed_planet_flags", {})
+	for planet_id_variant in saved_sacrificed_flags.keys():
+		state.sacrificed_planet_flags[str(planet_id_variant)] = bool(saved_sacrificed_flags[planet_id_variant])
 	state.moon_upgrade_purchases.clear()
 	var saved_moon_upgrades: Dictionary = save_data.get("moon_upgrade_purchases", {})
 	for moon_id_variant in saved_moon_upgrades.keys():
@@ -107,7 +111,18 @@ func apply_save_dict(state, save_data: Dictionary) -> void:
 		for upgrade_id_variant in saved_moon_upgrades[moon_id_variant]:
 			saved_upgrade_ids.append(str(upgrade_id_variant))
 		state.moon_upgrade_purchases[moon_id] = saved_upgrade_ids
+	state.oblation_claimed_recipe_ids.clear()
+	for recipe_id_variant in save_data.get("oblation_claimed_recipe_ids", []):
+		state.oblation_claimed_recipe_ids.append(str(recipe_id_variant))
 	state._ensure_planet_meta_defaults()
+	if save_version < 7:
+		if state.has_unlocked_era(1):
+			state.planet_purchase_unlocks[state.DEFAULT_PLANET_ID] = true
+			state.planet_owned_flags[state.DEFAULT_PLANET_ID] = true
+		if state.prestige_nodes_claimed.has("unlock_section_2") and not state.oblation_claimed_recipe_ids.has("hydrogen_memory"):
+			state.oblation_claimed_recipe_ids.append("hydrogen_memory")
+		if state.prestige_nodes_claimed.has("dust_gain_1") and not state.oblation_claimed_recipe_ids.has("planet_b_ashes"):
+			state.oblation_claimed_recipe_ids.append("planet_b_ashes")
 
 	var saved_elements: Dictionary = save_data.get("elements", {})
 	for element_id_variant in saved_elements.keys():

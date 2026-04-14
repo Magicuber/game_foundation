@@ -35,8 +35,6 @@ func refresh_progression_state() -> void:
 	game_state._ensure_planet_meta_defaults()
 	if game_state.next_milestone_id.is_empty() or game_state.completed_milestones.has(game_state.next_milestone_id):
 		game_state.next_milestone_id = game_state._get_next_pending_milestone_id()
-	if has_unlocked_era(1):
-		game_state.planet_owned_flags[game_state.DEFAULT_PLANET_ID] = true
 	game_state._apply_planet_unlock_states()
 	game_state._sync_legacy_prestige_count_from_nodes()
 
@@ -46,19 +44,12 @@ func refresh_progression_state() -> void:
 		if element != null and element.unlocked:
 			highest_unlocked_id = element_id
 
-	if has_unlocked_era(1):
-		var starting_planet: PlanetState = game_state.get_planet_state(game_state.DEFAULT_PLANET_ID)
-		if starting_planet != null:
-			starting_planet.unlocked = true
-			starting_planet.level = maxi(1, starting_planet.level)
-			starting_planet.xp_to_next_level = game_state._calculate_planet_xp_requirement(starting_planet.level)
-			game_state._update_best_planet_level(starting_planet.id, starting_planet.level)
-
 	for planet_id in game_state.planet_ids_in_order:
 		var planet: PlanetState = game_state.get_planet_state(planet_id)
 		if planet == null or not planet.unlocked:
 			continue
 		game_state._update_best_planet_level(planet_id, planet.level)
+	game_state.refresh_milestones()
 
 	game_state.max_unlocked_element_id = highest_unlocked_id
 	game_state.next_unlock_id = ""
@@ -81,11 +72,9 @@ func refresh_progression_state() -> void:
 		elif not game_state.element_ids_in_order.is_empty():
 			game_state.current_element_id = game_state.element_ids_in_order[0]
 
-	if game_state.current_planet_id.is_empty() or not game_state.is_planet_unlocked(game_state.current_planet_id):
-		for planet_id in game_state.planet_ids_in_order:
-			if game_state.is_planet_unlocked(planet_id):
-				game_state.current_planet_id = planet_id
-				break
+	var current_planet_display_state: String = game_state.get_planet_display_state(game_state.current_planet_id)
+	if game_state.current_planet_id.is_empty() or current_planet_display_state == "locked":
+		game_state.current_planet_id = game_state.get_fallback_world_planet_id()
 		if game_state.current_planet_id.is_empty() and not game_state.planet_ids_in_order.is_empty():
 			game_state.current_planet_id = game_state.planet_ids_in_order[0]
 
@@ -121,15 +110,7 @@ func get_next_unlock_element_state() -> ElementState:
 	return get_element_state(game_state.next_unlock_id)
 
 func get_visible_element_section_count() -> int:
-	var visible_sections := 1
-	for node_definition in game_state.PRESTIGE_NODES:
-		var node_id := str(node_definition.get("id", ""))
-		if node_id.is_empty() or not game_state.prestige_nodes_claimed.has(node_id):
-			continue
-		if str(node_definition.get("effect_type", "")) != "unlock_section":
-			continue
-		visible_sections += int(node_definition.get("effect_value", 0))
-	return clampi(visible_sections, 1, game_state.UNLOCK_SECTION_ENDS.size())
+	return clampi(1 + int(game_state.get_oblation_effect_totals().get("unlock_section", 0)), 1, game_state.UNLOCK_SECTION_ENDS.size())
 
 func get_max_unlockable_element_index() -> int:
 	var section_index := clampi(get_visible_element_section_count() - 1, 0, game_state.UNLOCK_SECTION_ENDS.size() - 1)
@@ -272,7 +253,9 @@ func unlock_next_era() -> bool:
 
 	game_state.unlocked_era_index = max(game_state.unlocked_era_index, next_era_index)
 	if next_era_index == 1:
+		game_state.planet_purchase_unlocks[game_state.DEFAULT_PLANET_ID] = true
 		game_state.planet_owned_flags[game_state.DEFAULT_PLANET_ID] = true
+		game_state.sacrificed_planet_flags[game_state.DEFAULT_PLANET_ID] = false
 		var starting_planet: PlanetState = game_state.get_planet_state(game_state.DEFAULT_PLANET_ID)
 		if starting_planet != null:
 			starting_planet.unlocked = true

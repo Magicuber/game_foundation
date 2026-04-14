@@ -427,6 +427,7 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 	var planet_entry := game_state.get_planet_menu_planet_entry(_selected_planet_id)
 	var accent_color := _color_from_hex(str(planet_entry.get("panel_accent_color", COLOR_NODE_DEFAULT)), _color_from_hex(COLOR_NODE_DEFAULT))
 	var owned := bool(planet_entry.get("owned", false))
+	var sacrificed := bool(planet_entry.get("sacrificed", false))
 	var can_purchase := bool(planet_entry.get("can_purchase", false))
 	var is_placeholder := bool(planet_entry.get("is_placeholder", false))
 	var purchase_unlocked := bool(planet_entry.get("purchase_unlocked", false))
@@ -439,13 +440,16 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 
 	var level := int(planet_entry.get("level", 1))
 	_preview_icon.texture = _icon_cache.get_planet_icon(str(planet_entry.get("id", "")), maxi(1, level))
-	_preview_icon.modulate = Color.WHITE if owned else accent_color
+	_preview_icon.modulate = Color(0.45, 0.45, 0.45, 1.0) if sacrificed else (Color.WHITE if owned else accent_color)
 
 	var stats_lines: Array[String] = []
 	if owned:
 		stats_lines.append("Level: %d / %d" % [level, int(planet_entry.get("max_level", 0))])
 		var workers: DigitMaster = planet_entry.get("workers", DigitMaster.zero())
 		stats_lines.append("Workers: %s" % workers.big_to_short_string())
+	elif sacrificed:
+		stats_lines.append("State: Sacrificed")
+		stats_lines.append("This planet is visible but inactive until repurchased.")
 	elif is_placeholder:
 		stats_lines.append("State: Future Content")
 		stats_lines.append("This branch is visible for progression planning only.")
@@ -454,7 +458,7 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 		stats_lines.append("Unlocking this planet does not switch the active world.")
 	else:
 		stats_lines.append("State: Locked")
-		stats_lines.append("Complete earlier prestige milestones to expose this branch.")
+		stats_lines.append("Complete earlier milestones to expose this branch.")
 	if bool(planet_entry.get("is_current_active_planet", false)):
 		stats_lines.append("Active World: Yes")
 	else:
@@ -481,7 +485,7 @@ func _refresh_preview_panel(game_state: GameState) -> void:
 
 	_action_button.text = str(planet_entry.get("action_label", "Locked"))
 	_action_button.disabled = not can_purchase
-	_apply_action_button_style(_action_button, accent_color, owned, can_purchase)
+	_apply_action_button_style(_action_button, accent_color, owned, sacrificed, can_purchase)
 
 func _sync_tree_node(
 	node_id: String,
@@ -628,10 +632,12 @@ func _apply_upgrade_button_style(button: Button, accent_color: Color, locked: bo
 	for state_name in ["normal", "hover", "pressed", "disabled", "focus"]:
 		button.add_theme_stylebox_override(state_name, style)
 
-func _apply_action_button_style(button: Button, accent_color: Color, owned: bool, can_purchase: bool) -> void:
+func _apply_action_button_style(button: Button, accent_color: Color, owned: bool, sacrificed: bool, can_purchase: bool) -> void:
 	var fill_color := _color_from_hex(COLOR_GOLD_BUTTON)
 	if owned:
 		fill_color = _color_from_hex(COLOR_NODE_PURCHASED)
+	elif sacrificed:
+		fill_color = _color_from_hex(COLOR_NODE_LOCKED)
 	elif not can_purchase:
 		fill_color = accent_color.darkened(0.35)
 
@@ -692,6 +698,8 @@ func _normalized_to_tree_point(position_data: Variant) -> Vector2:
 func _resolve_planet_node_color(planet_entry: Dictionary) -> Color:
 	if bool(planet_entry.get("owned", false)):
 		return _color_from_hex(COLOR_NODE_PURCHASED)
+	if bool(planet_entry.get("sacrificed", false)):
+		return _color_from_hex(COLOR_NODE_LOCKED).lightened(0.08)
 	if bool(planet_entry.get("purchase_unlocked", false)) and not bool(planet_entry.get("is_placeholder", false)):
 		return _color_from_hex(COLOR_NODE_DEFAULT)
 	return _color_from_hex(COLOR_NODE_LOCKED)

@@ -51,10 +51,19 @@ func on_tick_processed(_tick_count: int, processed_actions: Array, production_ch
 	var current_planet_changed: bool = bool(production_changes.get("current_planet_changed", false))
 	var any_planet_changed: bool = bool(production_changes.get("any_planet_changed", false))
 	var research_changed: bool = bool(production_changes.get("research_changed", false))
+	var milestones_changed: bool = bool(production_changes.get("milestones_changed", false))
 	if game_loader.ui_state_controller.view_mode == game_loader.VIEW_WORLD and (current_planet_changed or research_changed):
 		dirty_flags |= game_loader.UI_DIRTY_WORLD
 	if game_loader.ui_state_controller.menu_mode == game_loader.MENU_PLANETS and (any_planet_changed or research_changed):
 		dirty_flags |= game_loader.UI_DIRTY_PLANETS
+	if milestones_changed:
+		dirty_flags |= (
+			game_loader.UI_DIRTY_MENU_BUTTONS
+			| game_loader.UI_DIRTY_PLANETS
+			| game_loader.UI_DIRTY_PRESTIGE
+			| game_loader.UI_DIRTY_OBLATIONS
+			| game_loader.UI_DIRTY_STATS
+		)
 	for action_type_variant in processed_actions:
 		match str(action_type_variant):
 			"unlock_next":
@@ -211,6 +220,12 @@ func on_planets_menu_pressed() -> void:
 func on_prestige_menu_pressed() -> void:
 	_open_menu(loader.MENU_PRESTIGE)
 
+func on_oblations_menu_pressed() -> void:
+	var game_loader = loader
+	if game_loader == null or not game_loader.game_state.is_oblation_menu_unlocked():
+		return
+	_open_menu(game_loader.MENU_OBLATIONS)
+
 func on_factory_menu_pressed() -> void:
 	_open_menu(loader.MENU_FACTORY)
 
@@ -302,7 +317,7 @@ func on_add_orbs_pressed() -> void:
 	if game_loader == null:
 		return
 	game_loader.game_state.orbs += 1000
-	game_loader._refresh_ui(game_loader.UI_DIRTY_TOP_BAR | game_loader.UI_DIRTY_ERA | game_loader.UI_DIRTY_PLANETS | game_loader.UI_DIRTY_PRESTIGE)
+	game_loader._refresh_ui(game_loader.UI_DIRTY_TOP_BAR | game_loader.UI_DIRTY_ERA | game_loader.UI_DIRTY_PLANETS | game_loader.UI_DIRTY_PRESTIGE | game_loader.UI_DIRTY_OBLATIONS)
 
 func on_reset_blessings_pressed() -> void:
 	var game_loader = loader
@@ -324,24 +339,13 @@ func on_moon_upgrade_requested(moon_id: String, upgrade_id: String) -> void:
 	game_loader._refresh_ui(game_loader.UI_DIRTY_PLANETS | game_loader.UI_DIRTY_WORLD | game_loader.UI_DIRTY_STATS | game_loader.UI_DIRTY_TOP_BAR)
 	game_loader.planets_panel_controller.play_moon_upgrade_purchase_animation(moon_id, upgrade_id)
 
-func on_prestige_requested() -> void:
+func on_oblation_confirm_requested(recipe_id: String, selected_inputs: Dictionary) -> void:
 	var game_loader = loader
-	if game_loader == null or not game_loader.game_state.perform_prestige():
+	if game_loader == null or not game_loader.game_state.confirm_oblation(recipe_id, selected_inputs):
 		return
 	game_loader.dust_recipe_service.invalidate()
 	game_loader.upgrades_system.mark_cache_dirty()
-	game_loader.tick_system.configure(game_loader.game_state, game_loader.element_system, game_loader.upgrades_system)
-	game_loader.atom_effects_controller.clear()
-	game_loader.world_view_controller.clear_particles()
 	game_loader._refresh_ui(game_loader.UI_DIRTY_ALL)
-
-func on_claim_prestige_node_requested() -> void:
-	var game_loader = loader
-	if game_loader == null or not game_loader.game_state.claim_next_prestige_node():
-		return
-	game_loader.dust_recipe_service.invalidate()
-	game_loader.upgrades_system.mark_cache_dirty()
-	game_loader._refresh_ui(game_loader.UI_DIRTY_PRESTIGE | game_loader.UI_DIRTY_ELEMENTS | game_loader.UI_DIRTY_STATS | game_loader.UI_DIRTY_TOP_BAR)
 
 func on_prestige_decrement_pressed() -> void:
 	adjust_prestige_count(-1)

@@ -77,10 +77,11 @@ func ensure_planet_meta_defaults() -> void:
 			game_state.planet_purchase_unlocks[planet_id] = false
 		if not game_state.planet_owned_flags.has(planet_id):
 			game_state.planet_owned_flags[planet_id] = false
+		if not game_state.sacrificed_planet_flags.has(planet_id):
+			game_state.sacrificed_planet_flags[planet_id] = false
 
-	game_state.planet_purchase_unlocks[game_state.DEFAULT_PLANET_ID] = true
-	if not game_state.planet_owned_flags.has(game_state.DEFAULT_PLANET_ID):
-		game_state.planet_owned_flags[game_state.DEFAULT_PLANET_ID] = false
+	if game_state.has_unlocked_era(1):
+		game_state.planet_purchase_unlocks[game_state.DEFAULT_PLANET_ID] = true
 
 func apply_planet_unlock_states() -> void:
 	for planet_id in game_state.planet_ids_in_order:
@@ -119,10 +120,23 @@ func is_planet_unlocked(planet_id: String) -> bool:
 func is_planet_owned(planet_id: String) -> bool:
 	return bool(game_state.planet_owned_flags.get(planet_id, false))
 
+func is_planet_sacrificed(planet_id: String) -> bool:
+	return bool(game_state.sacrificed_planet_flags.get(planet_id, false))
+
 func is_planet_purchase_unlocked(planet_id: String) -> bool:
-	if planet_id == game_state.DEFAULT_PLANET_ID:
-		return game_state.has_unlocked_era(1)
 	return bool(game_state.planet_purchase_unlocks.get(planet_id, false))
+
+func can_oblate_planet(planet_id: String) -> bool:
+	return is_planet_owned(planet_id)
+
+func get_planet_display_state(planet_id: String) -> String:
+	if is_planet_owned(planet_id):
+		return "owned"
+	if is_planet_sacrificed(planet_id):
+		return "sacrificed"
+	if is_planet_purchase_unlocked(planet_id):
+		return "purchasable"
+	return "locked"
 
 func get_planet_purchase_cost_entries(planet_id: String) -> Array[Dictionary]:
 	var planet := get_planet_state(planet_id)
@@ -163,11 +177,12 @@ func purchase_planet(planet_id: String) -> bool:
 		return false
 
 	game_state.planet_owned_flags[planet_id] = true
+	game_state.sacrificed_planet_flags[planet_id] = false
 	game_state.refresh_progression_state()
 	return true
 
 func select_planet(planet_id: String) -> bool:
-	if not is_planet_unlocked(planet_id):
+	if not is_planet_owned(planet_id):
 		return false
 	game_state.current_planet_id = planet_id
 	return true
@@ -182,10 +197,12 @@ func get_planet_entries() -> Array[Dictionary]:
 			"id": planet.id,
 			"name": planet.name,
 			"owned": is_planet_owned(planet_id),
+			"sacrificed": is_planet_sacrificed(planet_id),
 			"unlocked": is_planet_unlocked(planet_id),
 			"purchase_unlocked": is_planet_purchase_unlocked(planet_id),
 			"can_purchase": can_purchase_planet(planet_id),
 			"selected": game_state.current_planet_id == planet_id,
+			"display_state": get_planet_display_state(planet_id),
 			"level": planet.level,
 			"purchase_costs": get_planet_purchase_cost_entries(planet_id)
 		})
@@ -250,6 +267,7 @@ func get_planet_menu_planet_entry(planet_id: String) -> Dictionary:
 	var config_entry: Dictionary = game_state._planet_menu_planets.get(planet_id, {})
 	var runtime_planet := get_planet_state(planet_id)
 	var owned := is_planet_owned(planet_id) if runtime_planet != null else false
+	var sacrificed := is_planet_sacrificed(planet_id) if runtime_planet != null else false
 	var visible := is_planet_visible_in_stage(planet_id, get_planet_menu_stage())
 	var purchase_unlocked := is_planet_purchase_unlocked(planet_id) if runtime_planet != null else false
 	var can_purchase := can_purchase_planet(planet_id) if runtime_planet != null else false
@@ -264,10 +282,12 @@ func get_planet_menu_planet_entry(planet_id: String) -> Dictionary:
 		"moon_ids": Array(config_entry.get("moon_ids", [])).duplicate(),
 		"visible": visible,
 		"owned": owned,
+		"sacrificed": sacrificed,
 		"purchase_unlocked": purchase_unlocked,
 		"can_purchase": can_purchase,
 		"is_placeholder": is_placeholder,
 		"is_current_active_planet": game_state.current_planet_id == planet_id,
+		"display_state": get_planet_display_state(planet_id) if runtime_planet != null else "locked",
 		"level": runtime_planet.level if runtime_planet != null else 0,
 		"max_level": runtime_planet.max_level if runtime_planet != null else 0,
 		"workers": runtime_planet.workers.clone() if runtime_planet != null else DigitMaster.zero(),
@@ -286,6 +306,7 @@ func get_planet_menu_moon_entry(moon_id: String) -> Dictionary:
 		"color": str(config_entry.get("color", "#4A7F78")),
 		"parent_planet_id": parent_planet_id,
 		"parent_owned": is_planet_owned(parent_planet_id),
+		"parent_sacrificed": is_planet_sacrificed(parent_planet_id),
 		"visible": is_moon_visible_in_stage(moon_id, get_planet_menu_stage())
 	}
 
@@ -352,6 +373,8 @@ func select_adjacent_owned_planet(direction: int) -> bool:
 func get_planet_menu_action_label(planet_id: String) -> String:
 	if is_planet_owned(planet_id):
 		return "Unlocked"
+	if is_planet_sacrificed(planet_id):
+		return "Restore" if can_purchase_planet(planet_id) else "Sacrificed"
 	if can_purchase_planet(planet_id):
 		return "Unlock"
 	return "Locked"
@@ -407,12 +430,28 @@ func find_adjacent_owned_planet_id(direction: int) -> String:
 
 	var current_index := owned_planet_ids.find(game_state.current_planet_id)
 	if current_index < 0:
-		return ""
+		return owned_planet_ids[0] if direction > 0 else owned_planet_ids[owned_planet_ids.size() - 1]
 
 	var target_index := current_index + direction
 	if target_index < 0 or target_index >= owned_planet_ids.size():
 		return ""
 	return owned_planet_ids[target_index]
+
+func get_fallback_world_planet_id() -> String:
+	var adjacent_owned := find_adjacent_owned_planet_id(-1)
+	if adjacent_owned.is_empty():
+		adjacent_owned = find_adjacent_owned_planet_id(1)
+	if not adjacent_owned.is_empty():
+		return adjacent_owned
+	if is_planet_sacrificed(game_state.current_planet_id):
+		return game_state.current_planet_id
+	for planet_id in game_state.planet_ids_in_order:
+		if is_planet_sacrificed(planet_id):
+			return planet_id
+	for planet_id in game_state.planet_ids_in_order:
+		if is_planet_purchase_unlocked(planet_id):
+			return planet_id
+	return ""
 
 func get_current_planet_workers() -> DigitMaster:
 	var planet := get_current_planet_state()
@@ -428,13 +467,13 @@ func get_current_planet_worker_cost() -> DigitMaster:
 
 func can_buy_current_planet_worker() -> bool:
 	var planet := get_current_planet_state()
-	if planet == null or not planet.unlocked:
+	if planet == null or not is_planet_owned(planet.id):
 		return false
 	return game_state.can_afford_resource(game_state.DUST_RESOURCE_ID, calculate_planet_worker_cost(planet))
 
 func buy_current_planet_worker() -> bool:
 	var planet := get_current_planet_state()
-	if planet == null or not planet.unlocked:
+	if planet == null or not is_planet_owned(planet.id):
 		return false
 
 	var worker_cost := calculate_planet_worker_cost(planet)
@@ -462,21 +501,26 @@ func process_planet_production(delta_seconds: float) -> Dictionary:
 	var production_changes := {
 		"current_planet_changed": false,
 		"any_planet_changed": false,
-		"research_changed": false
+		"research_changed": false,
+		"milestones_changed": false
 	}
 	if delta_seconds <= 0.0:
 		return production_changes
+	var completed_milestones_before: int = game_state.completed_milestones.size()
 
 	for planet_id in game_state.planet_ids_in_order:
 		var planet: PlanetState = get_planet_state(planet_id)
-		if planet == null or not planet.unlocked or planet.workers.is_zero():
+		if planet == null or not is_planet_owned(planet_id) or planet.workers.is_zero():
 			continue
 
 		var allocation_to_xp := clampf(planet.worker_allocation_to_xp, 0.0, 1.0)
 		if allocation_to_xp > 0.0:
 			var previous_level := planet.level
 			var previous_xp: DigitMaster = planet.xp
-			apply_planet_xp(planet, planet.workers.multiply_scalar(delta_seconds * allocation_to_xp))
+			apply_planet_xp(
+				planet,
+				planet.workers.multiply_scalar(delta_seconds * allocation_to_xp * game_state.get_planet_xp_gain_multiplier())
+			)
 			var planet_changed := planet.level != previous_level or planet.xp.compare(previous_xp) != 0
 			if planet_changed:
 				production_changes["any_planet_changed"] = true
@@ -488,6 +532,7 @@ func process_planet_production(delta_seconds: float) -> Dictionary:
 			game_state._apply_research_progress(planet.workers.multiply_scalar(delta_seconds * (1.0 - allocation_to_xp) * game_state.RESEARCH_POINTS_PER_PRODUCTION))
 			if game_state.research_points.compare(previous_research_points) != 0 or game_state.research_progress != previous_research_progress:
 				production_changes["research_changed"] = true
+	production_changes["milestones_changed"] = game_state.completed_milestones.size() != completed_milestones_before
 
 	return production_changes
 
@@ -551,6 +596,7 @@ func apply_planet_xp(planet: PlanetState, xp_amount: DigitMaster) -> void:
 	planet.xp = current_xp
 	planet.xp_to_next_level = DigitMaster.one() if level >= planet.max_level else xp_to_next
 	update_best_planet_level(planet.id, planet.level)
+	game_state.refresh_milestones()
 
 func calculate_planet_worker_cost(planet: PlanetState) -> DigitMaster:
 	if planet == null:

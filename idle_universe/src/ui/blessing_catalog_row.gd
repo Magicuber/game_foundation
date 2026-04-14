@@ -4,10 +4,13 @@ class_name BlessingCatalogRow
 
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 
-const CONTENT_PADDING_X := 14.0
+const TITLE_PADDING_LEFT := 14.0
+const SUMMARY_PADDING_LEFT := 26.0
+const CONTENT_PADDING_RIGHT := 14.0
 const CONTENT_PADDING_TOP := 12.0
 const CONTENT_PADDING_BOTTOM := 12.0
-const SUMMARY_TOP_OFFSET := 44.0
+const TITLE_TO_SUMMARY_GAP := 18.0
+const SUMMARY_TOP_OFFSET := CONTENT_PADDING_TOP + UIMetrics.FONT_SIZE_BODY + TITLE_TO_SUMMARY_GAP
 const ROW_MIN_HEIGHT := 108.0
 const LEVEL_TEXT_GAP := 16.0
 const LEVEL_RESERVED_WIDTH := 190.0
@@ -15,6 +18,7 @@ const LEVEL_RESERVED_WIDTH := 190.0
 var _ui_font: FontFile
 var _name_text := ""
 var _level_text := ""
+var _summary_margin: MarginContainer
 var _summary_label: Label
 var _title_color := Color.WHITE
 var _panel_style := StyleBoxFlat.new()
@@ -38,20 +42,24 @@ func _init() -> void:
 	_panel_style.corner_radius_bottom_left = 10
 	add_theme_stylebox_override("panel", _panel_style)
 
+	_summary_margin = MarginContainer.new()
+	_summary_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_summary_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_summary_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_summary_margin.add_theme_constant_override("margin_left", int(SUMMARY_PADDING_LEFT))
+	_summary_margin.add_theme_constant_override("margin_top", int(SUMMARY_TOP_OFFSET))
+	_summary_margin.add_theme_constant_override("margin_right", int(CONTENT_PADDING_RIGHT))
+	_summary_margin.add_theme_constant_override("margin_bottom", int(CONTENT_PADDING_BOTTOM))
+	add_child(_summary_margin)
+
 	_summary_label = Label.new()
 	_summary_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_summary_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_summary_label.add_theme_font_size_override("font_size", UIMetrics.CURRENCY_DISPLAY_FONT_SIZE)
-	_summary_label.anchor_left = 0.0
-	_summary_label.anchor_top = 0.0
-	_summary_label.anchor_right = 1.0
-	_summary_label.anchor_bottom = 1.0
-	_summary_label.offset_left = CONTENT_PADDING_X
-	_summary_label.offset_top = SUMMARY_TOP_OFFSET
-	_summary_label.offset_right = -CONTENT_PADDING_X
-	_summary_label.offset_bottom = -CONTENT_PADDING_BOTTOM
-	add_child(_summary_label)
+	_summary_margin.add_child(_summary_label)
 
 func configure(_blessing_id: String, ui_font: FontFile) -> void:
 	_ui_font = ui_font
@@ -94,11 +102,11 @@ func _draw() -> void:
 
 	var title_baseline := CONTENT_PADDING_TOP + float(UIMetrics.FONT_SIZE_BODY)
 	var level_size := _ui_font.get_string_size(_level_text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, UIMetrics.FONT_SIZE_BODY)
-	var level_x := maxf(CONTENT_PADDING_X, size.x - CONTENT_PADDING_X - level_size.x)
-	var name_width := maxf(0.0, level_x - CONTENT_PADDING_X - LEVEL_TEXT_GAP)
+	var level_x := maxf(TITLE_PADDING_LEFT, size.x - CONTENT_PADDING_RIGHT - level_size.x)
+	var name_width := maxf(0.0, level_x - TITLE_PADDING_LEFT - LEVEL_TEXT_GAP)
 	draw_string(
 		_ui_font,
-		Vector2(CONTENT_PADDING_X, title_baseline),
+		Vector2(TITLE_PADDING_LEFT, title_baseline),
 		_name_text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		name_width,

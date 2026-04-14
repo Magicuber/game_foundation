@@ -177,6 +177,8 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		_sync_worker_particles(0, game_state)
 		return
 
+	var planet_owned := game_state.is_planet_owned(planet.id)
+	var planet_sacrificed := game_state.is_planet_sacrificed(planet.id)
 	var planet_level := planet.level
 	var max_level := planet.max_level
 	var workers := planet.workers
@@ -198,19 +200,23 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		workers.big_to_short_string(),
 		game_state.get_research_points().big_to_short_string()
 	]
-	_info.text += "\nAllocation XP/RP: %d%% / %d%%" % [
-		int(round(allocation_ratio * 100.0)),
-		int(round((1.0 - allocation_ratio) * 100.0))
-	]
+	if planet_sacrificed:
+		_info.text += "\nStatus: Sacrificed\nProduction disabled. Repurchase this planet from the Planets menu."
+	else:
+		_info.text += "\nAllocation XP/RP: %d%% / %d%%" % [
+			int(round(allocation_ratio * 100.0)),
+			int(round((1.0 - allocation_ratio) * 100.0))
+		]
 	_planet_sprite.texture = _icon_cache.get_planet_icon(planet.id, planet_level)
+	_planet_sprite.modulate = Color(0.5, 0.5, 0.5, 1.0) if planet_sacrificed else Color(1, 1, 1, 1)
 	_worker_slider.set_block_signals(true)
 	_worker_slider.step = slider_step
 	_worker_slider.value = allocation_ratio * 100.0
 	_worker_slider.set_block_signals(false)
-	_worker_slider.editable = planet.unlocked
+	_worker_slider.editable = planet_owned
 	_worker_button.disabled = not can_buy_worker
 	_worker_button.modulate = _enabled_button_modulate if can_buy_worker else _disabled_button_modulate
-	_worker_button_label.text = "BUY WORKER\n%s Dust" % worker_cost.big_to_short_string()
+	_worker_button_label.text = "BUY WORKER\n%s Dust" % worker_cost.big_to_short_string() if planet_owned else "PLANET INACTIVE\nUse Planets Menu"
 	_set_progress_fill_ratio(_level_progress_fill, level_ratio)
 	_set_progress_fill_ratio(_rp_progress_fill, game_state.get_research_progress_ratio())
 	if planet_level >= max_level:
@@ -224,7 +230,7 @@ func refresh(game_state: GameState, is_world_view: bool) -> void:
 		game_state.get_research_points().big_to_short_string(),
 		game_state.get_research_progress_display()
 	]
-	_sync_worker_particles(_get_total_worker_count(workers), game_state)
+	_sync_worker_particles(_get_total_worker_count(workers) if planet_owned else 0, game_state)
 
 func update(delta: float, is_world_view: bool) -> void:
 	if not is_world_view or _worker_particles.is_empty():

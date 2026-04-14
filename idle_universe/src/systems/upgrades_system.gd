@@ -118,7 +118,19 @@ func should_trigger_fission(game_state: GameState) -> bool:
 	var chance := get_fission_chance_percent(game_state)
 	if chance <= 0.0:
 		return false
+	if chance >= 100.0:
+		return true
 	return rng.randf() * 100.0 < chance
+
+func get_fission_overflow_base_copy_count(game_state: GameState) -> int:
+	var overflow_chance := get_fission_chance_percent(game_state) - 100.0
+	if overflow_chance <= 0.0:
+		return 0
+	var copy_count := int(floor(overflow_chance / 100.0))
+	var remainder := fmod(overflow_chance, 100.0)
+	if rng.randf() * 100.0 < remainder:
+		copy_count += 1
+	return copy_count
 
 func get_manual_double_hit_chance(game_state: GameState) -> float:
 	if game_state == null:

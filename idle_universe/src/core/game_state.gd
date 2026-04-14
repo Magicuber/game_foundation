@@ -4,15 +4,16 @@ class_name GameState
 
 const BlessingStateScript = preload("res://src/core/state/blessing_state.gd")
 const BlessingManagerScript = preload("res://src/core/managers/blessing_manager.gd")
+const MilestoneManagerScript = preload("res://src/core/managers/milestone_manager.gd")
+const OblationManagerScript = preload("res://src/core/managers/oblation_manager.gd")
 const ResourceManagerScript = preload("res://src/core/managers/resource_manager.gd")
-const PrestigeManagerScript = preload("res://src/core/managers/prestige_manager.gd")
 const PlanetManagerScript = preload("res://src/core/managers/planet_manager.gd")
 const ProgressionManagerScript = preload("res://src/core/managers/progression_manager.gd")
 const UpgradeManagerScript = preload("res://src/core/managers/upgrade_manager.gd")
 const ResetManagerScript = preload("res://src/core/managers/reset_manager.gd")
 const GameStateSerializerScript = preload("res://src/core/save/game_state_serializer.gd")
 
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 const DUST_RESOURCE_ID := "dust"
 const BLESSINGS_MENU_UNLOCK_ELEMENT_ID := "ele_C"
 # Centralize blessing cost tuning so playtest balance changes stay in one place.
@@ -154,94 +155,13 @@ const PRESTIGE_MILESTONES := [
 	{
 		"id": "break_prestige",
 		"title": "Break Prestige",
-		"description": "Unlock repeatable multi-point prestige runs.",
+		"description": "Reserved for future milestone content.",
 		"kind": "break_prestige",
 		"reward_points": 0,
 		"placeholder": true
 	}
 ]
-const PRESTIGE_NODES := [
-	{
-		"id": "unlock_section_2",
-		"title": "Node 1: Atomic Section II",
-		"description": "Unlock element section 11-30.",
-		"effect_type": "unlock_section",
-		"effect_value": 1,
-		"future_locked": false
-	},
-	{
-		"id": "dust_gain_1",
-		"title": "Node 2: Dust Yield",
-		"description": "Increase all dust gains by 50%.",
-		"effect_type": "dust_multiplier",
-		"effect_value": 0.5,
-		"future_locked": false
-	},
-	{
-		"id": "future_node_3",
-		"title": "Node 3: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_4",
-		"title": "Node 4: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_5",
-		"title": "Node 5: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_6",
-		"title": "Node 6: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_7",
-		"title": "Node 7: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_8",
-		"title": "Node 8: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_9",
-		"title": "Node 9: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	},
-	{
-		"id": "future_node_10",
-		"title": "Node 10: Future Unlock",
-		"description": "Reserved for later milestone content.",
-		"effect_type": "",
-		"effect_value": 0,
-		"future_locked": true
-	}
-]
+const PRESTIGE_NODES := []
 
 var orbs: int
 var dust: DigitMaster
@@ -286,18 +206,23 @@ var prestige_nodes_claimed: Array[String]
 var best_planet_levels_this_run: Dictionary
 var planet_purchase_unlocks: Dictionary
 var planet_owned_flags: Dictionary
+var sacrificed_planet_flags: Dictionary
 var moon_upgrade_purchases: Dictionary
+var oblation_claimed_recipe_ids: Array[String]
+var oblation_recipe_ids_in_order: Array[String]
 var _planet_menu_root: Dictionary
 var _planet_menu_stages: Array[Dictionary]
 var _planet_menu_stage_by_index: Dictionary
 var _planet_menu_planets: Dictionary
 var _planet_menu_moons: Dictionary
+var _oblation_recipes_by_id: Dictionary
 
 var _element_ids_by_index: Dictionary
 var _blessing_rng: RandomNumberGenerator
 var blessing_manager
 var resource_manager
-var prestige_manager
+var milestone_manager
+var oblation_manager
 var planet_manager
 var progression_manager
 var upgrade_manager
@@ -309,7 +234,8 @@ static func from_content(
 	upgrades_content: Dictionary,
 	blessings_content: Dictionary,
 	planets_content: Dictionary,
-	planet_menu_content: Dictionary = {}
+	planet_menu_content: Dictionary = {},
+	oblations_content: Dictionary = {}
 ) -> GameState:
 	var state := GameState.new()
 	state._load_elements(elements_content.get("elements", []))
@@ -320,6 +246,7 @@ static func from_content(
 	)
 	state._load_planets(planets_content.get("planets", []))
 	state._load_planet_menu_config(planet_menu_content)
+	state._load_oblations(oblations_content)
 	state.refresh_progression_state()
 	return state
 
@@ -367,22 +294,27 @@ func _init() -> void:
 	best_planet_levels_this_run = {}
 	planet_purchase_unlocks = {}
 	planet_owned_flags = {}
+	sacrificed_planet_flags = {}
 	moon_upgrade_purchases = {}
+	oblation_claimed_recipe_ids = []
+	oblation_recipe_ids_in_order = []
 	_planet_menu_root = {}
 	_planet_menu_stages = []
 	_planet_menu_stage_by_index = {}
 	_planet_menu_planets = {}
 	_planet_menu_moons = {}
+	_oblation_recipes_by_id = {}
 	_element_ids_by_index = {}
 	_blessing_rng = RandomNumberGenerator.new()
 	_blessing_rng.randomize()
 	blessing_manager = BlessingManagerScript.new(self)
+	milestone_manager = MilestoneManagerScript.new(self)
+	oblation_manager = OblationManagerScript.new(self)
 	resource_manager = ResourceManagerScript.new(self)
 	planet_manager = PlanetManagerScript.new(self)
 	progression_manager = ProgressionManagerScript.new(self)
 	upgrade_manager = UpgradeManagerScript.new(self)
 	reset_manager = ResetManagerScript.new(self)
-	prestige_manager = PrestigeManagerScript.new(self)
 	serializer = GameStateSerializerScript.new()
 	next_milestone_id = _get_first_milestone_id()
 
@@ -413,6 +345,9 @@ func _load_planets(planets_data: Array) -> void:
 func _load_planet_menu_config(planet_menu_content: Dictionary) -> void:
 	planet_manager.load_planet_menu_config(planet_menu_content)
 
+func _load_oblations(oblations_content: Dictionary) -> void:
+	oblation_manager.load_oblations(oblations_content)
+
 func refresh_progression_state() -> void:
 	progression_manager.refresh_progression_state()
 
@@ -423,13 +358,13 @@ func _apply_planet_unlock_states() -> void:
 	planet_manager.apply_planet_unlock_states()
 
 func _get_first_milestone_id() -> String:
-	return prestige_manager.get_first_milestone_id()
+	return milestone_manager.get_first_milestone_id()
 
 func _get_next_pending_milestone_id() -> String:
-	return prestige_manager.get_next_pending_milestone_id()
+	return milestone_manager.get_next_pending_milestone_id()
 
 func _sync_legacy_prestige_count_from_nodes() -> void:
-	prestige_manager.sync_legacy_prestige_count_from_nodes()
+	prestige_count = maxi(0, get_visible_element_section_count() - 1)
 
 func _update_best_planet_level(planet_id: String, level: int) -> void:
 	planet_manager.update_best_planet_level(planet_id, level)
@@ -471,40 +406,85 @@ func adjust_prestige_count(delta: int) -> bool:
 	return progression_manager.adjust_prestige_count(delta)
 
 func get_milestone_by_id(milestone_id: String) -> Dictionary:
-	return prestige_manager.get_milestone_by_id(milestone_id)
+	return milestone_manager.get_milestone_by_id(milestone_id)
 
-func get_next_prestige_milestone() -> Dictionary:
-	return prestige_manager.get_next_prestige_milestone()
+func get_next_milestone() -> Dictionary:
+	return milestone_manager.get_next_milestone()
 
-func get_prestige_milestone_entries() -> Array[Dictionary]:
-	return prestige_manager.get_prestige_milestone_entries()
+func get_milestone_entries() -> Array[Dictionary]:
+	return milestone_manager.get_milestone_entries()
 
-func get_next_prestige_node_definition() -> Dictionary:
-	return prestige_manager.get_next_prestige_node_definition()
+func refresh_milestones() -> bool:
+	return milestone_manager.refresh_milestones()
 
-func get_prestige_node_entries() -> Array[Dictionary]:
-	return prestige_manager.get_prestige_node_entries()
+func get_completed_planet_rank() -> int:
+	return milestone_manager.get_completed_planet_rank()
 
-func get_prestige_dust_multiplier() -> float:
-	return prestige_manager.get_prestige_dust_multiplier()
+func is_oblation_menu_unlocked() -> bool:
+	return milestone_manager.is_oblation_menu_unlocked()
 
-func can_prestige() -> bool:
-	return prestige_manager.can_prestige()
+func get_oblation_recipe_entries() -> Array[Dictionary]:
+	return oblation_manager.get_oblation_recipe_entries()
 
-func can_claim_next_prestige_node() -> bool:
-	return prestige_manager.can_claim_next_prestige_node()
+func get_oblation_slot_options(recipe_id: String, slot_id: String) -> Array[Dictionary]:
+	return oblation_manager.get_oblation_slot_options(recipe_id, slot_id)
 
-func get_prestige_preview() -> Dictionary:
-	return prestige_manager.get_prestige_preview()
+func get_oblation_preview(recipe_id: String, selected_inputs: Dictionary) -> Dictionary:
+	return oblation_manager.get_oblation_preview(recipe_id, selected_inputs)
 
-func perform_prestige() -> bool:
-	return prestige_manager.perform_prestige()
+func can_confirm_oblation(recipe_id: String, selected_inputs: Dictionary) -> bool:
+	return oblation_manager.can_confirm_oblation(recipe_id, selected_inputs)
 
-func claim_next_prestige_node() -> bool:
-	return prestige_manager.claim_next_prestige_node()
+func confirm_oblation(recipe_id: String, selected_inputs: Dictionary) -> bool:
+	return oblation_manager.confirm_oblation(recipe_id, selected_inputs)
+
+func get_oblation_effect_totals() -> Dictionary:
+	return oblation_manager.get_oblation_effect_totals()
+
+func get_dust_gain_multiplier() -> float:
+	return oblation_manager.get_dust_gain_multiplier()
+
+func get_research_gain_multiplier() -> float:
+	return oblation_manager.get_research_gain_multiplier()
+
+func get_planet_xp_gain_multiplier() -> float:
+	return oblation_manager.get_planet_xp_gain_multiplier()
 
 func _get_milestone_progress_text(milestone: Dictionary) -> String:
-	return prestige_manager.get_milestone_progress_text(milestone)
+	return milestone_manager.get_milestone_progress_text(milestone)
+
+func get_next_prestige_milestone() -> Dictionary:
+	return get_next_milestone()
+
+func get_prestige_milestone_entries() -> Array[Dictionary]:
+	return get_milestone_entries()
+
+func get_prestige_preview() -> Dictionary:
+	return {
+		"can_prestige": false,
+		"milestone": get_next_milestone()
+	}
+
+func get_prestige_node_entries() -> Array[Dictionary]:
+	return []
+
+func get_next_prestige_node_definition() -> Dictionary:
+	return {}
+
+func get_prestige_dust_multiplier() -> float:
+	return get_dust_gain_multiplier()
+
+func can_prestige() -> bool:
+	return false
+
+func can_claim_next_prestige_node() -> bool:
+	return false
+
+func perform_prestige() -> bool:
+	return false
+
+func claim_next_prestige_node() -> bool:
+	return false
 
 func is_next_unlock_within_visible_sections() -> bool:
 	return progression_manager.is_next_unlock_within_visible_sections()
@@ -539,8 +519,20 @@ func is_planet_unlocked(planet_id: String) -> bool:
 func is_planet_owned(planet_id: String) -> bool:
 	return planet_manager.is_planet_owned(planet_id)
 
+func is_planet_sacrificed(planet_id: String) -> bool:
+	return planet_manager.is_planet_sacrificed(planet_id)
+
 func is_planet_purchase_unlocked(planet_id: String) -> bool:
 	return planet_manager.is_planet_purchase_unlocked(planet_id)
+
+func can_oblate_planet(planet_id: String) -> bool:
+	return planet_manager.can_oblate_planet(planet_id)
+
+func get_planet_display_state(planet_id: String) -> String:
+	return planet_manager.get_planet_display_state(planet_id)
+
+func get_fallback_world_planet_id() -> String:
+	return planet_manager.get_fallback_world_planet_id()
 
 func get_planet_purchase_cost_entries(planet_id: String) -> Array[Dictionary]:
 	return planet_manager.get_planet_purchase_cost_entries(planet_id)

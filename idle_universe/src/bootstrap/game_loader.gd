@@ -9,6 +9,7 @@ const GameLoaderSetupHelperScript = preload("res://src/bootstrap/game_loader_set
 const BlessingsPanelControllerScript = preload("res://src/controllers/blessings_panel_controller.gd")
 const PlanetsPanelControllerScript = preload("res://src/controllers/planets_panel_controller.gd")
 const PrestigePanelControllerScript = preload("res://src/controllers/prestige_panel_controller.gd")
+const OblationsPanelControllerScript = preload("res://src/controllers/oblations_panel_controller.gd")
 const UIMetrics = preload("res://src/ui/ui_metrics.gd")
 const UPGRADE_BUTTON_TEXTURE = preload("res://assests/sprites/spr_upgrade_btn.png")
 const DEBUG_HITBOX_COLOR := Color8(255, 80, 80)
@@ -31,6 +32,7 @@ const MENU_PRESTIGE := 10
 const MENU_FACTORY := 11
 const MENU_COLLIDER := 12
 const MENU_SETTINGS := 13
+const MENU_OBLATIONS := 14
 
 const VIEW_ATOM := 0
 const VIEW_WORLD := 1
@@ -52,6 +54,7 @@ const UI_DIRTY_MENU_BUTTONS := 1 << 13
 const UI_DIRTY_DEBUG := 1 << 14
 const UI_DIRTY_PRESTIGE := 1 << 15
 const UI_DIRTY_BLESSINGS_CATALOG := 1 << 16
+const UI_DIRTY_OBLATIONS := 1 << 17
 const UI_DIRTY_ALL := (
 	UI_DIRTY_TOP_BAR
 	| UI_DIRTY_SELECTION
@@ -70,6 +73,7 @@ const UI_DIRTY_ALL := (
 	| UI_DIRTY_DEBUG
 	| UI_DIRTY_PRESTIGE
 	| UI_DIRTY_BLESSINGS_CATALOG
+	| UI_DIRTY_OBLATIONS
 )
 
 const PREV_BUTTON_TEXTURE = preload("res://assests/sprites/spr_prev_btn.png")
@@ -207,12 +211,16 @@ var resource_display_ids: Array[String] = []
 var reset_blessings_button: Button
 var factory_menu_button: Button
 var collider_menu_button: Button
+var oblations_menu_button: Button
 var factory_panel: VBoxContainer
 var factory_title: Label
 var factory_info: Label
 var collider_panel: VBoxContainer
 var collider_title: Label
 var collider_info: Label
+var oblations_panel: VBoxContainer
+var oblations_title: Label
+var oblations_info: Label
 var debug_show_element_hitboxes := false
 var dust_mode_active := false
 var icon_cache: GameIconCache = GameIconCache.new()
@@ -225,6 +233,7 @@ var element_menu_controller: ElementMenuController = ElementMenuController.new()
 var blessings_panel_controller = BlessingsPanelControllerScript.new()
 var planets_panel_controller = PlanetsPanelControllerScript.new()
 var prestige_panel_controller = PrestigePanelControllerScript.new()
+var oblations_panel_controller = OblationsPanelControllerScript.new()
 var upgrades_panel_controller: UpgradesPanelController = UpgradesPanelController.new()
 var era_panel_controller: EraPanelController = EraPanelController.new()
 var game_bootstrap: GameBootstrap = GameBootstrapScript.new()
@@ -242,6 +251,7 @@ func _ready() -> void:
 	ui_refresh_coordinator = GameUiRefreshCoordinatorScript.new(self)
 	setup_helper = GameLoaderSetupHelperScript.new(self)
 	upgrades_system.mark_cache_dirty()
+	_ensure_oblations_menu_nodes()
 	_ensure_factory_and_collider_menu_nodes()
 
 	prev_button.pressed.connect(_on_prev_pressed)
@@ -259,6 +269,7 @@ func _ready() -> void:
 	era_menu_button.pressed.connect(_on_era_menu_pressed)
 	planets_menu_button.pressed.connect(_on_planets_menu_pressed)
 	prestige_menu_button.pressed.connect(_on_prestige_menu_pressed)
+	oblations_menu_button.pressed.connect(_on_oblations_menu_pressed)
 	factory_menu_button.pressed.connect(_on_factory_menu_pressed)
 	collider_menu_button.pressed.connect(_on_collider_menu_pressed)
 	stats_menu_button.pressed.connect(_on_stats_menu_pressed)
@@ -271,6 +282,8 @@ func _ready() -> void:
 	add_orbs_button.pressed.connect(_on_add_orbs_pressed)
 	_ensure_reset_blessings_button()
 	blessings_menu_button.text = "Blessings"
+	prestige_menu_button.text = "Milestones"
+	prestige_title.text = "Milestones"
 
 	fuse_button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	fuse_button.pivot_offset = fuse_button.size * 0.5
@@ -353,6 +366,7 @@ func _ready() -> void:
 		shop_panel,
 		planets_panel,
 		prestige_panel,
+		oblations_panel,
 		factory_panel,
 		collider_panel,
 		settings_panel,
@@ -381,6 +395,8 @@ func _ready() -> void:
 		planets_info,
 		prestige_title,
 		prestige_info,
+		oblations_title,
+		oblations_info,
 		factory_title,
 		factory_info,
 		collider_title,
@@ -401,6 +417,7 @@ func _ready() -> void:
 		era_menu_button,
 		planets_menu_button,
 		prestige_menu_button,
+		oblations_menu_button,
 		factory_menu_button,
 		collider_menu_button,
 		stats_menu_button,
@@ -453,8 +470,8 @@ func _ready() -> void:
 	planets_panel_controller.unlock_requested.connect(_on_planet_purchase_requested)
 	planets_panel_controller.moon_upgrade_requested.connect(_on_moon_upgrade_requested)
 	prestige_panel_controller.configure(prestige_panel, prestige_info)
-	prestige_panel_controller.prestige_requested.connect(_on_prestige_requested)
-	prestige_panel_controller.claim_node_requested.connect(_on_claim_prestige_node_requested)
+	oblations_panel_controller.configure(oblations_panel, oblations_info)
+	oblations_panel_controller.oblation_confirm_requested.connect(_on_oblation_confirm_requested)
 	upgrades_panel_controller.configure(upgrades_panel, upgrades_info, upgrade_list)
 	upgrades_panel_controller.purchase_requested.connect(_on_upgrade_purchase_requested)
 	era_panel_controller.configure(
@@ -575,7 +592,8 @@ func _get_resource_refresh_flags() -> int:
 		UI_DIRTY_PLANETS,
 		UI_DIRTY_BLESSINGS_PROGRESS,
 		UI_DIRTY_WORLD,
-		UI_DIRTY_PRESTIGE
+		UI_DIRTY_PRESTIGE,
+		UI_DIRTY_OBLATIONS
 	)
 
 func _get_selection_refresh_flags() -> int:
@@ -596,6 +614,7 @@ func _get_menu_mode_refresh_flags() -> int:
 		MENU_SHOP,
 		MENU_PLANETS,
 		MENU_PRESTIGE,
+		MENU_OBLATIONS,
 		MENU_SETTINGS,
 		UI_DIRTY_MENU_BUTTONS,
 		UI_DIRTY_UPGRADES,
@@ -607,6 +626,7 @@ func _get_menu_mode_refresh_flags() -> int:
 		UI_DIRTY_SHOP,
 		UI_DIRTY_PLANETS,
 		UI_DIRTY_PRESTIGE,
+		UI_DIRTY_OBLATIONS,
 		UI_DIRTY_SETTINGS
 	)
 
@@ -685,6 +705,9 @@ func _on_planets_menu_pressed() -> void:
 func _on_prestige_menu_pressed() -> void:
 	action_router.on_prestige_menu_pressed()
 
+func _on_oblations_menu_pressed() -> void:
+	action_router.on_oblations_menu_pressed()
+
 func _on_factory_menu_pressed() -> void:
 	action_router.on_factory_menu_pressed()
 
@@ -736,12 +759,6 @@ func _on_planet_purchase_requested(planet_id: String) -> void:
 func _on_moon_upgrade_requested(moon_id: String, upgrade_id: String) -> void:
 	action_router.on_moon_upgrade_requested(moon_id, upgrade_id)
 
-func _on_prestige_requested() -> void:
-	action_router.on_prestige_requested()
-
-func _on_claim_prestige_node_requested() -> void:
-	action_router.on_claim_prestige_node_requested()
-
 func _on_prestige_decrement_pressed() -> void:
 	action_router.on_prestige_decrement_pressed()
 
@@ -763,6 +780,9 @@ func _on_upgrade_purchase_requested(upgrade_id: String) -> void:
 func _adjust_prestige_count(delta: int) -> void:
 	action_router.adjust_prestige_count(delta)
 
+func _on_oblation_confirm_requested(recipe_id: String, selected_inputs: Dictionary) -> void:
+	action_router.on_oblation_confirm_requested(recipe_id, selected_inputs)
+
 func _pulse_fuse_element() -> void:
 	if not is_instance_valid(fuse_button):
 		return
@@ -778,6 +798,9 @@ func _ensure_reset_blessings_button() -> void:
 
 func _style_reset_blessings_button() -> void:
 	setup_helper.style_reset_blessings_button()
+
+func _ensure_oblations_menu_nodes() -> void:
+	setup_helper.ensure_oblations_menu_nodes()
 
 func _ensure_factory_and_collider_menu_nodes() -> void:
 	setup_helper.ensure_factory_and_collider_menu_nodes()

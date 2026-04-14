@@ -1,0 +1,158 @@
+{
+  "recipes": [
+    {
+      "id": "hydrogen_memory",
+      "title": "Hydrogen Memory",
+      "description": "Offer Hydrogen to expand the atomic frontier.",
+      "required_milestone_rank": 1,
+      "placeholder": false,
+      "slots": [
+        {
+          "id": "element_slot",
+          "label": "Element",
+          "kind": "element",
+          "allowed_ids": ["ele_H"]
+        }
+      ],
+      "effects": [
+        {
+          "type": "unlock_section",
+          "value": 1,
+          "text": "Unlock atomic section 11-30."
+        }
+      ]
+    },
+    {
+      "id": "helium_study",
+      "title": "Helium Study",
+      "description": "Trade Helium for permanent research efficiency.",
+      "required_milestone_rank": 1,
+      "placeholder": false,
+      "slots": [
+        {
+          "id": "element_slot",
+          "label": "Element",
+          "kind": "element",
+          "allowed_ids": ["ele_He"]
+        }
+      ],
+      "effects": [
+        {
+          "type": "research_multiplier",
+          "value": 0.25,
+          "text": "+25% RP gain."
+        }
+      ]
+    },
+    {
+      "id": "planet_a_ember",
+      "title": "Planet A Ember",
+      "description": "Burn Planet A into permanent planetary insight.",
+      "required_milestone_rank": 1,
+      "placeholder": false,
+      "slots": [
+        {
+          "id": "planet_slot",
+          "label": "Planet",
+          "kind": "planet",
+          "allowed_ids": ["planet_a"]
+        }
+      ],
+      "effects": [
+        {
+          "type": "planet_xp_multiplier",
+          "value": 0.15,
+          "text": "+15% planet XP gain."
+        }
+      ]
+    },
+    {
+      "id": "planet_b_ashes",
+      "title": "Planet B Ashes",
+      "description": "Reduce Planet B to ash for a permanent dust yield bonus.",
+      "required_milestone_rank": 1,
+      "placeholder": false,
+      "slots": [
+        {
+          "id": "planet_slot",
+          "label": "Planet",
+          "kind": "planet",
+          "allowed_ids": ["planet_b"]
+        }
+      ],
+      "effects": [
+        {
+          "type": "dust_multiplier",
+          "value": 0.5,
+          "text": "+50% dust gain."
+        }
+      ]
+    },
+    {
+      "id": "neon_orbit",
+      "title": "Neon Orbit",
+      "description": "Bind Neon and Planet B into a faster planetary ascent.",
+      "required_milestone_rank": 2,
+      "placeholder": false,
+      "slots": [
+        {
+          "id": "element_slot",
+          "label": "Element",
+          "kind": "element",
+          "allowed_ids": ["ele_Ne"]
+        },
+        {
+          "id": "planet_slot",
+          "label": "Planet",
+          "kind": "planet",
+          "allowed_ids": ["planet_b"]
+        }
+      ],
+      "effects": [
+        {
+          "type": "planet_xp_multiplier",
+          "value": 0.25,
+          "text": "+25% planet XP gain."
+        }
+      ]
+    },
+    {
+      "id": "solar_seed_alpha",
+      "title": "Solar Seed Alpha",
+      "description": "Reserved for future Solar sacrifices.",
+      "required_milestone_rank": 2,
+      "placeholder": true,
+      "slots": [
+        {
+          "id": "solar_slot",
+          "label": "Solar System",
+          "kind": "solar_system",
+          "allowed_ids": ["solar_alpha"]
+        }
+      ],
+      "effects": []
+    },
+    {
+      "id": "solar_seed_beta",
+      "title": "Solar Seed Beta",
+      "description": "Reserved for future Solar sacrifices.",
+      "required_milestone_rank": 2,
+      "placeholder": true,
+      "slots": [
+        {
+          "id": "element_slot",
+          "label": "Element",
+          "kind": "element",
+          "allowed_ids": ["ele_Ne"]
+        },
+        {
+          "id": "solar_slot",
+          "label": "Solar System",
+          "kind": "solar_system",
+          "allowed_ids": ["solar_beta"]
+        }
+      ],
+      "effects": []
+    }
+  ]
+}

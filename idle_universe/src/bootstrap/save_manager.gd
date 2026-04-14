@@ -125,13 +125,17 @@ static func _is_valid_save_dict(save_data: Dictionary) -> bool:
 		return false
 	if typeof(save_data.get("planet_owned_flags", {})) != TYPE_DICTIONARY:
 		return false
+	if save_data.has("sacrificed_planet_flags") and typeof(save_data.get("sacrificed_planet_flags", {})) != TYPE_DICTIONARY:
+		return false
 	if typeof(save_data.get("moon_upgrade_purchases", {})) != TYPE_DICTIONARY:
+		return false
+	if save_data.has("oblation_claimed_recipe_ids") and typeof(save_data.get("oblation_claimed_recipe_ids", [])) != TYPE_ARRAY:
 		return false
 	if typeof(save_data.get("best_planet_levels_this_run", {})) != TYPE_DICTIONARY:
 		return false
 	if typeof(save_data.get("completed_milestones", [])) != TYPE_ARRAY:
 		return false
-	if typeof(save_data.get("prestige_nodes_claimed", [])) != TYPE_ARRAY:
+	if save_data.has("prestige_nodes_claimed") and typeof(save_data.get("prestige_nodes_claimed", [])) != TYPE_ARRAY:
 		return false
 	if typeof(save_data.get("current_element_id", "")) != TYPE_STRING:
 		return false

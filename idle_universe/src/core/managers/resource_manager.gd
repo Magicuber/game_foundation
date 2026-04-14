@@ -163,7 +163,7 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 
 	var normalized_id := resource_id.to_lower()
 	if normalized_id == game_state.DUST_RESOURCE_ID:
-		game_state.dust = game_state.dust.add(amount.multiply_scalar(game_state.get_prestige_dust_multiplier()))
+		game_state.dust = game_state.dust.add(amount.multiply_scalar(game_state.get_dust_gain_multiplier()))
 		return
 
 	var element: ElementState = game_state.get_element_state(resource_id)
@@ -177,6 +177,7 @@ func produce_resource(resource_id: String, amount: DigitMaster) -> void:
 func apply_research_progress(rp_amount: DigitMaster) -> void:
 	if rp_amount.is_zero():
 		return
+	rp_amount = rp_amount.multiply_scalar(game_state.get_research_gain_multiplier())
 
 	var amount_float := rp_amount.to_float()
 	if is_inf(amount_float):

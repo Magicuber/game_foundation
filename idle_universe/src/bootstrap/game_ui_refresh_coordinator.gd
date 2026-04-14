@@ -73,6 +73,7 @@ func flush_dirty_ui() -> void:
 		{"flag": game_loader.UI_DIRTY_SHOP, "callable": Callable(self, "refresh_shop_panel")},
 		{"flag": game_loader.UI_DIRTY_PLANETS, "callable": Callable(self, "refresh_planets_panel")},
 		{"flag": game_loader.UI_DIRTY_PRESTIGE, "callable": Callable(self, "refresh_prestige_panel")},
+		{"flag": game_loader.UI_DIRTY_OBLATIONS, "callable": Callable(self, "refresh_oblations_panel")},
 		{"flag": game_loader.UI_DIRTY_SETTINGS, "callable": Callable(self, "refresh_settings_panel")},
 		{"flag": game_loader.UI_DIRTY_BLESSINGS_PROGRESS, "callable": Callable(self, "refresh_blessings_progress")},
 		{"flag": game_loader.UI_DIRTY_BLESSINGS_CATALOG, "callable": Callable(self, "refresh_blessings_catalog")},
@@ -124,8 +125,9 @@ func refresh_menu_buttons() -> void:
 	var blessings_enabled: bool = game_loader.game_state.is_blessings_menu_unlocked()
 	var era_menu_enabled: bool = game_loader.game_state.is_era_menu_unlocked()
 	var planets_enabled: bool = game_loader.game_state.has_unlocked_era(1)
+	var oblations_enabled: bool = game_loader.game_state.is_oblation_menu_unlocked()
 	var shop_enabled: bool = game_loader.game_state.is_element_unlocked("ele_H")
-	game_loader.menu_controller.refresh_main_menu_buttons(blessings_enabled, era_menu_enabled, planets_enabled, shop_enabled)
+	game_loader.menu_controller.refresh_main_menu_buttons(blessings_enabled, era_menu_enabled, planets_enabled, oblations_enabled, shop_enabled)
 	game_loader.hud_controller.refresh_menu_button(game_loader.ui_state_controller.menu_mode != game_loader.MENU_CLOSED)
 	game_loader.hud_controller.refresh_shop_button(shop_enabled, shop_enabled and game_loader.ui_state_controller.menu_mode == game_loader.MENU_CLOSED)
 
@@ -158,12 +160,12 @@ func refresh_stats_panel() -> void:
 	]
 	game_loader.planetary_stats_info.visible = game_loader.game_state.has_unlocked_era(1)
 	if game_loader.planetary_stats_info.visible:
-		var next_milestone: Dictionary = game_loader.game_state.get_next_prestige_milestone()
+		var next_milestone: Dictionary = game_loader.game_state.get_next_milestone()
 		var next_milestone_title: String = "None" if next_milestone.is_empty() else str(next_milestone.get("title", "None"))
-		game_loader.planetary_stats_info.text = "Planetary Stats\nResearch Points: %s\nPrestige Points: %d (%d unspent)\nNext Milestone: %s" % [
+		game_loader.planetary_stats_info.text = "Planetary Stats\nResearch Points: %s\nCompleted Milestones: %d\nOblations Claimed: %d\nNext Milestone: %s" % [
 			game_loader.game_state.get_research_points().big_to_short_string(),
-			game_loader.game_state.prestige_points_total,
-			game_loader.game_state.prestige_points_unspent,
+			game_loader.game_state.completed_milestones.size(),
+			game_loader.game_state.oblation_claimed_recipe_ids.size(),
 			next_milestone_title
 		]
 
@@ -185,6 +187,12 @@ func refresh_prestige_panel() -> void:
 		return
 	game_loader.prestige_panel_controller.refresh(game_loader.game_state)
 
+func refresh_oblations_panel() -> void:
+	var game_loader = loader
+	if game_loader == null or game_loader.oblations_panel == null or not game_loader.oblations_panel.visible:
+		return
+	game_loader.oblations_panel_controller.refresh(game_loader.game_state)
+
 func refresh_blessings_progress() -> void:
 	var game_loader = loader
 	if game_loader == null or not game_loader.blessings_panel.visible:
@@ -202,7 +210,7 @@ func refresh_settings_panel() -> void:
 	if game_loader == null or not game_loader.settings_panel.visible:
 		return
 
-	game_loader.settings_info.text = "Developer Tools\nUse Dust and Orbs to test prestige milestones and planet purchases."
+	game_loader.settings_info.text = "Developer Tools\nUse Dust and Orbs to test milestones, planets, and oblations."
 	game_loader.prestige_debug_row.visible = false
 	game_loader.prestige_count_label.text = "Prestige Count: %d" % game_loader.game_state.prestige_count
 	game_loader.click_boxes_toggle.button_pressed = game_loader.debug_show_element_hitboxes

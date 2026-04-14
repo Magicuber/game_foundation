@@ -78,6 +78,9 @@ func _build_smash_result(game_state: GameState, upgrades_system: UpgradesSystem,
 		if not fission_results.is_empty():
 			produced_resource_ids = fission_results
 			was_fission = true
+			var overflow_base_copy_count: int = upgrades_system.get_fission_overflow_base_copy_count(game_state)
+			for _overflow_index in range(overflow_base_copy_count):
+				produced_resource_ids.append(produced_resource)
 
 	var rolled_variants := _roll_smasher_variants(game_state)
 	var smasher_variant := _get_display_variant(rolled_variants)
